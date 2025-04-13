@@ -13,7 +13,7 @@ const GenderSelector = () => {
         style={{
           borderRadius: "50%",
           padding: "5px",
-          border: selected === "boy" ? "3px solid #007bff" : "3px solid transparent",
+          border: selected === "boy" ? "3px solid #007074" : "3px solid transparent",
           cursor: "pointer",
         }}
       >
@@ -35,7 +35,7 @@ const GenderSelector = () => {
         style={{
           borderRadius: "50%",
           padding: "5px",
-          border: selected === "girl" ? "3px solid #ff69b4" : "3px solid transparent",
+          border: selected === "girl" ? "3px solid #E9A5F1" : "3px solid transparent",
           cursor: "pointer",
         }}
       >

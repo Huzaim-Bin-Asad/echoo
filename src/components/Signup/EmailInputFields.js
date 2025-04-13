@@ -26,7 +26,7 @@ const EmailInputFields = () => {
         <div className="position-relative">
           <Form.Control
             type="email"
-            placeholder="Alternate email (optional)"
+            placeholder="Username"
             className="rounded-4 ps-3 pe-5 text-start border shadow-sm"
             style={{ 
               height: "45px",
