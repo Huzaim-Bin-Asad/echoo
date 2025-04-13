@@ -11,16 +11,31 @@ import PasswordInputFields from "../components/Signup/PasswordInputFields";
 import SignupProgress from "../components/Signup/SignupProgress";
 import GenderSelector from "../components/Signup/GenderSelector";
 import UploadProfilePicture from "../components/Signup/UploadProfilePicture";
+import useSignupForm from "../hooks/useSignupForm";
 
 const Signup = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
+  const { formData, updateFormData, validateStep, submitForm } = useSignupForm();
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
+    // Validate current step before proceeding
+    if (!validateStep(currentStep)) {
+      alert('Please fill all required fields');
+      return;
+    }
+
     if (currentStep < 5) {
       setCurrentStep(currentStep + 1);
     } else {
-      navigate("/signup-step-two");
+      // Final step - submit form
+      try {
+        await submitForm();
+        navigate("/signup-step-two");
+      } catch (error) {
+        console.error('Signup error:', error);
+        alert('Signup failed. Please try again.');
+      }
     }
   };
 
@@ -36,24 +51,23 @@ const Signup = () => {
     if (currentStep === 3) return <PasswordHeader />;
     if (currentStep === 4) return null;
     if (currentStep === 5) return null; // hide on final step
-
     return <SignupHeader />;
   };
 
   const renderFormFields = () => {
     switch (currentStep) {
       case 1:
-        return <NameInputFields />;
+        return <NameInputFields formData={formData} updateFormData={updateFormData} />;
       case 2:
-        return <EmailInputFields />;
+        return <EmailInputFields formData={formData} updateFormData={updateFormData} />;
       case 3:
-        return <PasswordInputFields />;
+        return <PasswordInputFields formData={formData} updateFormData={updateFormData} />;
       case 4:
-        return <GenderSelector />;
-        case 5:
-            return <UploadProfilePicture />;
+        return <GenderSelector formData={formData} updateFormData={updateFormData} />;
+      case 5:
+        return <UploadProfilePicture formData={formData} updateFormData={updateFormData} />;
       default:
-        return <NameInputFields />;
+        return <NameInputFields formData={formData} updateFormData={updateFormData} />;
     }
   };
 
