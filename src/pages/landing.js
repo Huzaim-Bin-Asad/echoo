@@ -1,14 +1,18 @@
 import React from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import landingImg from "../assets/landing.jpg";
+import { useNavigate } from "react-router-dom";
+
 
 const Landing = () => {
+  const navigate = useNavigate();  // Add this line here
+
   return (
     <div
       className="d-flex flex-column bg-light position-relative"
       style={{
-        height: "80vh", // 80% of the viewport
-        overflow: "hidden", // prevent internal scroll
+        height: "100vh", // Full viewport height
+        overflow: "hidden", // Prevent scrolling
       }}
     >
       {/* Top Section */}
@@ -16,7 +20,7 @@ const Landing = () => {
         className="d-flex align-items-end justify-content-center position-relative flex-grow-1"
         style={{
           backgroundColor: "#f9efe3",
-          paddingBottom: "20px",
+          paddingBottom: "160px", // Slightly less to move elements up
         }}
       >
         <svg
@@ -25,7 +29,7 @@ const Landing = () => {
             top: "100%",
             left: 0,
             width: "100%",
-            height: "80px",
+            height: "95px",
             transform: "translateY(-100%)",
             zIndex: 2,
           }}
@@ -42,7 +46,7 @@ const Landing = () => {
           src={landingImg}
           alt="Connect Illustration"
           style={{
-            width: "50%",
+            width: "70%",
             maxWidth: "250px",
             height: "auto",
             zIndex: 1,
@@ -50,22 +54,31 @@ const Landing = () => {
         />
       </div>
 
+
       {/* Bottom Section */}
       <div
         className="text-center text-white px-4 py-3"
         style={{
           backgroundColor: "#1a1a2e",
+          marginTop: "0px", // Pull it up slightly
         }}
       >
         <h4 className="fw-bold mb-2">Let's connect with each other</h4>
         <p className="text-secondary mb-3" style={{ fontSize: "0.85rem" }}>
           A message is a discrete communication intended by the source consumption.
         </p>
+
+
         <button
           className="btn btn-danger px-4 py-2"
           style={{
             borderRadius: "30px",
+            marginBottom: "95px", // Pull it up slightly
+
           }}
+
+          onClick={() => navigate("/signup")}
+
         >
           Let's Start →
         </button>
