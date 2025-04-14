@@ -22,45 +22,56 @@ const Signup = () => {
   const [validationError, setValidationError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { formData, updateFormData, validateStep } = useSignupForm();
+
+  const { formData, updateFormData, validateStep, checkCredentials } = useSignupForm();
 
   const handleContinue = async () => {
     const { isValid, message } = validateStep(currentStep);
-
+  
     if (!isValid) {
       setValidationError(message);
       return;
     } else {
       setValidationError("");
     }
-
+  
+    if (currentStep === 2) {
+      try {
+        await checkCredentials(); // <- Call backend validation
+      } catch (error) {
+        if (error.errors) {
+          if (error.errors.email) {
+            setValidationError(error.errors.email);
+          } else if (error.errors.username) {
+            setValidationError(error.errors.username);
+          } else {
+            setValidationError("Email or username already in use.");
+          }
+        } else {
+          setValidationError("Error checking credentials.");
+        }
+        return; // Don't proceed to next step
+      }
+    }
+  
     if (currentStep < 5) {
       setCurrentStep(prev => prev + 1);
     } else {
       setIsSubmitting(true);
       try {
         const response = await submitSignupForm(formData);
-
         localStorage.setItem("token", response.token);
         localStorage.setItem("user", JSON.stringify(response.user));
-
         navigate("/signup-step-two");
       } catch (error) {
         console.error("Signup error:", error);
-        if (error.response?.data?.field) {
-          setValidationError(`This ${error.response.data.field} is already in use`);
-          if (error.response.data.field === "email" || error.response.data.field === "username") {
-            setCurrentStep(2);
-          }
-        } else {
-          setHasError(true);
-        }
+        setHasError(true);
       } finally {
         setIsSubmitting(false);
       }
     }
   };
-
+  
   const handleBack = () => {
     if (currentStep === 1) {
       navigate("/");
@@ -135,6 +146,7 @@ const Signup = () => {
         <SignupProgress currentStep={currentStep} />
 
         <Button
+          id={currentStep === 2 ? "case2" : undefined}
           className="w-100 rounded-4 fw-semibold shadow"
           style={{ backgroundColor: "black", border: "none", height: "45px" }}
           onClick={handleContinue}

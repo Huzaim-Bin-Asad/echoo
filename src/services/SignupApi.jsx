@@ -1,6 +1,35 @@
 // api.js
 const API_URL = process.env.API_URL || 'http://localhost:5000'; // Use local URL by default
 
+
+export const checkCredentials = async ({ email, username }) => {
+    try {
+      const response = await fetch(`${API_URL}/check-credentials`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          username,
+          buttonId: 'case2',
+        }),
+      });
+  
+      const responseData = await response.json();
+  
+      if (!response.ok) {
+        throw responseData;
+      }
+  
+      return responseData;
+    } catch (error) {
+      console.error('[CHECK CREDENTIALS] Error:', error);
+      throw error;
+    }
+  };
+
+  
 export const submitSignupForm = async (formData) => {
     console.log('[SUBMIT] Starting form submission with data:', formData);
   

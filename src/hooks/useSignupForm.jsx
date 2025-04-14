@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { submitSignupForm } from '../services/SignupApi';
+import { submitSignupForm, checkCredentials } from '../services/SignupApi';
 
 const useSignupForm = () => {
   const [formData, setFormData] = useState({
@@ -82,7 +82,11 @@ const useSignupForm = () => {
     formData,
     updateFormData,
     validateStep,
-    submitForm: () => submitSignupForm(formData)
+    submitForm: () => submitSignupForm(formData),
+    checkCredentials: () => checkCredentials({
+      email: formData.email,
+      username: formData.username
+    })
   };
 };
 
