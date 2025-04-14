@@ -1,17 +1,40 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { User } from 'lucide-react';
 
 const ChatItem = ({ name, message, time, unread, img }) => {
-  const truncateMessage = (message, limit = 30) => {
-    return message.length > limit ? message.slice(0, limit) + '...' : message;
-  };
+  const [truncateLimit, setTruncateLimit] = useState(30);
+
+  // Adjust truncate limit based on screen width
+  useEffect(() => {
+    const updateLimit = () => {
+      const width = window.innerWidth;
+      if (width < 400) {
+        setTruncateLimit(20);
+      } else if (width < 576) {
+        setTruncateLimit(30);
+      } else if (width < 768) {
+        setTruncateLimit(45);
+      } else if (width < 992) {
+        setTruncateLimit(60);
+      } else {
+        setTruncateLimit(80);
+      }
+    };
+
+    updateLimit(); // Run initially
+    window.addEventListener('resize', updateLimit);
+    return () => window.removeEventListener('resize', updateLimit);
+  }, []);
+
+  const truncateMessage = (msg, limit) =>
+    msg.length > limit ? msg.slice(0, limit) + '...' : msg;
 
   return (
     <div className="list-group-item list-group-item-action d-flex justify-content-between align-items-start border-0 py-3">
       {/* Avatar */}
       <div
         className="me-3 d-flex align-items-center justify-content-center rounded-circle bg-light"
-        style={{ width: 50, height: 50 }} // Fixed size for avatar
+        style={{ width: 50, height: 50 }}
       >
         {img ? (
           <img
@@ -23,35 +46,30 @@ const ChatItem = ({ name, message, time, unread, img }) => {
             style={{ objectFit: 'cover' }}
           />
         ) : (
-          <User size={30} className="text-muted" /> // Fixed icon size
+          <User size={30} className="text-muted" />
         )}
       </div>
 
       {/* Text content */}
       <div
         className="d-flex flex-column flex-grow-1"
-        style={{
-          // Allow the text container to grow but not exceed the available width
-          maxWidth: 'calc(100% - 70px)', // Ensures text container doesn't grow beyond available space
-          overflow: 'hidden',            // Prevent overflow of the text container
-        }}
+        style={{ maxWidth: 'calc(100% - 70px)', overflow: 'hidden' }}
       >
         <div className="d-flex justify-content-between">
           <strong className="text-truncate fs-6 fs-md-5">{name}</strong>
           <small className="text-muted">{time}</small>
         </div>
-        
         <div
           className="text-muted text-truncate fs-6 fs-md-6"
           style={{
-            whiteSpace: 'nowrap',        // Prevent the text from wrapping
-            overflow: 'hidden',         // Hide overflowed content
-            textOverflow: 'ellipsis',   // Add ellipsis for overflowing content
-            maxWidth: '100%',           // Ensure the message container does not exceed the available space
-            flexShrink: 0,              // Prevent the text container from shrinking
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            maxWidth: '100%',
+            flexShrink: 0,
           }}
         >
-          {truncateMessage(message, 30)}  {/* Truncate the message after 30 characters */}
+          {truncateMessage(message, truncateLimit)}
         </div>
       </div>
 
