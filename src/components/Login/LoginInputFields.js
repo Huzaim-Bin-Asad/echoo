@@ -1,4 +1,3 @@
-// src/components/Login/LoginInputFields.js
 import React, { useState } from "react";
 import { Form, InputGroup } from "react-bootstrap";
 import { AtSign, Eye } from "lucide-react";
@@ -14,7 +13,6 @@ const EyeClosedIcon = () => (
     strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
-    className="lucide lucide-eye-closed"
   >
     <path d="m15 18-.722-3.25" />
     <path d="M2 8a10.645 10.645 0 0 0 20 0" />
@@ -24,19 +22,22 @@ const EyeClosedIcon = () => (
   </svg>
 );
 
-const LoginInputFields = () => {
+const LoginInputFields = ({ credentials, onChange }) => {
   const [showPassword, setShowPassword] = useState(false);
 
   return (
     <Form>
       {/* Email or Username Field */}
-      <Form.Group className="mb-3" controlId="formEmail">
+      <Form.Group className="mb-3" controlId="formIdentifier">
         <InputGroup>
           <Form.Control
+            name="identifier"
             type="text"
             placeholder="Email or Username"
             className="rounded-start-4 px-3 text-start border shadow-sm"
             style={{ height: "45px" }}
+            value={credentials.identifier}
+            onChange={onChange}
           />
           <InputGroup.Text
             className="bg-white border shadow-sm rounded-end-4"
@@ -51,14 +52,17 @@ const LoginInputFields = () => {
       <Form.Group className="mb-3" controlId="formPassword">
         <InputGroup>
           <Form.Control
+            name="password"
             type={showPassword ? "text" : "password"}
             placeholder="Password"
             className="rounded-start-4 px-3 text-start border shadow-sm"
             style={{ height: "45px" }}
+            value={credentials.password}
+            onChange={onChange}
           />
           <InputGroup.Text
-            className="bg-white border shadow-sm rounded-end-4"
-            style={{ height: "45px", cursor: "pointer" }}
+            className="bg-white border shadow-sm rounded-end-4 cursor-pointer"
+            style={{ height: "45px" }}
             onClick={() => setShowPassword(!showPassword)}
           >
             {showPassword ? <Eye size={18} /> : <EyeClosedIcon />}

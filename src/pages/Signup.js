@@ -12,33 +12,50 @@ import SignupProgress from "../components/Signup/SignupProgress";
 import GenderSelector from "../components/Signup/GenderSelector";
 import UploadProfilePicture from "../components/Signup/UploadProfilePicture";
 import useSignupForm from "../hooks/useSignupForm";
-import ErrorCard from "../components/response/error"; // ✅ Import your custom error component
+import ErrorCard from "../components/response/error";
+import { submitSignupForm } from "../services/SignupApi"; // Import the API function
 
 const Signup = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
-  const [hasError, setHasError] = useState(false); // ✅ Track if there's an error
-  const [validationError, setValidationError] = useState(""); // 🔸 new state
-  const { formData, updateFormData, validateStep, submitForm } = useSignupForm();
+  const [hasError, setHasError] = useState(false);
+  const [validationError, setValidationError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { formData, updateFormData, validateStep } = useSignupForm();
 
   const handleContinue = async () => {
-    // Validate current step before proceeding
     if (!validateStep(currentStep)) {
       setValidationError("Please fill all required fields");
       return;
     } else {
-      setValidationError(""); // Clear error if validation passes
+      setValidationError("");
     }
 
     if (currentStep < 5) {
       setCurrentStep(currentStep + 1);
     } else {
+      setIsSubmitting(true);
       try {
-        await submitForm();
+        const response = await submitSignupForm(formData);
+        
+        // Store token and user data
+        localStorage.setItem('token', response.token);
+        localStorage.setItem('user', JSON.stringify(response.user));
+
         navigate("/signup-step-two");
       } catch (error) {
         console.error("Signup error:", error);
-        setHasError(true); // ✅ Trigger error view on failure
+        if (error.response?.data?.field) {
+          setValidationError(`This ${error.response.data.field} is already in use`);
+          // Go back to email/username step if duplicate
+          if (error.response.data.field === 'email' || error.response.data.field === 'username') {
+            setCurrentStep(2);
+          }
+        } else {
+          setHasError(true);
+        }
+      } finally {
+        setIsSubmitting(false);
       }
     }
   };
@@ -76,11 +93,10 @@ const Signup = () => {
 
   const getButtonText = () => {
     if (currentStep === 4) return "Choose Gender";
-    if (currentStep === 5) return "Sign Up Account";
+    if (currentStep === 5) return isSubmitting ? "Creating Account..." : "Sign Up Account";
     return "Continue";
   };
 
-  // ✅ Show error card if submission fails
   if (hasError) {
     return <ErrorCard onRetry={() => {
       setHasError(false);
@@ -105,7 +121,6 @@ const Signup = () => {
         {renderHeader()}
         {renderFormFields()}
 
-        {/* Show validation error if exists */}
         {validationError && (
           <div className="text-danger mt-2 fw-semibold">
             {validationError}
@@ -114,16 +129,15 @@ const Signup = () => {
 
         <SignupProgress currentStep={currentStep} />
 
-        {/* Continue Button */}
         <Button
           className="w-100 rounded-4 fw-semibold shadow"
           style={{ backgroundColor: "black", border: "none", height: "45px" }}
           onClick={handleContinue}
+          disabled={isSubmitting}
         >
           {getButtonText()}
         </Button>
 
-        {/* Already have an account? */}
         <div className="mt-4 text-start">
           <span className="d-block">Already have an Account?</span>
           <div
@@ -136,7 +150,6 @@ const Signup = () => {
         </div>
       </Container>
 
-      {/* Bottom Spacer */}
       <div></div>
     </div>
   );

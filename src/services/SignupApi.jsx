@@ -26,31 +26,34 @@ export const submitSignupForm = async (formData) => {
       }
   
       console.log('[SUBMIT] Sending request to API...');
-      const response = await fetch(`${API_URL}/signup`, {  // Use the API_URL
+      const response = await fetch(`${API_URL}/signup`, {
         method: 'POST',
-        body: submissionData
+        body: submissionData,
+        // Don't set Content-Type header when using FormData,
+        // the browser will set it automatically with the correct boundary
       });
   
+      const responseData = await response.json();
+      
       console.log('[SUBMIT] Received response:', {
         status: response.status,
         statusText: response.statusText,
-        ok: response.ok
+        data: responseData
       });
   
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('[SUBMIT] API error response:', errorData);
-        throw new Error(errorData.message || 'Signup failed');
+        console.error('[SUBMIT] API error response:', responseData);
+        throw responseData;
       }
   
-      const responseData = await response.json();
       console.log('[SUBMIT] Successful response data:', responseData);
       return responseData;
   
     } catch (error) {
       console.error('[SUBMIT] Submission error:', {
         error: error.message,
-        stack: error.stack
+        stack: error.stack,
+        response: error.response
       });
       throw error;
     }
