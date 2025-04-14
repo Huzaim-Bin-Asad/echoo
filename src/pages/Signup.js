@@ -13,7 +13,7 @@ import GenderSelector from "../components/Signup/GenderSelector";
 import UploadProfilePicture from "../components/Signup/UploadProfilePicture";
 import useSignupForm from "../hooks/useSignupForm";
 import ErrorCard from "../components/response/error";
-import { submitSignupForm } from "../services/SignupApi"; // Import the API function
+import { submitSignupForm } from "../services/SignupApi";
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -21,34 +21,35 @@ const Signup = () => {
   const [hasError, setHasError] = useState(false);
   const [validationError, setValidationError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
   const { formData, updateFormData, validateStep } = useSignupForm();
 
   const handleContinue = async () => {
-    if (!validateStep(currentStep)) {
-      setValidationError("Please fill all required fields");
+    const { isValid, message } = validateStep(currentStep);
+
+    if (!isValid) {
+      setValidationError(message);
       return;
     } else {
       setValidationError("");
     }
 
     if (currentStep < 5) {
-      setCurrentStep(currentStep + 1);
+      setCurrentStep(prev => prev + 1);
     } else {
       setIsSubmitting(true);
       try {
         const response = await submitSignupForm(formData);
-        
-        // Store token and user data
-        localStorage.setItem('token', response.token);
-        localStorage.setItem('user', JSON.stringify(response.user));
+
+        localStorage.setItem("token", response.token);
+        localStorage.setItem("user", JSON.stringify(response.user));
 
         navigate("/signup-step-two");
       } catch (error) {
         console.error("Signup error:", error);
         if (error.response?.data?.field) {
           setValidationError(`This ${error.response.data.field} is already in use`);
-          // Go back to email/username step if duplicate
-          if (error.response.data.field === 'email' || error.response.data.field === 'username') {
+          if (error.response.data.field === "email" || error.response.data.field === "username") {
             setCurrentStep(2);
           }
         } else {
@@ -64,7 +65,7 @@ const Signup = () => {
     if (currentStep === 1) {
       navigate("/");
     } else {
-      setCurrentStep(currentStep - 1);
+      setCurrentStep(prev => prev - 1);
     }
   };
 
@@ -87,7 +88,7 @@ const Signup = () => {
       case 5:
         return <UploadProfilePicture formData={formData} updateFormData={updateFormData} />;
       default:
-        return <NameInputFields formData={formData} updateFormData={updateFormData} />;
+        return null;
     }
   };
 
@@ -98,10 +99,14 @@ const Signup = () => {
   };
 
   if (hasError) {
-    return <ErrorCard onRetry={() => {
-      setHasError(false);
-      setCurrentStep(1);
-    }} />;
+    return (
+      <ErrorCard
+        onRetry={() => {
+          setHasError(false);
+          setCurrentStep(1);
+        }}
+      />
+    );
   }
 
   return (
@@ -109,7 +114,7 @@ const Signup = () => {
       className="d-flex flex-column align-items-start justify-content-between vh-100 px-4 py-3"
       style={{ backgroundColor: "#fff" }}
     >
-      {/* Header - Back Icon */}
+      {/* Header */}
       <div className="w-100 d-flex align-items-start">
         <div style={{ cursor: "pointer" }} onClick={handleBack}>
           <Undo2 size={28} />

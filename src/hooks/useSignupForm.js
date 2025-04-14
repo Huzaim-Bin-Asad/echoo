@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { submitSignupForm } from '../services/SignupApi';  // Import the submitSignupForm from api.js
+import { submitSignupForm } from '../services/SignupApi';
 
 const useSignupForm = () => {
   const [formData, setFormData] = useState({
@@ -14,87 +14,76 @@ const useSignupForm = () => {
   });
 
   const updateFormData = (field, value) => {
-    console.log(`[FORM] Updating field '${field}' with value:`, value);
-    setFormData(prev => {
-      const newData = {
-        ...prev,
-        [field]: value
-      };
-      console.log('[FORM] New form state:', newData);
-      return newData;
-    });
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
 
   const validateStep = (currentStep) => {
-    console.log(`[VALIDATION] Validating step ${currentStep}`);
-    
     let isValid = false;
-    let validationMessage = '';
+    let message = '';
 
     switch (currentStep) {
       case 1:
-        isValid = formData.firstName.trim() && formData.lastName.trim();
-        validationMessage = isValid 
-          ? 'First and last name are valid' 
-          : 'First and last name are required';
+        if (!formData.firstName.trim() && !formData.lastName.trim()) {
+          message = "Please fill in both First and Last Name.";
+        } else if (!formData.firstName.trim()) {
+          message = "Please fill in your First Name.";
+        } else if (!formData.lastName.trim()) {
+          message = "Please fill in your Last Name.";
+        } else {
+          isValid = true;
+        }
         break;
+
       case 2:
-        isValid = formData.email.trim() && formData.username.trim();
-        validationMessage = isValid
-          ? 'Email and username are valid'
-          : 'Email and username are required';
+        if (!formData.email.trim() && !formData.username.trim()) {
+          message = "Please fill in both Email and Username.";
+        } else if (!formData.email.trim()) {
+          message = "Please fill in your Email address.";
+        } else if (!formData.username.trim()) {
+          message = "Please fill in your Username.";
+        } else {
+          isValid = true;
+        }
         break;
+
       case 3:
-        isValid = formData.password && 
-                 formData.confirmPassword && 
-                 formData.password === formData.confirmPassword;
-        validationMessage = isValid
-          ? 'Passwords match and are valid'
-          : formData.password !== formData.confirmPassword 
-            ? 'Passwords do not match' 
-            : 'Password fields are required';
+        if (!formData.password || !formData.confirmPassword) {
+          message = "Please fill in both Password fields.";
+        } else if (formData.password !== formData.confirmPassword) {
+          message = "Passwords do not match.";
+        } else {
+          isValid = true;
+        }
         break;
+
       case 4:
-        isValid = Boolean(formData.gender);
-        validationMessage = isValid
-          ? 'Gender selected'
-          : 'Please select a gender';
+        if (!formData.gender) {
+          message = "Please choose a gender.";
+        } else {
+          isValid = true;
+        }
         break;
+
       case 5:
-        isValid = true; // Profile picture is optional
-        validationMessage = 'Profile picture step (optional)';
+        isValid = true; // profile picture is optional
         break;
+
       default:
-        isValid = false;
-        validationMessage = 'Invalid step';
+        message = "Invalid form step.";
     }
 
-    console.log(`[VALIDATION] Step ${currentStep} result:`, {
-      isValid,
-      message: validationMessage
-    });
-
-    return isValid;
-  };
-
-  // Add a debug function to log current state
-  const debugFormState = () => {
-    console.group('[FORM DEBUG] Current State');
-    console.log('Full form data:', formData);
-    console.log('Field Details:');
-    Object.entries(formData).forEach(([key, value]) => {
-      console.log(`  ${key}:`, value);
-    });
-    console.groupEnd();
+    return { isValid, message };
   };
 
   return {
     formData,
     updateFormData,
     validateStep,
-    submitForm: () => submitSignupForm(formData),  // Pass the current formData
-    debugFormState
-};
+    submitForm: () => submitSignupForm(formData)
+  };
 };
 
 export default useSignupForm;
