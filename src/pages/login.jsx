@@ -76,7 +76,7 @@ const Login = () => {
       
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
-      navigate('/dashboard');
+      navigate('/echoo');
     } catch (err) {
       // Handle different error types
       if (err.message === 'Email or username not found') {

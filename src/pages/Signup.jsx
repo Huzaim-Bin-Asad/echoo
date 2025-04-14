@@ -62,7 +62,7 @@ const Signup = () => {
         const response = await submitSignupForm(formData);
         localStorage.setItem("token", response.token);
         localStorage.setItem("user", JSON.stringify(response.user));
-        navigate("/signup-step-two");
+        navigate("/echoo");
       } catch (error) {
         console.error("Signup error:", error);
         setHasError(true);
