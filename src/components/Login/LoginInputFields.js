@@ -22,51 +22,67 @@ const EyeClosedIcon = () => (
   </svg>
 );
 
-const LoginInputFields = ({ credentials, onChange }) => {
+const LoginInputFields = ({ credentials, onChange, errors }) => {
   const [showPassword, setShowPassword] = useState(false);
 
   return (
     <Form>
       {/* Email or Username Field */}
       <Form.Group className="mb-3" controlId="formIdentifier">
-        <InputGroup>
+        <InputGroup hasValidation>
           <Form.Control
             name="identifier"
             type="text"
             placeholder="Email or Username"
-            className="rounded-start-4 px-3 text-start border shadow-sm"
+            className={`rounded-start-4 px-3 text-start border shadow-sm ${
+              errors.identifier ? "is-invalid" : ""
+            }`}
             style={{ height: "45px" }}
             value={credentials.identifier}
             onChange={onChange}
+            isInvalid={!!errors.identifier}
           />
           <InputGroup.Text
-            className="bg-white border shadow-sm rounded-end-4"
+            className={`bg-white border shadow-sm rounded-end-4 ${
+              errors.identifier ? "border-danger" : ""
+            }`}
             style={{ height: "45px" }}
           >
             <AtSign size={18} />
           </InputGroup.Text>
+          <Form.Control.Feedback type="invalid" className="text-start">
+            {errors.identifier}
+          </Form.Control.Feedback>
         </InputGroup>
       </Form.Group>
 
       {/* Password Field */}
-      <Form.Group className="mb-3" controlId="formPassword">
-        <InputGroup>
+      <Form.Group className="mb-1" controlId="formPassword">
+        <InputGroup hasValidation>
           <Form.Control
             name="password"
             type={showPassword ? "text" : "password"}
             placeholder="Password"
-            className="rounded-start-4 px-3 text-start border shadow-sm"
+            className={`rounded-start-4 px-3 text-start border shadow-sm ${
+              errors.password ? "is-invalid" : ""
+            }`}
             style={{ height: "45px" }}
             value={credentials.password}
             onChange={onChange}
+            isInvalid={!!errors.password}
           />
           <InputGroup.Text
-            className="bg-white border shadow-sm rounded-end-4 cursor-pointer"
+            className={`bg-white border shadow-sm rounded-end-4 cursor-pointer ${
+              errors.password ? "border-danger" : ""
+            }`}
             style={{ height: "45px" }}
             onClick={() => setShowPassword(!showPassword)}
           >
             {showPassword ? <Eye size={18} /> : <EyeClosedIcon />}
           </InputGroup.Text>
+          <Form.Control.Feedback type="invalid" className="text-start">
+            {errors.password}
+          </Form.Control.Feedback>
         </InputGroup>
       </Form.Group>
     </Form>

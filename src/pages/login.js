@@ -1,13 +1,11 @@
-// Login.js
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Container, Button } from "react-bootstrap";
+import { Container, Button, Form } from "react-bootstrap";
 import { Undo2, ChevronRight } from "lucide-react";
 
 import LoginHeader from "../components/Login/LoginHeader";
 import LoginInputFields from "../components/Login/LoginInputFields";
-import ErrorCard from "../components/response/error";
-import { loginUser } from "../services/LoginApi"; // Import the API function
+import { loginUser } from "../services/LoginApi";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -16,6 +14,10 @@ const Login = () => {
     password: ""
   });
   const [error, setError] = useState(null);
+  const [fieldErrors, setFieldErrors] = useState({
+    identifier: "",
+    password: ""
+  });
   const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e) => {
@@ -24,34 +26,76 @@ const Login = () => {
       ...prev,
       [name]: value
     }));
+    // Clear error when user starts typing
+    if (error) {
+      setError(null);
+      setFieldErrors({
+        identifier: "",
+        password: ""
+      });
+    }
   };
 
   const handleLogin = async () => {
-    setIsLoading(true);
+    // Reset all errors
     setError(null);
+    setFieldErrors({
+      identifier: "",
+      password: ""
+    });
+
+    // Validate inputs
+    if (!credentials.identifier && !credentials.password) {
+      setFieldErrors({
+        identifier: "Email or username is required",
+        password: "Password is required"
+      });
+      return;
+    }
+    
+    if (!credentials.identifier) {
+      setFieldErrors(prev => ({
+        ...prev,
+        identifier: "Email or username is required"
+      }));
+      return;
+    }
+    
+    if (!credentials.password) {
+      setFieldErrors(prev => ({
+        ...prev,
+        password: "Password is required"
+      }));
+      return;
+    }
+
+    setIsLoading(true);
     
     try {
       const { token, user } = await loginUser(credentials);
       
-      // Store token and user data
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
-      
-      // Redirect to dashboard or home
       navigate('/dashboard');
     } catch (err) {
-      setError(err.message);
+      // Handle different error types
+      if (err.message === 'Email or username not found') {
+        setFieldErrors({
+          identifier: err.message,
+          password: ""
+        });
+      } else if (err.message === 'Password is incorrect') {
+        setFieldErrors({
+          identifier: "",
+          password: err.message
+        });
+      } else {
+        setError(err.message);
+      }
     } finally {
       setIsLoading(false);
     }
   };
-  
-  if (error) {
-    return <ErrorCard 
-      message={error} 
-      onRetry={() => setError(null)} 
-    />;
-  }
 
   return (
     <div className="d-flex flex-column align-items-start justify-content-between vh-100 px-4 py-3 bg-white">
@@ -65,14 +109,22 @@ const Login = () => {
       {/* Content */}
       <Container className="text-start">
         <LoginHeader />
+        
+        {/* Global Error Message (for server errors) */}
+        {error && (
+          <Form.Text className="text-danger d-block mb-3">
+            {error}
+          </Form.Text>
+        )}
+        
         <LoginInputFields 
           credentials={credentials} 
-          onChange={handleChange} 
+          onChange={handleChange}
+          errors={fieldErrors}
         />
 
-        {/* Login Button */}
         <Button
-          className="w-100 rounded-4 fw-semibold shadow bg-black border-none"
+          className="w-100 rounded-4 fw-semibold shadow bg-black border-none mt-3"
           style={{ height: "45px" }}
           onClick={handleLogin}
           disabled={isLoading}
@@ -80,7 +132,6 @@ const Login = () => {
           {isLoading ? 'Logging in...' : 'Login'}
         </Button>
 
-        {/* New to Echoo? */}
         <div className="mt-4 text-start">
           <span className="d-block">New to Echoo?</span>
           <div
@@ -92,7 +143,6 @@ const Login = () => {
         </div>
       </Container>
 
-      {/* Bottom Spacer */}
       <div></div>
     </div>
   );
