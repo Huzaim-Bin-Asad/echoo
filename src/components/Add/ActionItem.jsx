@@ -1,11 +1,11 @@
 import React from 'react';
 import { User, Users, QrCode } from 'lucide-react';
 
-const ActionItem = ({ icon, label }) => {
+const ActionItem = ({ icon, label, onClick }) => {
   const Icon = icon === 'group' ? Users : User;
 
   return (
-    <div className="d-flex justify-content-between align-items-center py-3 px-2">
+    <div className="d-flex justify-content-between align-items-center py-3 px-2" onClick={onClick}>
       <div className="d-flex align-items-center gap-2 w-100">
         <div
           className="bg-secondary rounded-circle d-flex justify-content-center align-items-center"

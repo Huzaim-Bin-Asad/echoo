@@ -21,13 +21,14 @@ const ContactList = () => {
       <small className="text-white px-3 fw-bold fs-6 pb-6">
         Contacts on Echoo
       </small>
-      <div className="d-flex flex-column mt-2">
-        {contacts.map((contact, index) => (
-          <div key={index} className="mb-4">
-            <ContactItem {...contact} />
-          </div>
-        ))}
-      </div>
+      <div className="d-flex flex-column mt-2 pb-5">
+  {contacts.map((contact, index) => (
+    <div key={index} className="mb-4">
+      <ContactItem {...contact} />
+    </div>
+  ))}
+</div>
+
     </div>
   );
 };
