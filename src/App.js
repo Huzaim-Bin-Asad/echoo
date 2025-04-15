@@ -7,7 +7,8 @@ import Login from "./pages/login";
 import Echoo from "./pages/Echoos";
 import Add from './pages/Add';
 import NewContact from './pages/NewContact';
-import NewGroup from './pages/NewGroup'; // Import the NewGroup component
+import NewGroup from './pages/NewGroup';
+import QRquickLink from './pages/QRquickLink'; // Import the QRquickLink component
 
 function App() {
   return (
@@ -19,7 +20,8 @@ function App() {
         <Route path="/echoo" element={<Echoo />} />
         <Route path="/add" element={<Add />} />
         <Route path="/new-contact" element={<NewContact />} />
-        <Route path="/new-group" element={<NewGroup />} /> {/* Added NewGroup route */}
+        <Route path="/new-group" element={<NewGroup />} />
+        <Route path="/qr-quicklink" element={<QRquickLink />} /> {/* Added QRquickLink route */}
       </Routes>
     </Router>
   );
