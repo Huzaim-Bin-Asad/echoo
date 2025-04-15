@@ -13,6 +13,11 @@ const Add = () => {
     navigate('/new-contact');  // Navigate to the NewContact page
   };
 
+  // Handle the "New group" button click
+  const handleNewGroupClick = () => {
+    navigate('/new-group');  // Navigate to the NewGroup page
+  };
+
   return (
     <SlideWrapper>
       <div className="bg-dark text-white d-flex flex-column vh-100">
@@ -20,11 +25,15 @@ const Add = () => {
 
         <div className="flex-grow-1 overflow-auto">
           <div className="px-3 pt-2">
-            <ActionItem icon="group" label="New group" />
+            <ActionItem 
+              icon="group" 
+              label="New group" 
+              onClick={handleNewGroupClick}  // Pass the handler for "New group"
+            />
             <ActionItem 
               icon="contact" 
               label="New contact" 
-              onClick={handleNewContactClick}  // Pass the handler as prop
+              onClick={handleNewContactClick}  // Pass the handler for "New contact"
             />
           </div>
 
