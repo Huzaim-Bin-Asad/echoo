@@ -36,3 +36,13 @@
     transform: rotate(360deg);
   }
 }
+
+
+
+.custom-email-input::placeholder {
+  margin-right: 100px;
+}
+
+.custom-username-input::placeholder {
+  text-align: right;
+}
