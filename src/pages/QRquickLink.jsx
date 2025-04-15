@@ -1,4 +1,3 @@
-// pages/QRquickLink.jsx
 import React, { useEffect, useState } from 'react';
 import QRHeader from '../components/QRquickLink/QRHeader';
 import QRInfo from '../components/QRquickLink/QRInfo';
@@ -11,6 +10,13 @@ const QRquickLink = () => {
   const [activeTab, setActiveTab] = useState('myCode');
   const [qrImage, setQrImage] = useState('');
   const [name] = useState('Humna');
+  const [flashOn, setFlashOn] = useState(false); // Flash toggle state
+
+  // Function to open gallery or file section
+  const openGallery = () => {
+    alert('Gallery or file section would open here');
+    // Implement gallery/file opening logic here
+  };
 
   useEffect(() => {
     const generateQRCode = async () => {
@@ -28,12 +34,13 @@ const QRquickLink = () => {
 
   return (
     <div className="container py-5" style={{ maxWidth: 480 }}>
-      <QRHeader />
+      <QRHeader showDotIcon={activeTab !== 'scanCode'} />
       <QRInfo activeTab={activeTab} onTabChange={setActiveTab} />
+
       {activeTab === 'myCode' ? (
         <QRCard qrImage={qrImage} name={name} />
       ) : (
-        <QRScan />
+        <QRScan flashOn={flashOn} setFlashOn={setFlashOn} openGallery={openGallery} />
       )}
     </div>
   );
