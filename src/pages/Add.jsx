@@ -1,22 +1,32 @@
-import React from "react";
-import { useNavigate } from "react-router-dom";  // 🧭 Import useNavigate
+import React, { useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom"; // Import useNavigate
 import Header from "../components/Add/Header";
 import ActionItem from "../components/Add/ActionItem";
 import ContactList, { contacts } from "../components/Add/ContactList";
 import SlideWrapper from "../components/Add/SlideWrapper";
 
 const Add = () => {
-  const navigate = useNavigate();  // 🧭 Hook for navigation
+  const navigate = useNavigate();  // Initialize useNavigate hook
 
-  // Handle the "New contact" button click
-  const handleNewContactClick = () => {
-    navigate('/new-contact');  // Navigate to the NewContact page
-  };
+  // Memoize handleQRCodeClick using useCallback
+  const handleQRCodeClick = useCallback(() => {
+    navigate('/qr-quicklink');  // Navigate to /qr-quicklink page
+  }, [navigate]); // Dependency on navigate
 
-  // Handle the "New group" button click
-  const handleNewGroupClick = () => {
-    navigate('/new-group');  // Navigate to the NewGroup page
-  };
+  // Effect to add an event listener for the QR Code icon click (using ID)
+  useEffect(() => {
+    const qrCodeIcon = document.getElementById('qr-code-icon');
+    if (qrCodeIcon) {
+      qrCodeIcon.addEventListener('click', handleQRCodeClick);
+    }
+
+    // Cleanup event listener on component unmount
+    return () => {
+      if (qrCodeIcon) {
+        qrCodeIcon.removeEventListener('click', handleQRCodeClick);
+      }
+    };
+  }, [handleQRCodeClick]); // Add handleQRCodeClick as a dependency
 
   return (
     <SlideWrapper>
@@ -28,12 +38,17 @@ const Add = () => {
             <ActionItem 
               icon="group" 
               label="New group" 
-              onClick={handleNewGroupClick}  // Pass the handler for "New group"
+              onClick={() => navigate('/new-group')}  // Navigate to New Group page
             />
             <ActionItem 
               icon="contact" 
               label="New contact" 
-              onClick={handleNewContactClick}  // Pass the handler for "New contact"
+              onClick={() => navigate('/new-contact')}  // Navigate to New Contact page
+            />
+            <ActionItem 
+              icon="qr" 
+              label="QR Code" 
+              onClick={handleQRCodeClick}  // Directly use the QR click handler
             />
           </div>
 
