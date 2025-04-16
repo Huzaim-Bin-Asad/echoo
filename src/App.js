@@ -9,7 +9,8 @@ import Add from './pages/Add';
 import NewContact from './pages/NewContact';
 import NewGroup from './pages/NewGroup';
 import QRquickLink from './pages/QRquickLink';
-import Call from './pages/call'; // Import the Call component
+import Call from './pages/call';
+import StatusPage from './pages/StatusPage'; // ✅ Added StatusPage
 
 function App() {
   return (
@@ -23,7 +24,8 @@ function App() {
         <Route path="/new-contact" element={<NewContact />} />
         <Route path="/new-group" element={<NewGroup />} />
         <Route path="/qr-quicklink" element={<QRquickLink />} />
-        <Route path="/call" element={<Call />} /> {/* Added Call route */}
+        <Route path="/call" element={<Call />} />
+        <Route path="/status" element={<StatusPage />} /> {/* ✅ New route */}
       </Routes>
     </Router>
   );
