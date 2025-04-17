@@ -1,8 +1,8 @@
 import React from 'react';
 import { Container } from 'react-bootstrap';
-import SettingsHeader from '../components/Settings/SettingsHeader';
-import ProfileSetting from '../components/Settings/ProfileSetting';
-import SettingsList from '../components/Settings/SettingsList';
+import SettingsHeader from '../components/Settings/mainDisplay/SettingsHeader';
+import ProfileSetting from '../components/Settings/mainDisplay/ProfileSetting';
+import SettingsList from '../components/Settings/mainDisplay/SettingsList';
 
 const Settings = () => {
   return (

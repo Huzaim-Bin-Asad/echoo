@@ -33,18 +33,22 @@ const DotMenu = () => {
       </button>
       <div className="dropdown-divider my-1"></div>
 
-      <button className="dropdown-item py-3 px-4" style={{ fontSize: '1.05rem' }}>
-        New Community
-      </button>
-      <div className="dropdown-divider my-1"></div>
+   
 
-      <button className="dropdown-item py-3 px-4" style={{ fontSize: '1.05rem' }}>
+      <button className="dropdown-item py-3 px-4" style={{ fontSize: '1.05rem' }}
+        onClick={() => {
+          if (window.showLinkedDevices) {
+            window.showLinkedDevices();
+          }
+        }}>
         Linked devices
       </button>
       <div className="dropdown-divider my-1"></div>
 
-      <button className="dropdown-item py-3 px-4" style={{ fontSize: '1.05rem' }}>
-        Starred messages
+      <button className="dropdown-item py-3 px-4" style={{ fontSize: '1.05rem' }}
+  onClick={() => window.showStarredMessages()}
+
+>        Starred messages
       </button>
       <div className="dropdown-divider my-1"></div>
 

@@ -9,7 +9,6 @@ import {
   Languages,
 } from 'lucide-react';
 import {
-  FaUsers,
   FaQuestionCircle,
 } from 'react-icons/fa';
 import SettingItem from './SettingItem';
@@ -31,13 +30,7 @@ const SettingsList = () => {
           subtitle="Block users, disappearing messages"
         />
       </div>
-      <div className="px-3 py-4">
-        <SettingItem
-          icon={<FaUsers size={18} />}
-          title="Lists"
-          subtitle="Manage people and groups"
-        />
-      </div>
+
       <div className="px-3 py-4">
         <SettingItem
           icon={<MessageCircleHeart size={20} />}
