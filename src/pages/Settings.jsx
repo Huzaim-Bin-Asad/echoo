@@ -1,0 +1,19 @@
+import React from 'react';
+import { Container } from 'react-bootstrap';
+import SettingsHeader from '../components/Settings/SettingsHeader';
+import ProfileSetting from '../components/Settings/ProfileSetting';
+import SettingsList from '../components/Settings/SettingsList';
+
+const Settings = () => {
+  return (
+    <>
+      <SettingsHeader />
+      <Container className="py-4 bg-dark min-vh-100 text-white">
+        <ProfileSetting />         {/* ✅ Moved into its own component */}
+        <SettingsList />          {/* ✅ Already modular */}
+      </Container>
+    </>
+  );
+};
+
+export default Settings;

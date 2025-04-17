@@ -1,4 +1,3 @@
-// src/App.js
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Landing from "./pages/landing";
@@ -10,7 +9,9 @@ import NewContact from './pages/NewContact';
 import NewGroup from './pages/NewGroup';
 import QRquickLink from './pages/QRquickLink';
 import Call from './pages/call';
-import StatusPage from './pages/StatusPage'; // ✅ Added StatusPage
+import StatusPage from './pages/StatusPage';
+import Settings from './pages/Settings'; // ✅ Added Settings
+import Profile from './pages/Profile'; // ✅ Added Settings
 
 function App() {
   return (
@@ -26,6 +27,9 @@ function App() {
         <Route path="/qr-quicklink" element={<QRquickLink />} />
         <Route path="/call" element={<Call />} />
         <Route path="/status" element={<StatusPage />} /> {/* ✅ New route */}
+        <Route path="/settings" element={<Settings />} /> {/* ✅ New route added */}
+        <Route path="/profile" element={<Profile />} /> {/* ✅ New route added */}
+
       </Routes>
     </Router>
   );
