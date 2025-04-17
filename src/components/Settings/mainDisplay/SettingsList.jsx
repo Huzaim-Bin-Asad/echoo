@@ -8,21 +8,22 @@ import {
   Server,
   Languages,
 } from 'lucide-react';
-import {
-  FaQuestionCircle,
-} from 'react-icons/fa';
+import { FaQuestionCircle } from 'react-icons/fa';
 import SettingItem from './SettingItem';
 
-const SettingsList = () => {
+const SettingsList = ({ onNavigate }) => {
   return (
     <ListGroup className="bg-dark" style={{ gap: '8px' }}>
-<div className="px-3 py-4">
-<SettingItem
+      <div className="px-3 py-4">
+        <SettingItem
           icon={<Slack size={20} />}
           title="Account"
           subtitle="Security notifications, change email"
+          onClick={() => onNavigate('account')}
+          style={{ cursor: 'pointer' }}
         />
       </div>
+
       <div className="px-3 py-4">
         <SettingItem
           icon={<GlobeLock size={20} />}
@@ -38,6 +39,7 @@ const SettingsList = () => {
           subtitle="Theme, wallpapers, chat history"
         />
       </div>
+
       <div className="px-3 py-4">
         <SettingItem
           icon={<BellRing size={20} />}
@@ -45,6 +47,7 @@ const SettingsList = () => {
           subtitle="Message, group and call tones"
         />
       </div>
+
       <div className="px-3 py-4">
         <SettingItem
           icon={<Server size={20} />}
@@ -52,6 +55,7 @@ const SettingsList = () => {
           subtitle="Network usage, auto-download"
         />
       </div>
+
       <div className="px-3 py-4">
         <SettingItem
           icon={<Languages size={20} />}
@@ -59,6 +63,7 @@ const SettingsList = () => {
           subtitle="English (device's language)"
         />
       </div>
+
       <div className="px-3 py-4">
         <SettingItem
           icon={<FaQuestionCircle size={18} />}

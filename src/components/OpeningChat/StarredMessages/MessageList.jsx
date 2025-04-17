@@ -28,14 +28,14 @@ const MessageList = () => {
       type: "forwarded",
       title: "Sendups Syllabus & Date Sheet 2024-25 (Grade X)",
       tableData: [
-        { date: "Friday", subDate: "Nov 8,2014", subtest: "PassiveNotes" },
-        { date: "Monday", subDate: "Nov 11,2014", subtest: "Paylist (Teeny+Fail)" }
-      ]
-    }
+        { date: "Friday", subtest: "PassiveNotes" },
+        { date: "Monday", subtest: "Paylist (Teeny+Fail)" },
+      ],
+    },
   ];
 
   return (
-    <div className="divide-y overflow-y-auto" style={{ height: 'calc(120vh - 60px)' }}>
+    <div className="divide-y overflow-y-auto bg-black text-white" style={{ height: 'calc(100vh - 60px)' }}>
       {messages.map((message) => (
         <Message key={message.id} message={message} />
       ))}

@@ -4,18 +4,11 @@ import MessageList from './MessageList';
 
 const StarredMessages = ({ goBack }) => {
   return (
-    <div 
-      className="bg-white container-fluid p-0"
-      style={{
-        maxWidth: "768px",
-        margin: "0 auto",
-        height: "120vh",
-        border: "1px solid #ccc",
-        overflow: "hidden",
-      }}
-    >
+    <div className="bg-black text-white h-screen flex flex-col">
       <Header goBack={goBack} />
-      <MessageList />
+      <div className="flex-grow overflow-y-auto">
+        <MessageList />
+      </div>
     </div>
   );
 };

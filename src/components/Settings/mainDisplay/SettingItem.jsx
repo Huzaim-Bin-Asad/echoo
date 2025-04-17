@@ -1,18 +1,22 @@
 import React from 'react';
-import { BsChevronRight } from 'react-icons/bs';
+import { ListGroup } from 'react-bootstrap';
 
-const SettingItem = ({ icon, title, subtitle }) => {
+const SettingItem = ({ icon, title, subtitle, onClick, style }) => {
   return (
-    <div className="d-flex align-items-center justify-content-between bg-dark text-white rounded-2">
+    <ListGroup.Item
+      className="bg-dark text-white rounded-2 d-flex align-items-center justify-content-between"
+      onClick={onClick}
+      style={{ ...style, border: 'none' }}
+    >
       <div className="d-flex align-items-start gap-3">
         <div className="fs-4">{icon}</div>
         <div>
           <div className="fw-semibold">{title}</div>
-          {subtitle && <div className="text-white small">{subtitle}</div>}
+          <div className="text-white small">{subtitle}</div>
         </div>
       </div>
-      <BsChevronRight className="text-muted" />
-    </div>
+      <span className="text-muted">&gt;</span> {/* optional arrow */}
+    </ListGroup.Item>
   );
 };
 
