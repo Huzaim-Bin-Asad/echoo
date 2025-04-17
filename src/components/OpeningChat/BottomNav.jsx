@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';  // Import the useNavigate hook
+import useNavRoute from '../../hooks/useNavRoute'; // Custom hook
 import {
   MessageCircleMore,
   CircleFadingArrowUp,
@@ -9,12 +9,7 @@ import {
 } from 'lucide-react';
 
 const BottomNav = () => {
-  const navigate = useNavigate();  // Initialize the navigate function
-
-  // Handle navigation when Call button is clicked
-  const handleCallClick = () => {
-    navigate('/call');  // Redirect to /call route
-  };
+  const navigateTo = useNavRoute(); // Use custom hook
 
   return (
     <nav
@@ -26,8 +21,13 @@ const BottomNav = () => {
         justifyContent: 'space-between',
       }}
     >
-      {/* Messages button with grey oval beneath it */}
-      <button className="nav-link text-primary border-0 bg-transparent d-flex flex-column align-items-center p-0 position-relative" style={{ flex: 1 }} id="messages">
+      {/* Messages */}
+      <button
+        className="nav-link text-primary border-0 bg-transparent d-flex flex-column align-items-center p-0 position-relative"
+        style={{ flex: 1 }}
+        id="messages"
+        onClick={navigateTo("/echoo")}
+      >
         <div
           style={{
             width: '60px',
@@ -43,28 +43,46 @@ const BottomNav = () => {
         <small className="text-primary" style={{ marginTop: '10px' }}>Messages</small>
       </button>
 
-      {/* Other buttons */}
-      <button className="nav-link text-muted border-0 bg-transparent d-flex flex-column align-items-center p-0" style={{ flex: 1 }} id="status">
+      {/* Status */}
+      <button
+        className="nav-link text-muted border-0 bg-transparent d-flex flex-column align-items-center p-0"
+        style={{ flex: 1 }}
+        id="status"
+        onClick={navigateTo("/status")}
+      >
         <CircleFadingArrowUp size={26} />
         <small>Status</small>
       </button>
-      <button className="nav-link text-muted border-0 bg-transparent d-flex flex-column align-items-center p-0" style={{ flex: 1 }} id="footage">
+
+      {/* Footage */}
+      <button
+        className="nav-link text-muted border-0 bg-transparent d-flex flex-column align-items-center p-0"
+        style={{ flex: 1 }}
+        id="footage"
+        onClick={navigateTo("/footage")}
+      >
         <Video size={26} />
         <small>Footage</small>
       </button>
 
-      {/* Call button */}
+      {/* Call */}
       <button
         className="nav-link text-muted border-0 bg-transparent d-flex flex-column align-items-center p-0"
         style={{ flex: 1 }}
-        id="call"  // Ensure the id is present here
-        onClick={handleCallClick}  // Add the onClick event to trigger navigation
+        id="call"
+        onClick={navigateTo("/call")}
       >
         <Phone size={26} />
         <small>Call</small>
       </button>
 
-      <button className="nav-link text-muted border-0 bg-transparent d-flex flex-column align-items-center p-0" style={{ flex: 1 }} id="profile">
+      {/* Profile */}
+      <button
+        className="nav-link text-muted border-0 bg-transparent d-flex flex-column align-items-center p-0"
+        style={{ flex: 1 }}
+        id="profile"
+        onClick={navigateTo("/profile")}
+      >
         <UserRoundPen size={26} />
         <small>Profile</small>
       </button>
