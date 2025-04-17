@@ -1,7 +1,9 @@
-// components/Status/Popup.jsx
 import React from 'react';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 
 const Popup = ({ togglePopup, onPrivacyClick, onArchiveSettingsClick }) => {
+  const navigate = useNavigate(); // Initialize the navigation hook
+
   return (
     <div
       className="position-absolute end-0 mt-2 bg-white border shadow-sm rounded"
@@ -24,13 +26,17 @@ const Popup = ({ togglePopup, onPrivacyClick, onArchiveSettingsClick }) => {
           <button
             className="dropdown-item"
             style={{ padding: '10px' }}
-            onClick={onArchiveSettingsClick} // Call the new function
+            onClick={onArchiveSettingsClick}
           >
             Status Archive Settings
           </button>
         </li>
         <li>
-          <button className="dropdown-item" style={{ padding: '10px' }}>
+          <button
+            className="dropdown-item"
+            style={{ padding: '10px' }}
+            onClick={() => navigate('/settings')} // Navigate directly to /settings
+          >
             Settings
           </button>
         </li>

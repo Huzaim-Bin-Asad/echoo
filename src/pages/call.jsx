@@ -1,27 +1,31 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";  // Import useNavigate for routing
+import { useNavigate } from "react-router-dom";
 import CallHeader from "../components/Call/CallHeader";
 import CallList from "../components/Call/CallList";
 import BottomNav from "../components/Call/BottomNav";
+import DropdownMenu from "../components/Call/DropdownMenu"; // assuming it's used in Call
 
 const Call = () => {
-  const navigate = useNavigate();  // Initialize the navigate function
+  const navigate = useNavigate();
 
   // Handle navigation when the "Messages" icon is clicked
   const handleMessagesClick = () => {
-    navigate("/echoo");  // Redirect to the /echoo page
+    navigate("/echoo");
   };
 
-  console.log("Call component loaded");  // Check if the Call component is rendered
+  // Handle navigation to settings when "Settings" dropdown is clicked
+  const handleSettingsClick = () => {
+    navigate("/settings");
+  };
 
   return (
     <div className="bg-white text-light min-vh-100 d-flex flex-column justify-content-between">
       <div>
         <CallHeader />
         <CallList />
+        <DropdownMenu onSettingsClick={handleSettingsClick} />
       </div>
-      
-      {/* Pass the handleMessagesClick function to the BottomNav component */}
+
       <BottomNav onMessagesClick={handleMessagesClick} />
     </div>
   );
