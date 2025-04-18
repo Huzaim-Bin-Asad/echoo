@@ -1,30 +1,42 @@
 import React, { useState } from 'react';
-import { Container } from 'react-bootstrap';
 import SettingsHeader from '../components/Settings/mainDisplay/SettingsHeader';
 import ProfileSetting from '../components/Settings/mainDisplay/ProfileSetting';
 import SettingsList from '../components/Settings/mainDisplay/SettingsList';
 import AccountPage from '../components/Settings/Account/Main/AccountPage';
-
+import PrivacyPage from  '../components/Settings/Privacy/Main/PrivacyPage'
 const Settings = () => {
-  const [activePage, setActivePage] = useState('main'); // 'main' or 'account'
+  const [activeView, setActiveView] = useState('main');
 
-  const handleNavigate = (page) => {
-    setActivePage(page);
-  };
+  const goTo = (view) => setActiveView(view);
+  const goBack = () => setActiveView('main');
 
   return (
-    <>
-      {activePage === 'main' && <SettingsHeader />}  {/* Only show SettingsHeader on main page */}
-      <Container className="py-4 bg-dark min-vh-100 text-white">
-        {activePage === 'main' && (
+    <div className="min-h-screen bg-dark text-white flex justify-center">
+      <div className="w-full max-w-[768px] border border-secondary flex flex-col min-h-screen">
+        {activeView === 'main' && (
           <>
-            <ProfileSetting />
-            <SettingsList onNavigate={handleNavigate} />
+            <SettingsHeader />
+            <div className="flex-1 overflow-y-auto px-4 py-4">
+              <ProfileSetting />
+              <SettingsList onNavigate={goTo} />
+            </div>
           </>
         )}
-        {activePage === 'account' && <AccountPage />}
-      </Container>
-    </>
+
+        {activeView === 'account' && (
+          <div className="flex-1 overflow-y-auto">
+            <AccountPage goBack={goBack} />
+          </div>
+        )}
+
+{activeView === 'privacy' && (
+  <div className="flex-1 overflow-y-auto">
+    <PrivacyPage goBack={goBack} />
+  </div>
+)}
+
+      </div>
+    </div>
   );
 };
 

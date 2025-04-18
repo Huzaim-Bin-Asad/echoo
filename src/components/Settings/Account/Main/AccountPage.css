@@ -1,0 +1,28 @@
+/* AccountPage Styles */
+.account-page-wrapper {
+    min-height: 100vh;  /* Ensures full screen height */
+    display: flex;
+    flex-direction: column;
+    background-color: #212121; /* Dark background */
+    color: #ffffff;  /* White text */
+    padding: 20px 30px; /* Added padding for breathing room */
+  }
+  
+  .account-page-content {
+    flex-grow: 1; /* Allows content to grow and fill remaining space */
+    overflow-y: auto;  /* Makes content scrollable */
+    margin-top: 20px;  /* Adds space above content */
+    padding-bottom: 30px; /* Bottom padding for scroll space */
+    height: auto; /* Allows auto-height based on content */
+  }
+  
+  .header-padding {
+    margin-bottom: 20px; /* Space under the header */
+  }
+  
+  @media (max-width: 768px) {
+    .account-page-wrapper {
+      padding: 15px;
+    }
+  }
+  
