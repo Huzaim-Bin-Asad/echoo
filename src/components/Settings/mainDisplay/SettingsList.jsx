@@ -36,26 +36,34 @@ const SettingsList = ({ onNavigate }) => {
 
       <div className="py-4" style={{ paddingRight: '25px' }}>
       <SettingItem
-          icon={<MessageCircleHeart size={20} />}
-          title="Chats"
-          subtitle="Theme, wallpapers, chat history"
-        />
+  icon={<MessageCircleHeart size={20} />}
+  title="Chats"
+  subtitle="Theme, wallpapers, chat history"
+  onClick={() => onNavigate('chats')} // ✅ Navigate to Chats
+/>
+
       </div>
 
       <div className="py-4" style={{ paddingRight: '25px' }}>
       <SettingItem
-          icon={<BellRing size={20} />}
-          title="Notifications"
-          subtitle="Message, group and call tones"
-        />
+  icon={<BellRing size={20} />}
+  title="Notifications"
+  subtitle="Message, group and call tones"
+  onClick={() => onNavigate('notifications')} // ✅ Add navigation
+  style={{ cursor: 'pointer' }}
+/>
+
       </div>
 
       <div className="py-4" style={{ paddingRight: '25px' }}>
       <SettingItem
-          icon={<Server size={20} />}
-          title="Storage and data"
-          subtitle="Network usage, auto-download"
-        />
+  icon={<Server size={20} />}
+  title="Storage and data"
+  subtitle="Network usage, auto-download"
+  onClick={() => onNavigate('storage')} // ✅ Add this
+  style={{ cursor: 'pointer' }}
+/>
+
       </div>
 
       <div className="py-4" style={{ paddingRight: '25px' }}>

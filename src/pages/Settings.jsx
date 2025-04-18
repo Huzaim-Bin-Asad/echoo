@@ -3,7 +3,11 @@ import SettingsHeader from '../components/Settings/mainDisplay/SettingsHeader';
 import ProfileSetting from '../components/Settings/mainDisplay/ProfileSetting';
 import SettingsList from '../components/Settings/mainDisplay/SettingsList';
 import AccountPage from '../components/Settings/Account/Main/AccountPage';
-import PrivacyPage from  '../components/Settings/Privacy/Main/PrivacyPage'
+import PrivacyPage from '../components/Settings/Privacy/Main/PrivacyPage';
+import ChatsPage from '../components/Settings/Chats/main/ChatsPage'; // ✅ Import added
+import NotificationPage from '../components/Settings/Notification/main/App'; // ✅ Import NotificationPage
+import StorageAndData from '../components/Settings/StorageAndData/Main/StorageAndData'; // ✅ Add this
+
 const Settings = () => {
   const [activeView, setActiveView] = useState('main');
 
@@ -29,9 +33,28 @@ const Settings = () => {
           </div>
         )}
 
-{activeView === 'privacy' && (
+        {activeView === 'privacy' && (
+          <div className="flex-1 overflow-y-auto">
+            <PrivacyPage goBack={goBack} />
+          </div>
+        )}
+
+        {activeView === 'chats' && ( // ✅ Chats condition added
+          <div className="flex-1 overflow-y-auto">
+            <ChatsPage goBack={goBack} />
+          </div>
+        )}
+
+{activeView === 'notifications' && ( // ✅ Notifications condition
   <div className="flex-1 overflow-y-auto">
-    <PrivacyPage goBack={goBack} />
+    <NotificationPage goBack={goBack} />
+  </div>
+
+)}
+
+{activeView === 'storage' && (
+  <div className="flex-1 overflow-y-auto">
+    <StorageAndData goBack={goBack} />
   </div>
 )}
 
