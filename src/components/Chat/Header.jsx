@@ -1,35 +1,54 @@
 import React from "react";
-import { ChevronLeft, Phone, MoreVertical } from "lucide-react";
+import {
+  ChevronLeft,
+  PhoneCall,
+  Video,
+  EllipsisVertical,
+  User,
+} from "lucide-react";
 
 function Header({ goBack }) {
   const handleBack = () => {
-    if (goBack) goBack(); // Use prop, fallback to window.goBack if needed
+    if (goBack) goBack();
     else if (window.goBack) window.goBack();
   };
 
   return (
-    <div className="d-flex align-items-center justify-content-between p-2 border-bottom">
-      <div className="d-flex align-items-center">
+    <div className="d-flex align-items-center justify-content-between p-2 border-bottom flex-wrap">
+      <div className="d-flex align-items-center flex-grow-1 flex-shrink-1" style={{ minWidth: 0 }}>
         <ChevronLeft
           size={24}
-          className="me-2"
+          className="me-2 flex-shrink-0"
           style={{ cursor: "pointer", color: "black" }}
           onClick={handleBack}
         />
-        <img
-          src="https://via.placeholder.com/40"
-          alt="profile"
-          className="rounded-circle me-2"
+        <User
+          size={30}
+          className="me-2 flex-shrink-0"
+          style={{ color: "black" }}
         />
-        <div>
-          <div className="fw-bold">Nina Greer</div>
+        <div className="text-truncate">
+          <div className="fw-bold text-truncate">Nina Greer</div>
           <small className="text-success">Online</small>
         </div>
       </div>
 
-      <div className="d-flex align-items-center">
-        <Phone size={20} className="mx-2" style={{ color: "black" }} />
-        <MoreVertical size={20} style={{ color: "black" }} />
+      <div className="d-flex align-items-center justify-content-end flex-shrink-0 mt-2 mt-md-0">
+        <PhoneCall
+          size={24}
+          className="mx-2"
+          style={{ color: "black", cursor: "pointer" }}
+        />
+        <Video
+          size={24}
+          className="mx-2"
+          style={{ color: "black", cursor: "pointer" }}
+        />
+        <EllipsisVertical
+          size={24}
+          className="mx-2"
+          style={{ color: "black", cursor: "pointer" }}
+        />
       </div>
     </div>
   );

@@ -5,7 +5,7 @@ import MessageInput from "./MessageInput";
 
 function Chat({ goBack }) {
   return (
-    <div className="container d-flex flex-column border rounded shadow" style={{ maxWidth: '400px', height: '100vh' }}>
+    <div className="d-flex flex-column vh-100">
       <Header goBack={goBack} />
       <ChatDisplay />
       <MessageInput />
