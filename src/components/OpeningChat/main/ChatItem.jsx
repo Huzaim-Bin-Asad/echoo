@@ -1,27 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { User } from 'lucide-react';
-
 const ChatItem = ({ name, message, time, unread, img }) => {
   const [truncateLimit, setTruncateLimit] = useState(30);
 
-  // Adjust truncate limit based on screen width
   useEffect(() => {
     const updateLimit = () => {
       const width = window.innerWidth;
-      if (width < 400) {
-        setTruncateLimit(20);
-      } else if (width < 576) {
-        setTruncateLimit(30);
-      } else if (width < 768) {
-        setTruncateLimit(45);
-      } else if (width < 992) {
-        setTruncateLimit(60);
-      } else {
-        setTruncateLimit(80);
-      }
+      if (width < 400) setTruncateLimit(20);
+      else if (width < 576) setTruncateLimit(30);
+      else if (width < 768) setTruncateLimit(45);
+      else if (width < 992) setTruncateLimit(60);
+      else setTruncateLimit(80);
     };
 
-    updateLimit(); // Run initially
+    updateLimit();
     window.addEventListener('resize', updateLimit);
     return () => window.removeEventListener('resize', updateLimit);
   }, []);
@@ -29,8 +21,14 @@ const ChatItem = ({ name, message, time, unread, img }) => {
   const truncateMessage = (msg, limit) =>
     msg.length > limit ? msg.slice(0, limit) + '...' : msg;
 
+ 
   return (
-    <div className="list-group-item list-group-item-action d-flex justify-content-between align-items-start border-0 py-3">
+    <div
+    className="list-group-item list-group-item-action d-flex justify-content-between align-items-start border-0 py-3"
+    onClick={() => window.showChat()}
+    style={{ cursor: "pointer" }}
+  >
+  
       {/* Avatar */}
       <div
         className="me-3 d-flex align-items-center justify-content-center rounded-circle bg-light"

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import OpeningChat from "../components/OpeningChat/main/OpeningChat";
 import LinkedDevices from "../components/OpeningChat/linkedDevices/LinkedDevices";
 import StarredMessages from "../components/OpeningChat/StarredMessages";
+import Chat from "../components/Chat/Chat"; // Make sure the path is correct
 
 const Echoo = () => {
   const navigate = useNavigate();
@@ -14,11 +15,13 @@ const Echoo = () => {
 
   const showLinkedDevices = () => setActiveView("linked");
   const showStarredMessages = () => setActiveView("starred");
+  const showChat = () => setActiveView("chat");
   const goBack = () => setActiveView("main");
 
   // Expose globally
   window.showLinkedDevices = showLinkedDevices;
   window.showStarredMessages = showStarredMessages;
+  window.showChat = showChat;
 
   return (
     <div className="max-w-[768px] mx-auto min-h-screen bg-white border border-gray-300">
@@ -34,7 +37,8 @@ const Echoo = () => {
 
       {activeView === "linked" && <LinkedDevices goBack={goBack} />}
       {activeView === "starred" && <StarredMessages goBack={goBack} />}
-    </div>
+      {activeView === "chat" && <Chat goBack={goBack} />}
+      </div>
   );
 };
 
