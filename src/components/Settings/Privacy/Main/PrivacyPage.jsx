@@ -7,8 +7,15 @@ import GeneralSettings from './GeneralSettings';
 
 const PrivacyPage = ({ goBack }) => {
   return (
-    <div className="container py-4 text-light bg-dark" style={{ minHeight: '100vh' }}>
-      <Header goBack={goBack} /> {/* Pass goBack here */}
+    <div
+      className="bg-dark text-light"
+      style={{
+        minHeight: '100vh',
+        overflowY: 'auto', // This makes the sticky header work
+        padding: '1rem',
+      }}
+    >
+      <Header goBack={goBack} />
       <ViewInfo />
       <DisappearingMessages />
       <GeneralSettings />

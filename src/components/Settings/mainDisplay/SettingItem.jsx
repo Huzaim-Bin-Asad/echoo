@@ -8,8 +8,10 @@ const SettingItem = ({ icon, title, subtitle, onClick, style }) => {
       onClick={onClick}
       style={{ ...style, border: 'none' }}
     >
-      <div className="d-flex align-items-start gap-3">
-        <div className="fs-4">{icon}</div>
+      <div className="d-flex align-items-start gap-2">
+        <div style={{ marginLeft: '-1rem', marginRight: '0.25rem' }} className="fs-4">
+          {icon}
+        </div>
         <div>
           <div className="fw-semibold">{title}</div>
           <div className="text-white small">{subtitle}</div>

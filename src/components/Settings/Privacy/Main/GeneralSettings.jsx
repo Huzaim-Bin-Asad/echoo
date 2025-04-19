@@ -2,22 +2,45 @@ import React from 'react';
 
 const GeneralSettings = () => (
   <div className="mb-4">
-    <div className="list-group mb-2">
-      <div className="list-group-item bg-dark text-light border-secondary">
-        <div className="d-flex justify-content-between align-items-center">
-          <span>Read receipts</span>
-          <div className="form-check form-switch">
-            <input className="form-check-input" type="checkbox" id="readReceiptsSwitch" />
-          </div>
+    <ul className="list-unstyled">
+      {/* Groups Item with slightly reduced top margin */}
+      <li className="bg-dark text-light mb-4 mt-2">
+        <div className="d-flex flex-column">
+          <div className="fw-medium fs-6 mt-3">Groups</div>
+          <div className="text-secondary small fs-7 mb-3">My contacts</div>
         </div>
-        <small className="text-muted d-block mt-1">
-          If turned off, you won't send or receive read receipts. Read receipts are always sent for group chats.
-        </small>
-      </div>
-    </div>
-    <ul className="list-group">
-      <li className="list-group-item bg-dark text-light border-secondary">Groups <span className="float-end">My contacts</span></li>
-      <li className="list-group-item bg-dark text-light border-secondary">Avatar stickers</li>
+      </li>
+
+  
+
+      <li className="bg-dark text-light mb-5">
+        <div className="fw-medium fs-6 ">Live location</div>
+      </li>
+
+      <li className="bg-dark text-light mb-5">
+        <div className="d-flex flex-column">
+          <div className="fw-medium fs-6">Calls</div>
+          <div className="text-secondary small fs-7">Silence unknown callers</div>
+        </div>
+      </li>
+
+      <li className="bg-dark text-light mb-5">
+        <div className="d-flex flex-column">
+          <div className="fw-medium fs-6">Blocked Contacts</div>
+          <div className="text-secondary small fs-7">16</div>
+        </div>
+      </li>
+
+      <li className="bg-dark text-light mb-5">
+        <div className="d-flex flex-column">
+          <div className="fw-medium fs-6">App Lock</div>
+          <div className="text-secondary small fs-7">Disabled</div>
+        </div>
+      </li>
+
+      <li className="bg-dark text-light mb-5">
+        <div className="fw-medium fs-6">Chat Lock</div>
+      </li>
     </ul>
   </div>
 );
