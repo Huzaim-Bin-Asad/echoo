@@ -1,0 +1,98 @@
+/* Custom Slide-up Modal */
+.custom-slide-up-modal {
+    transition: height 0.5s cubic-bezier(0.25, 0.8, 0.25, 1), bottom 0.5s ease-out;
+    position: fixed !important;
+    bottom: 0; /* Modal starts from the bottom */
+    margin: 0;
+    width: 100%;
+    border-radius: 16px 16px 0 0;
+    overflow: hidden;
+    background-color: #212529; /* Dark background */
+    z-index: 1055;
+    height: 40vh; /* Initial height */
+}
+
+.custom-slide-up-modal.expanded {
+    height: 90vh; /* Full expanded height */
+}
+
+.custom-slide-up-modal.half-open {
+    height: 60vh; /* Half-open height */
+}
+
+.custom-slide-up-modal.closing {
+    height: 40vh; /* Reset to initial height while closing */
+}
+
+/* Modal Body */
+.custom-modal-body {
+    height: 100%;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+    padding-bottom: 10px;
+    overscroll-behavior: contain;
+}
+
+/* Drag Indicator */
+.drag-indicator {
+    font-size: 26px;
+    line-height: 1;
+    text-align: center;
+    padding-top: 8px;
+    padding-bottom: 4px;
+    color: #ccc;
+    user-select: none;
+}
+
+/* Backdrop */
+.custom-backdrop {
+    background: rgba(0, 0, 0, 0.5); /* Darkened backdrop */
+}
+
+/* List Group Item Styling */
+.list-group-item-dark {
+    background-color: transparent !important; /* Transparent background */
+    color: white !important; /* White text color */
+    border: none !important; /* No border */
+    padding: 12px 16px; /* Adjust padding for better spacing */
+    display: flex;
+    align-items: center;
+    cursor: pointer; /* Make it look interactive */
+    transition: background-color 0.3s ease, color 0.3s ease; /* Smooth transition for hover effects */
+}
+
+/* Active State Styling */
+.list-group-item-dark.active {
+    background-color: transparent !important; /* Same as header */
+    color: white !important; /* Ensure active text remains white */
+    border: none !important; /* No border */
+}
+
+/* Hover Effects */
+.list-group-item-dark:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important; /* Light background on hover */
+    color: white !important; /* Ensure hover text remains white */
+    border: none !important; /* No border on hover */
+}
+
+/* Radio Button and Label Alignment */
+.list-group-item-dark .form-check {
+    display: flex;
+    align-items: center;
+}
+
+/* Label Text Styling */
+.list-group-item-dark .fs-5 {
+    margin-left: 8px;
+    font-size: 18px;
+}
+
+/* Ensure smooth scroll in the modal body */
+.custom-modal-body {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch; /* Enable smooth scrolling on mobile */
+}
+
+.form-check-input{
+    margin-right: 20px;
+}

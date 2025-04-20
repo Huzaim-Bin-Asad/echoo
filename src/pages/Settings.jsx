@@ -7,9 +7,11 @@ import PrivacyPage from '../components/Settings/Privacy/Main/PrivacyPage';
 import ChatsPage from '../components/Settings/Chats/main/ChatsPage'; // ✅ Import added
 import NotificationPage from '../components/Settings/Notification/main/App'; // ✅ Import NotificationPage
 import StorageAndData from '../components/Settings/StorageAndData/Main/StorageAndData'; // ✅ Add this
+import AppLanguageSelector from "../components/Settings/AppLanguage/AppLanguageSelector.jsx";
 
 const Settings = () => {
   const [activeView, setActiveView] = useState('main');
+  const [showLanguageModal, setShowLanguageModal] = useState(false); // State for controlling the modal visibility
 
   const goTo = (view) => setActiveView(view);
   const goBack = () => setActiveView('main');
@@ -22,7 +24,7 @@ const Settings = () => {
             <SettingsHeader />
             <div className="flex-1 overflow-y-auto px-4 py-4">
               <ProfileSetting />
-              <SettingsList onNavigate={goTo} />
+              <SettingsList onNavigate={goTo} setShowLanguageModal={setShowLanguageModal} />
             </div>
           </>
         )}
@@ -45,19 +47,20 @@ const Settings = () => {
           </div>
         )}
 
-{activeView === 'notifications' && ( // ✅ Notifications condition
-  <div className="flex-1 overflow-y-auto">
-    <NotificationPage goBack={goBack} />
-  </div>
+        {activeView === 'notifications' && ( // ✅ Notifications condition
+          <div className="flex-1 overflow-y-auto">
+            <NotificationPage goBack={goBack} />
+          </div>
+        )}
 
-)}
-
-{activeView === 'storage' && (
-  <div className="flex-1 overflow-y-auto">
-    <StorageAndData goBack={goBack} />
-  </div>
-)}
-
+        {activeView === 'storage' && (
+          <div className="flex-1 overflow-y-auto">
+            <StorageAndData goBack={goBack} />
+          </div>
+        )}
+        
+        {/* App Language Modal */}
+        <AppLanguageSelector show={showLanguageModal} handleClose={() => setShowLanguageModal(false)} />
       </div>
     </div>
   );

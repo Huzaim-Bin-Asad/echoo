@@ -11,9 +11,11 @@ import {
 import { FaQuestionCircle } from 'react-icons/fa';
 import SettingItem from './SettingItem';
 
-const SettingsList = ({ onNavigate }) => {
+const SettingsList = ({ onNavigate, setShowLanguageModal  }) => {
+
   return (
     <ListGroup className="bg-dark" style={{ gap: '22px', marginRight: '1rem' }}>
+      {/* Account Setting Item */}
       <div className="py-2" style={{ paddingRight: '25px', marginRight: '1rem', marginBottom: '1rem' }}>
         <SettingItem
           icon={<Slack size={20} />}
@@ -24,6 +26,7 @@ const SettingsList = ({ onNavigate }) => {
         />
       </div>
 
+      {/* Privacy Setting Item */}
       <div className="py-2" style={{ paddingRight: '25px', marginRight: '1rem', marginBottom: '.1rem' }}>
         <SettingItem
           icon={<GlobeLock size={20} />}
@@ -33,6 +36,7 @@ const SettingsList = ({ onNavigate }) => {
         />
       </div>
 
+      {/* Chats Setting Item */}
       <div className="py-2" style={{ paddingRight: '25px', marginRight: '1rem', marginBottom: '1rem' }}>
         <SettingItem
           icon={<MessageCircleHeart size={20} />}
@@ -42,6 +46,7 @@ const SettingsList = ({ onNavigate }) => {
         />
       </div>
 
+      {/* Notifications Setting Item */}
       <div className="py-2" style={{ paddingRight: '25px', marginRight: '1rem', marginBottom: '1rem' }}>
         <SettingItem
           icon={<BellRing size={20} />}
@@ -52,6 +57,7 @@ const SettingsList = ({ onNavigate }) => {
         />
       </div>
 
+      {/* Storage Setting Item */}
       <div className="py-2" style={{ paddingRight: '25px', marginRight: '1rem', marginBottom: '1rem' }}>
         <SettingItem
           icon={<Server size={20} />}
@@ -62,7 +68,10 @@ const SettingsList = ({ onNavigate }) => {
         />
       </div>
 
-      <div className="py-2" style={{ paddingRight: '25px', marginRight: '1rem', marginBottom: '1rem' }}>
+      {/* App Language Setting Item */}
+      <div className="py-2" style={{ paddingRight: '25px', marginRight: '1rem', marginBottom: '1rem' }}
+              onClick={() => setShowLanguageModal(true)} // Triggering the modal on click
+>
         <SettingItem
           icon={<Languages size={20} />}
           title="App language"
@@ -70,13 +79,18 @@ const SettingsList = ({ onNavigate }) => {
         />
       </div>
 
-      <div className="py-2" style={{ paddingRight: '25px', marginRight: '1rem', marginBottom: '1rem' }}>
+      {/* Help Setting Item - Opens Modal */}
+      <div
+        className="py-2"
+        style={{ paddingRight: "25px", marginRight: "1rem", marginBottom: "1rem" }}
+      >
         <SettingItem
           icon={<FaQuestionCircle size={18} />}
           title="Help"
           subtitle="Help centre, contact us, privacy policy"
         />
       </div>
+
     </ListGroup>
   );
 };

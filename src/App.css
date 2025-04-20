@@ -46,3 +46,12 @@
 .custom-username-input::placeholder {
   text-align: right;
 }
+
+
+.custom-modal .modal-dialog {
+  z-index: 1050 !important; /* Ensures modal is above other elements */
+}
+
+.custom-modal .modal-backdrop {
+  z-index: 1040 !important; /* Ensures backdrop is behind modal */
+}
