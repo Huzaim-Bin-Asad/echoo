@@ -1,32 +1,31 @@
 import React from 'react';
-import { Row, Col } from 'react-bootstrap';
 
 const NetworkOpt = () => (
-  <div className="py-3 border-top border-secondary">
-    <Row>
-      <Col>
-        <small className="text-muted">Media auto-download</small>
-        <div className="text-muted">Voice messages are always automatically downloaded</div>
-      </Col>
-    </Row>
-    <Row className="mt-3">
-      <Col>
-        <div>When using mobile data</div>
-        <small className="text-muted">Photos</small>
-      </Col>
-    </Row>
-    <Row className="mt-2">
-      <Col>
-        <div>When connected on Wi-Fi</div>
-        <small className="text-muted">All media</small>
-      </Col>
-    </Row>
-    <Row className="mt-2">
-      <Col>
-        <div>When roaming</div>
-        <small className="text-muted">No media</small>
-      </Col>
-    </Row>
+  <div
+    className="pt-4 border-top border-secondary"
+    style={{ marginTop: '15px' }}
+  >
+    <div style={{ marginLeft: '20px', marginRight: '20px' }}>
+      <div className="mb-4">
+        <div className="text-secondary fw-semibold mb-1">Media auto-download</div>
+        <div className="text-secondary">Voice messages are always automatically downloaded</div>
+      </div>
+
+      <div className="mb-4" style={{ marginLeft: "35px"}}>
+        <p className="mb-1">When using mobile data</p>
+        <small className="text-secondary">Photos</small>
+      </div>
+
+      <div className="mb-4" style={{ marginLeft: "35px"}}>
+        <p className="mb-1">When connected on Wi-Fi</p>
+        <small className="text-secondary">All media</small>
+      </div>
+
+      <div style={{ marginLeft: "35px"}}>
+        <p className="mb-1" >When roaming</p>
+        <small className="text-secondary">No media</small>
+      </div>
+    </div>
   </div>
 );
 
