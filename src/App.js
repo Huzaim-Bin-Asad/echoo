@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import Landing from "./pages/landing";
 import Signup from "./pages/Signup";
 import Login from "./pages/login";
@@ -10,12 +10,27 @@ import NewGroup from './pages/NewGroup';
 import QRquickLink from './pages/QRquickLink';
 import Call from './pages/call';
 import StatusPage from './pages/StatusPage';
-import Settings from './pages/Settings'; // ✅ Added Settings
-import Profile from './pages/Profile'; // ✅ Added Settings
+import Settings from './pages/Settings';
+import Profile from './pages/Profile';
+import useTokenChecker from './hooks/useTokenChecker';
 
-function App() {
+function AppContent() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { AuthModal } = useTokenChecker(location.pathname);
+
+  const handleLogin = () => {
+    navigate('/login'); // Redirect to login page
+  };
+
+  const handleSignup = () => {
+    navigate('/signup'); // Redirect to signup page
+  };
+
   return (
-    <Router>
+    <div>
+      <AuthModal handleLogin={handleLogin} handleSignup={handleSignup} />
+      
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/signup" element={<Signup />} />
@@ -26,11 +41,18 @@ function App() {
         <Route path="/new-group" element={<NewGroup />} />
         <Route path="/qr-quicklink" element={<QRquickLink />} />
         <Route path="/call" element={<Call />} />
-        <Route path="/status" element={<StatusPage />} /> {/* ✅ New route */}
-        <Route path="/settings" element={<Settings />} /> {/* ✅ New route added */}
-        <Route path="/profile" element={<Profile />} /> {/* ✅ New route added */}
-
+        <Route path="/status" element={<StatusPage />} />
+        <Route path="/settings" element={<Settings />} />
+        <Route path="/profile" element={<Profile />} />
       </Routes>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <AppContent />
     </Router>
   );
 }

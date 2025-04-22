@@ -28,13 +28,10 @@ export const checkCredentials = async ({ email, username }) => {
       throw error;
     }
   };
-
-  
-export const submitSignupForm = async (formData) => {
+  export const submitSignupForm = async (formData) => {
     console.log('[SUBMIT] Starting form submission with data:', formData);
   
     try {
-      // Prepare the data for submission
       const submissionData = new FormData();
       submissionData.append('firstName', formData.firstName);
       submissionData.append('lastName', formData.lastName);
@@ -42,14 +39,13 @@ export const submitSignupForm = async (formData) => {
       submissionData.append('username', formData.username);
       submissionData.append('password', formData.password);
       submissionData.append('gender', formData.gender);
-      
+  
       if (formData.profilePicture) {
         console.log('[SUBMIT] Including profile picture in submission');
         submissionData.append('profilePicture', formData.profilePicture);
       }
   
       console.log('[SUBMIT] FormData contents:');
-      // Log FormData entries (note: this requires modern browsers)
       for (const [key, value] of submissionData.entries()) {
         console.log(`  ${key}:`, value);
       }
@@ -58,12 +54,10 @@ export const submitSignupForm = async (formData) => {
       const response = await fetch(`${API_URL}/signup`, {
         method: 'POST',
         body: submissionData,
-        // Don't set Content-Type header when using FormData,
-        // the browser will set it automatically with the correct boundary
       });
   
       const responseData = await response.json();
-      
+  
       console.log('[SUBMIT] Received response:', {
         status: response.status,
         statusText: response.statusText,
@@ -75,7 +69,15 @@ export const submitSignupForm = async (formData) => {
         throw responseData;
       }
   
-      console.log('[SUBMIT] Successful response data:', responseData);
+      // Save token, user, and timestamp to localStorage
+      if (responseData.token && responseData.user) {
+        const savedAt = new Date().toISOString(); // Local device time in ISO format
+        localStorage.setItem('token', responseData.token);
+        localStorage.setItem('user', JSON.stringify(responseData.user));
+        localStorage.setItem('token_saved_at', savedAt);
+        console.log('[SUBMIT] Token, user, and save time stored in localStorage at:', savedAt);
+      }
+  
       return responseData;
   
     } catch (error) {
@@ -86,4 +88,5 @@ export const submitSignupForm = async (formData) => {
       });
       throw error;
     }
-};
+  };
+  
