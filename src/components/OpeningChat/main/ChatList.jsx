@@ -19,7 +19,9 @@ const chatData = [
   // Add more messages if needed
 ];
 
-const ChatList = () => {
+const ChatList = ({ visible = false }) => {
+  if (!visible) return null;
+
   return (
     <div className="list-group px-2 py-2">
       {chatData.map((chat, index) => (

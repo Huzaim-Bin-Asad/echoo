@@ -1,7 +1,7 @@
 import React from 'react';
 import { User } from 'lucide-react';  // Importing User icon
 
-const ContactItem = ({ name, message }) => {
+const ContactItem = ({ name, message, visible = false }) => {
   return (
     <div className="d-flex align-items-center px-3 py-2">
       {/* Icon Container with a fixed size */}
