@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { User } from 'lucide-react';
+
 const ChatItem = ({ name, message, time, unread, img }) => {
   const [truncateLimit, setTruncateLimit] = useState(30);
 
@@ -21,14 +22,12 @@ const ChatItem = ({ name, message, time, unread, img }) => {
   const truncateMessage = (msg, limit) =>
     msg.length > limit ? msg.slice(0, limit) + '...' : msg;
 
- 
   return (
     <div
-    className="list-group-item list-group-item-action d-flex justify-content-between align-items-start border-0 py-3"
-    onClick={() => window.showChat()}
-    style={{ cursor: "pointer" }}
-  >
-  
+      className="list-group-item list-group-item-action d-flex justify-content-between align-items-start border-0 py-3"
+      onClick={() => window.showChat()}
+      style={{ cursor: "pointer" }}
+    >
       {/* Avatar */}
       <div
         className="me-3 d-flex align-items-center justify-content-center rounded-circle bg-light"

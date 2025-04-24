@@ -4,6 +4,7 @@ import OpeningChat from "../components/OpeningChat/main/OpeningChat";
 import LinkedDevices from "../components/OpeningChat/linkedDevices/LinkedDevices";
 import StarredMessages from "../components/OpeningChat/StarredMessages";
 import Chat from "../components/Chat/Chat"; // Make sure the path is correct
+import UserInfoPrinter from "../components/OpeningChat/main/UserInfoPrinter";
 
 const Echoo = () => {
   const navigate = useNavigate();
@@ -28,17 +29,22 @@ const Echoo = () => {
       {activeView === "main" && (
         <>
           <OpeningChat />
+          {/* 👇 Inserted user info display */}
+          <UserInfoPrinter />
+
           <div
             className="flex justify-center items-center mt-5 cursor-pointer"
             onClick={handleCallClick}
-          ></div>
+          >
+            {/* Add something visual like a button/icon if needed */}
+          </div>
         </>
       )}
 
       {activeView === "linked" && <LinkedDevices goBack={goBack} />}
       {activeView === "starred" && <StarredMessages goBack={goBack} />}
       {activeView === "chat" && <Chat goBack={goBack} />}
-      </div>
+    </div>
   );
 };
 

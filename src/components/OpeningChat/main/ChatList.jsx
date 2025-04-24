@@ -1,6 +1,7 @@
 import React from 'react';
 import ChatItem from './ChatItem';
 
+// Example data for chats, you can replace it with dynamic data if needed.
 const chatData = [
   {
     name: 'Loretta Russell',
