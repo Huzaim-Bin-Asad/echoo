@@ -39,7 +39,7 @@ const NewContact = () => {
           width: "90vw", // Default width for small screens
           minHeight: "100vh", // Increased height for all devices (1.3x)
           height: "auto", // Auto height adjustment based on content
-          backgroundColor: "#67AE6E",
+          backgroundColor: "#1a1a1a", // Dark background color
           position: "relative", // To position the Chevron icon correctly
         }}
       >
@@ -51,35 +51,46 @@ const NewContact = () => {
             left: "10px",
             top: "20px", // Adjusted to move the icon lower
             cursor: "pointer",
-            color: "#fff",
+            color: "white",
           }}
           onClick={handleIconClick} // Trigger the redirection on click
         />
 
-        <form onSubmit={handleSubmit}>
+<form onSubmit={handleSubmit}>
           {/* Heading aligned to the left with a slight margin */}
-          <h3 className="text-start mb-4" style={{ marginLeft: "20px" }}>
+          <h3 className="text-start mb-4" style={{ marginLeft: "20px", color: "white" }}>
             New Contact
           </h3>
+          
+          {/* Contact Name Form */}
           <ContactNameForm
             firstName={contact.firstName}
             lastName={contact.lastName}
             handleChange={handleChange}
           />
+          
+          {/* Contact Info Form */}
           <ContactInfoForm
             email={contact.email}
             username={contact.username}
             handleChange={handleChange}
           />
+          
+          {/* Save Button */}
           <SaveButton />
         </form>
       </div>
-
       <style>{`
         @media (min-width: 765px) {
           .p-4 {
             min-width: 100vw; /* Increase width for tablets by 1.4x */
           }
+        }
+                 h3, label, input, .form-control {
+          color: white; /* Ensure all form text is white */
+        }
+        .form-control::placeholder {
+          color: white; /* Ensure placeholder text is also white */
         }
       `}</style>
     </div>

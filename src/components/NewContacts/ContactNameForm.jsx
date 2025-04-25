@@ -3,11 +3,11 @@ import { User } from "lucide-react";
 
 const inputStyle = {
   border: "none",
-  borderBottom: "1px solid #555",
+  borderBottom: "1px solid #555", // Optional: customize border if needed
   borderRadius: 0,
   backgroundColor: "transparent",
-  color: "white",
-  paddingLeft: "0.8rem", // closer to left
+  color: "white", // White text inside the input
+  paddingLeft: "0.8rem", // Closer to the left
   paddingRight: "1rem",
   width: "80%",
   marginLeft: "9%",
@@ -18,7 +18,7 @@ const inputStyle = {
 
 const iconStyle = {
   position: "absolute",
-  left: "-0.2rem",
+  left: "-0.2rem", // Pull icon more to the left
   top: "50%",
   transform: "translateY(-50%)",
   pointerEvents: "none",
@@ -32,7 +32,7 @@ const ContactNameForm = ({ firstName, lastName, handleChange }) => (
     {/* First Name Input */}
     <div className="position-relative mb-4">
       <User
-        className="position-absolute text-muted"
+        className="position-absolute text-white" // Set the icon color to white
         style={iconStyle}
         size={22}
       />
@@ -59,6 +59,13 @@ const ContactNameForm = ({ firstName, lastName, handleChange }) => (
         placeholder="Last name"
       />
     </div>
+
+    {/* CSS to ensure all placeholder text is white */}
+    <style>{`
+      input::placeholder {
+        color: white !important; /* Ensures the placeholder text is white */
+      }
+    `}</style>
 
   </div>
 );

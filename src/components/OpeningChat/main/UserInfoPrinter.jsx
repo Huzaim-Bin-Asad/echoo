@@ -1,58 +1,54 @@
 import React, { useEffect, useRef } from 'react';
-import { useUser } from '../../../services/UserContext'; // Adjust path as needed
+import { useUser } from '../../../services/UserContext';
 import { useNavigate } from 'react-router-dom';
-import ChatList from './ChatList'; // Import ChatList
+import ChatList from './ChatList';
 
 const UserInfoPrinter = () => {
-  const { user, loading } = useUser(); // Getting user data from context
+  const { user, loading } = useUser();
   const navigate = useNavigate();
-  const printCount = useRef(0); // Reference to count the number of times we print user data
+  const printCount = useRef(0);
 
   useEffect(() => {
-    // When user data is updated and loading is complete
     if (user && !loading) {
       printCount.current += 1;
-
-      // Print to console every 10 context updates
       if (printCount.current % 10 === 0) {
         console.log("🖨️ [UserInfoPrinter] Current user data:", user);
       }
     }
   }, [user, loading]);
 
-  // Check if chat preview exists (replace `user.chatPreview` with your actual path)
   const chatPreview = user ? user.chat_previews : null;
-  console.log("chatPreview:", chatPreview);  // Added for debugging
+  console.log("chatPreview:", chatPreview);
 
 
   return (
-    <div className="flex-grow-1 overflow-auto p-3">
-      {/* Display user information with elegance */}
-      <div className="mb-3">
- 
-      </div>
-
-      {/* If there is no chat preview, show a "Start Conversation" link */}
+    <div className="flex-grow-1 overflow-auto p-3" style={{ backgroundColor: 'transparent' }}>
       {!chatPreview || chatPreview.length === 0 ? (
-        <div className="alert alert-info" role="alert">
-          <p>You haven’t started any conversations yet.</p>
-          <p>
-            <strong>Start a conversation</strong> by clicking{" "}
-            <a
-              href="/new-contact"
-              onClick={(e) => {
-                e.preventDefault(); // Prevent page reload
-                navigate('/new-contact'); // Redirect programmatically
+        <div
+          className="p-3 mt-4 text-muted"
+          style={{ fontSize: '0.9rem', backgroundColor: 'transparent' }}
+        >
+          <h6 className="mb-2">🕊️ Welcome to Echoo</h6>
+          <p className="mb-1">It’s a little quiet here... you haven’t echoed any thoughts yet.</p>
+          <p style={{ fontSize: '0.85rem' }}>
+            <span
+              onClick={() => navigate('/new-contact')}
+              style={{
+                color: 'inherit',
+                fontWeight: '500',
+                cursor: 'pointer',
+                padding: '2px 4px',
+                borderRadius: '4px',
               }}
-              className="link-primary"
+              onMouseOver={(e) => (e.target.style.backgroundColor = '#f0f0f0')}
+              onMouseOut={(e) => (e.target.style.backgroundColor = 'transparent')}
             >
-              here
-            </a>
-            .
+              Start your first convo
+            </span>{" "}
+            and let Echoo carry your words 🎈
           </p>
         </div>
       ) : (
-        // If there is chat data, display it
         <ChatList visible={true} />
       )}
     </div>

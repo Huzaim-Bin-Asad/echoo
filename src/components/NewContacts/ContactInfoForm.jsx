@@ -3,11 +3,11 @@ import { AtSign, Signature } from "lucide-react";
 
 const inputStyle = {
   border: "none",
-  borderBottom: "1px solid #555",
+  borderBottom: "1px solid #fff", // White border for inputs
   borderRadius: 0,
   backgroundColor: "transparent",
-  color: "white",
-  paddingLeft: "0.8rem", // closer to left
+  color: "white", // Text inside the input will be white
+  paddingLeft: "0.8rem", // Closer to left
   paddingRight: "1rem",
   width: "80%",
   marginLeft: "9%",
@@ -18,12 +18,14 @@ const inputStyle = {
 
 const iconStyle = {
   position: "absolute",
-  left: "-0.2rem", // pull icon more left
+  left: "-0.2rem", // Pull icon more left
   top: "50%",
   transform: "translateY(-50%)",
   pointerEvents: "none",
   zIndex: 1,
   marginTop: "2%",
+  color: "white", // Make icons white
+
 };
 
 const ContactInfoForm = ({ email, username, handleChange }) => (
@@ -32,7 +34,7 @@ const ContactInfoForm = ({ email, username, handleChange }) => (
     {/* Email Input */}
     <div className="position-relative mb-4">
       <AtSign
-        className="position-absolute text-muted"
+        className="position-absolute"
         style={iconStyle}
         size={22}
       />
@@ -50,7 +52,7 @@ const ContactInfoForm = ({ email, username, handleChange }) => (
     {/* Username Input */}
     <div className="position-relative">
       <Signature
-        className="position-absolute text-muted"
+        className="position-absolute"
         style={iconStyle}
         size={22}
       />
@@ -64,6 +66,12 @@ const ContactInfoForm = ({ email, username, handleChange }) => (
         placeholder="Username"
       />
     </div>
+
+    {/* Custom styling for placeholder and input text */}
+    <style>{`
+   
+    
+    `}</style>
 
   </div>
 );
