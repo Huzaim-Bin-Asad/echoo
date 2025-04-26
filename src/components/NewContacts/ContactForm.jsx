@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom"; // ← import useNavigate
 import axios from "axios";
 import ContactNameForm from './ContactNameForm';
 import ContactInfoForm from './ContactInfoForm';
@@ -7,6 +8,7 @@ import SaveButton from './SaveButton';
 const API_BASE_URL = "http://localhost:5000";
 
 const ContactForm = () => {
+  const navigate = useNavigate(); // ← initialize navigate
   const [contact, setContact] = useState({
     firstName: "",
     lastName: "",
@@ -87,12 +89,15 @@ const ContactForm = () => {
       contacted_username: contact.username,
       created_at: new Date().toISOString(),
     };
-    
 
     try {
       console.log("📤 handleSubmit: Sending contact data to backend:", contactData);
       const response = await axios.post(`${API_BASE_URL}/api/add-contact`, contactData);
       console.log("✅ handleSubmit: Contact saved successfully:", response.data);
+      
+      // 👇 redirect after successful save
+      navigate("/Add");
+      
     } catch (err) {
       console.error("❌ handleSubmit: Error saving contact", err);
     }

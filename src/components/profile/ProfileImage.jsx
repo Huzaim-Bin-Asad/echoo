@@ -22,12 +22,12 @@ const ProfileImage = () => {
           height: '34px',
           width: '34px',
           marginBottom: '5px',  // Adjusted for small spacing
-          left: '60%',  // Adjusted to move the icon even more to the right
+          left: '58%',  // Adjusted to move the icon even more to the right
           zIndex: '1',
         }}
       >
         <SwitchCamera size={20} color="#121B22" />
-      </div>
+        </div>
     </div>
   );
 };

@@ -6,7 +6,7 @@ import BottomNav from './BottomNav';  // Assuming you have a BottomNav component
 const OpeningChat = () => {
   return (
     <div className="container-fluid p-0 d-flex flex-column" style={{ height: '100vh', maxWidth: '768px', margin: '0 auto' }}>
-``      {/* Header section */}
+   {/* Header section */}
       <Header />
 
       {/* User info and chat list section, which grows to fill the remaining space and allows for scrolling */}
