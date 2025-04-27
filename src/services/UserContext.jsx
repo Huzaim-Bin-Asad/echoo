@@ -5,7 +5,7 @@ const UserContext = createContext();
 
 export const UserProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const userRef = useRef(null); // to keep latest user state
+  const userRef = useRef(null); // to keep the latest user state
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -26,7 +26,7 @@ export const UserProvider = ({ children }) => {
 
           requestCount += 1;
 
-          if (requestCount === 1) {
+          if (requestCount === 10) {
             console.log("✅ [100th Poll] User data received:", newUserData);
 
             if (JSON.stringify(userRef.current) !== JSON.stringify(newUserData)) {
@@ -54,7 +54,7 @@ export const UserProvider = ({ children }) => {
   }, []); // Run only once on mount
 
   return (
-    <UserContext.Provider value={{ user, loading }}>
+    <UserContext.Provider value={{ user, setUser, loading }}>
       {children}
     </UserContext.Provider>
   );

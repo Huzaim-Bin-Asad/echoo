@@ -28,6 +28,7 @@ export const checkCredentials = async ({ email, username }) => {
       throw error;
     }
   };
+ 
   export const submitSignupForm = async (formData) => {
     console.log('[SUBMIT] Starting form submission with data:', formData);
   
@@ -43,11 +44,6 @@ export const checkCredentials = async ({ email, username }) => {
       if (formData.profilePicture) {
         console.log('[SUBMIT] Including profile picture in submission');
         submissionData.append('profilePicture', formData.profilePicture);
-      }
-  
-      console.log('[SUBMIT] FormData contents:');
-      for (const [key, value] of submissionData.entries()) {
-        console.log(`  ${key}:`, value);
       }
   
       console.log('[SUBMIT] Sending request to API...');
@@ -78,7 +74,7 @@ export const checkCredentials = async ({ email, username }) => {
         console.log('[SUBMIT] Token, user, and save time stored in localStorage at:', savedAt);
       }
   
-      return responseData;
+      return responseData; // This should now include the profile picture URL.
   
     } catch (error) {
       console.error('[SUBMIT] Submission error:', {
