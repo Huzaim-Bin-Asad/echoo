@@ -2,68 +2,68 @@ import React, { useRef, useState } from 'react';
 import { User, SwitchCamera } from 'lucide-react';
 import { useUser } from '../../services/UserContext.jsx';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom'; // ✅ import useNavigate
 
 const ProfileImage = () => {
   const { user, setUser } = useUser();
   const fileInputRef = useRef(null);
+  const navigate = useNavigate(); // ✅ initialize navigate
 
-  const [isUploading, setIsUploading] = useState(false); // Track upload status
+  const [isUploading, setIsUploading] = useState(false);
   const profileImageUrl = user?.user?.profile_picture || null;
-  const userId = user?.user?.user_id; // Extract user_id from context (localStorage)
+  const userId = user?.user?.user_id;
 
   const handleIconClick = () => {
-    fileInputRef.current.click(); // Trigger file input when camera icon clicked
+    fileInputRef.current.click();
   };
 
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
-    if (!file) return;
-
-    // If uploading is in progress, don't proceed further
-    if (isUploading) return;
-
-    // Temporarily show the new image in the UI before the upload is finished
-    const newImageUrl = URL.createObjectURL(file); // Local preview of the image
+    if (!file || isUploading) return;
+  
+    // Instantly navigate back
+    navigate(-1);
+  
+    const newImageUrl = URL.createObjectURL(file);
     setUser((prev) => ({
       ...prev,
       user: {
         ...prev.user,
-        profile_picture: newImageUrl, // Set the local image preview
+        profile_picture: newImageUrl,
       },
     }));
-    setIsUploading(true); // Start the uploading state
-
+  
+    setIsUploading(true);
+  
     const formData = new FormData();
     formData.append('profilePicture', file);
-    formData.append('userId', userId); // Send userId too
-
+    formData.append('userId', userId);
+  
     try {
       const response = await axios.post('https://echoo-backend.vercel.app/api/upload-profile-picture', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
-
+  
       const uploadedImageUrl = response.data.profilePictureUrl;
-
-      // Only update the user profile image if the URL has changed
+  
       if (uploadedImageUrl !== user?.user?.profile_picture) {
         setUser((prev) => ({
           ...prev,
           user: {
             ...prev.user,
-            profile_picture: uploadedImageUrl, // Update with Cloudinary URL
+            profile_picture: uploadedImageUrl,
           },
         }));
       }
     } catch (error) {
       console.error('Error uploading profile picture:', error);
-      // Optionally, you could reset the profile picture to the old one if needed
     } finally {
-      setIsUploading(false); // Reset the upload status
+      setIsUploading(false);
     }
   };
-
+  
   return (
     <div className="position-relative d-flex justify-content-center mb-4">
       {profileImageUrl ? (
@@ -106,7 +106,6 @@ const ProfileImage = () => {
         <SwitchCamera size={20} color="#121B22" />
       </div>
 
-      {/* Hidden file input */}
       <input
         type="file"
         accept="image/*"
