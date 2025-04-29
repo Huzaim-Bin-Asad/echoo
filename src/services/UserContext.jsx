@@ -18,7 +18,7 @@
       let requestCount = 0;
 
       const fetchUser = () => {
-        axios.get('http://localhost:5000/api/userinfo', {
+        axios.get('https://echoo-backend.vercel.app/api/userinfo', {
           headers: { Authorization: `Bearer ${token}` },
         })
           .then(res => {
@@ -26,7 +26,7 @@
 
             requestCount += 1;
 
-            if (requestCount === 1) {
+            if (requestCount === 10) {
               console.log("✅ [100th Poll] User data received:", newUserData);
 
               if (JSON.stringify(userRef.current) !== JSON.stringify(newUserData)) {

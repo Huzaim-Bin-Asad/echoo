@@ -1,5 +1,5 @@
 // api.js
-const API_URL = process.env.API_URL || 'http://localhost:5000'; // Use local URL by default
+const API_URL = process.env.API_URL || 'https://echoo-backend.vercel.app'; // Use local URL by default
 
 
 export const checkCredentials = async ({ email, username }) => {

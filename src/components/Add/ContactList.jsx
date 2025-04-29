@@ -27,17 +27,22 @@ const ContactList = () => {
   }));
 
   const handleContactClick = (id, name) => {
+    console.log(`[Click] Contact clicked: ID=${id}, Name=${name}`);
     localStorage.setItem("selectedContactId", id);
-  
-    if (name.includes("(You)")) {
-      localStorage.setItem("selectedContactType", "currentUser");
-    } else {
-      localStorage.setItem("selectedContactType", "contactUser");
-    }
-  
-    navigate("/echoo", { state: { openChat: true } });
+
+    const type = name.includes("(You)") ? "currentUser" : "contactUser";
+    localStorage.setItem("selectedContactType", type);
+
+    console.log(`[Set] selectedContactId = ${id}`);
+    console.log(`[Set] selectedContactType = ${type}`);
+    console.log("[Redirect] Waiting 0.5 seconds before navigation...");
+
+    setTimeout(() => {
+      navigate("/echoo", { state: { openChat: true } });
+      console.log("[Redirect] Navigated to /echoo");
+    }, );
   };
-  
+
   return (
     <div className="pt-3">
       <small className="text-white px-3 fw-bold fs-6 pb-6">
@@ -46,27 +51,26 @@ const ContactList = () => {
 
       <div className="d-flex flex-column mt-2 pb-5">
         <div className="mb-4" key={currentUser.id} id={currentUser.id}>
-        <ContactItem
-  id={currentUser.id}
-  name={currentUser.name}
-  message={currentUser.message}
-  profilePicture={currentUser.profilePicture}
-  onClick={() => handleContactClick(currentUser.id, currentUser.name)}
-/>
-
+          <ContactItem
+            id={currentUser.id}
+            name={currentUser.name}
+            message={currentUser.message}
+            profilePicture={currentUser.profilePicture}
+            onClick={() => handleContactClick(currentUser.id, currentUser.name)}
+          />
         </div>
 
         {contacts.map((contact) => (
-  <div className="mb-4" key={contact.id} id={contact.id}>
-    <ContactItem
-      id={contact.id}
-      name={contact.name}
-      message={contact.message}
-      profilePicture={contact.profilePicture}
-      onClick={() => handleContactClick(contact.id, contact.name)}
-    />
-  </div>
-))}
+          <div className="mb-4" key={contact.id} id={contact.id}>
+            <ContactItem
+              id={contact.id}
+              name={contact.name}
+              message={contact.message}
+              profilePicture={contact.profilePicture}
+              onClick={() => handleContactClick(contact.id, contact.name)}
+            />
+          </div>
+        ))}
       </div>
     </div>
   );
