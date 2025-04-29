@@ -1,24 +1,35 @@
-import React, { useState } from 'react';
-import axios from 'axios'; // Make sure axios is installed
+import React, { useState, useRef } from 'react';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 const ProfileInfoItem = ({ icon, label, value, onValueChange, type = 'text', placeholder, id }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [inputValue, setInputValue] = useState(value);
+  const hasUpdated = useRef(false); // ✅ Prevent multiple submissions
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     setInputValue(e.target.value);
   };
 
   const handleBlur = async () => {
+    if (hasUpdated.current) return; // ✅ Already updated, skip
+    hasUpdated.current = true;
+
     if (inputValue !== value) {
-      onValueChange(inputValue); // Update the parent component
-      await updateUserProfile(inputValue); // Send the updated full user object to the backend
+      onValueChange(inputValue);
+      const success = await updateUserProfile(inputValue);
+      if (success) {
+        navigate(-1);
+      }
     }
+
     setIsEditing(false);
   };
 
   const handleFocus = () => {
     setIsEditing(true);
+    hasUpdated.current = false; // ✅ Reset on new focus
   };
 
   const handleKeyDown = (e) => {
@@ -29,14 +40,12 @@ const ProfileInfoItem = ({ icon, label, value, onValueChange, type = 'text', pla
 
   const updateUserProfile = async (newValue) => {
     try {
-      // Get full user object from localStorage
       const storedUser = JSON.parse(localStorage.getItem("user"));
       if (!storedUser) {
         console.error('No user data found in localStorage');
-        return;
+        return false;
       }
-  
-      // Update the specific field locally
+
       if (id === 'name') {
         const [first_name, last_name] = newValue.split(' ');
         storedUser.first_name = first_name || '';
@@ -46,19 +55,17 @@ const ProfileInfoItem = ({ icon, label, value, onValueChange, type = 'text', pla
       } else {
         storedUser[id] = newValue;
       }
-  
-      const url = `http://localhost:5000/api/users/update`; // ✅ NEW URL: no userId in URL anymore
-  
-      await axios.put(url, storedUser); // ✅ Send the full updated object
-      console.log('Profile updated successfully');
-  
-      // Update localStorage after backend update
+
+      const url = `http://localhost:5000/api/users/update`;
+      await axios.put(url, storedUser);
       localStorage.setItem("user", JSON.stringify(storedUser));
+      console.log('Profile updated successfully');
+      return true;
     } catch (error) {
       console.error('Error updating profile:', error);
+      return false;
     }
   };
-  
 
   return (
     <div className="d-flex align-items-start mb-4">
@@ -83,6 +90,7 @@ const ProfileInfoItem = ({ icon, label, value, onValueChange, type = 'text', pla
               />
               <button
                 className="btn btn-link position-absolute end-0 top-0 p-0 m-0"
+                onMouseDown={(e) => e.preventDefault()} // ✅ Prevent focus loss before click
                 onClick={handleBlur}
                 style={{
                   height: '100%',

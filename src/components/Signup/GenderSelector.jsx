@@ -1,8 +1,25 @@
-import React from "react";
-import boyImg from "../../assets/boy.png";
-import girlImg from "../../assets/girl.jpg";
+import React, { useEffect, useState } from "react";
+
+// Dynamically require all boy and girl images from assets
+const importAll = (r) => r.keys().map(r);
+const boyImages = importAll(require.context("../../assets", false, /boy\d*\.jpg|boy\.png/));
+const girlImages = importAll(require.context("../../assets", false, /girl\d*\.jpg|girl\.jpg/));
+
+const getRandomImage = (images) => {
+  const index = Math.floor(Math.random() * images.length);
+  return images[index];
+};
 
 const GenderSelector = ({ formData, updateFormData }) => {
+  const [randomBoyImage, setRandomBoyImage] = useState(null);
+  const [randomGirlImage, setRandomGirlImage] = useState(null);
+
+  useEffect(() => {
+    // Randomly pick one image each for boy and girl when component mounts
+    setRandomBoyImage(getRandomImage(boyImages));
+    setRandomGirlImage(getRandomImage(girlImages));
+  }, []);
+
   return (
     <div className="d-flex justify-content-center my-4 gap-4">
       {/* Male */}
@@ -17,7 +34,7 @@ const GenderSelector = ({ formData, updateFormData }) => {
         }}
       >
         <img
-          src={boyImg}
+          src={randomBoyImage}
           alt="Male"
           style={{
             width: "100px",
@@ -40,7 +57,7 @@ const GenderSelector = ({ formData, updateFormData }) => {
         }}
       >
         <img
-          src={girlImg}
+          src={randomGirlImage}
           alt="Female"
           style={{
             width: "100px",
