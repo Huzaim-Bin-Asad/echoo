@@ -2,7 +2,7 @@ import React, { useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom"; // Import useNavigate
 import Header from "../components/Add/Header";
 import ActionItem from "../components/Add/ActionItem";
-import ContactList, { contacts } from "../components/Add/ContactList";
+import ContactList from "../components/Add/ContactList";
 import SlideWrapper from "../components/Add/SlideWrapper";
 
 const Add = () => {
@@ -31,7 +31,7 @@ const Add = () => {
   return (
     <SlideWrapper>
       <div className="bg-dark text-white d-flex flex-column vh-100">
-        <Header contactCount={contacts.length} />
+        <Header />
 
         <div className="flex-grow-1 overflow-auto">
           <div className="px-3 pt-2">
