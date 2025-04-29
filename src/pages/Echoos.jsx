@@ -1,13 +1,17 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import OpeningChat from "../components/OpeningChat/main/OpeningChat";
 import LinkedDevices from "../components/OpeningChat/linkedDevices/LinkedDevices";
 import StarredMessages from "../components/OpeningChat/StarredMessages";
-import Chat from "../components/Chat/Chat"; // Make sure the path is correct
+import Chat from "../components/Chat/Chat";
 
 const Echoo = () => {
-  const navigate = useNavigate();
-  const [activeView, setActiveView] = useState("main");
+  const navigate = useNavigate(); 
+  const location = useLocation();
+
+  // ✅ Use location state to decide initial view
+  const initialView = location.state?.openChat ? "chat" : "main";
+  const [activeView, setActiveView] = useState(initialView);
 
   const handleCallClick = () => {
     navigate("/call");
@@ -28,7 +32,6 @@ const Echoo = () => {
       {activeView === "main" && (
         <>
           <OpeningChat />
-
           <div
             className="flex justify-center items-center mt-5 cursor-pointer"
             onClick={handleCallClick}

@@ -1,10 +1,13 @@
 import React from 'react';
 import { User as UserIcon } from 'lucide-react';
 
-const ContactItem = ({ name, message, profilePicture }) => {
+const ContactItem = ({ id, name, message, profilePicture, onClick }) => {
   return (
-    <div className="d-flex align-items-center px-3 py-2">
-      {/* Profile Image or Default Icon */}
+    <div
+      className="d-flex align-items-center px-3 py-2"
+      style={{ cursor: 'pointer' }}
+      onClick={() => onClick?.(id)}
+    >
       <div
         className="bg-secondary rounded-circle d-flex justify-content-center align-items-center"
         style={{
@@ -26,7 +29,6 @@ const ContactItem = ({ name, message, profilePicture }) => {
         )}
       </div>
 
-      {/* Name and Message */}
       <div className="d-flex flex-column ms-3">
         <div className="fw-bold">{name}</div>
         {message && <small className="text-white">{message}</small>}

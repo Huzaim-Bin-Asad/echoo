@@ -96,7 +96,7 @@ const ContactForm = () => {
       console.log("✅ handleSubmit: Contact saved successfully:", response.data);
       
       // 👇 redirect after successful save
-      navigate("/Add");
+      navigate("/echoo");
       
     } catch (err) {
       console.error("❌ handleSubmit: Error saving contact", err);

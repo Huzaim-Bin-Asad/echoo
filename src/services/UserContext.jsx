@@ -26,7 +26,7 @@
 
             requestCount += 1;
 
-            if (requestCount === 20) {
+            if (requestCount === 1) {
               console.log("✅ [100th Poll] User data received:", newUserData);
 
               if (JSON.stringify(userRef.current) !== JSON.stringify(newUserData)) {
