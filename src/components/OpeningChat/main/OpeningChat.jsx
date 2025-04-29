@@ -5,7 +5,7 @@ import BottomNav from './BottomNav';  // Assuming you have a BottomNav component
 
 const OpeningChat = () => {
   return (
-    <div className="container-fluid p-0 d-flex flex-column" style={{ height: '100vh', maxWidth: '768px', margin: '0 auto' }}>
+    <div className="container-fluid p-0 d-flex flex-column" style={{ height: '90vh', maxWidth: '768px', margin: '0 auto' }}>
    {/* Header section */}
       <Header />
 
