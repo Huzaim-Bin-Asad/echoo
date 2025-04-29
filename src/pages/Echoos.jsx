@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, {useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import OpeningChat from "../components/OpeningChat/main/OpeningChat";
 import LinkedDevices from "../components/OpeningChat/linkedDevices/LinkedDevices";
@@ -9,9 +9,9 @@ const Echoo = () => {
   const navigate = useNavigate(); 
   const location = useLocation();
 
-  // ✅ Use location state to decide initial view
   const initialView = location.state?.openChat ? "chat" : "main";
   const [activeView, setActiveView] = useState(initialView);
+  const [scrollTrigger, setScrollTrigger] = useState(0); // trigger scroll
 
   const handleCallClick = () => {
     navigate("/call");
@@ -19,7 +19,12 @@ const Echoo = () => {
 
   const showLinkedDevices = () => setActiveView("linked");
   const showStarredMessages = () => setActiveView("starred");
-  const showChat = () => setActiveView("chat");
+
+  const showChat = () => {
+    setActiveView("chat");
+    setScrollTrigger(Date.now()); // force scroll
+  };
+
   const goBack = () => setActiveView("main");
 
   // Expose globally
@@ -36,14 +41,14 @@ const Echoo = () => {
             className="flex justify-center items-center mt-5 cursor-pointer"
             onClick={handleCallClick}
           >
-            {/* Add something visual like a button/icon if needed */}
+            {/* Optional call-to-action */}
           </div>
         </>
       )}
 
       {activeView === "linked" && <LinkedDevices goBack={goBack} />}
       {activeView === "starred" && <StarredMessages goBack={goBack} />}
-      {activeView === "chat" && <Chat goBack={goBack} />}
+      {activeView === "chat" && <Chat goBack={goBack} scrollToBottomTrigger={scrollTrigger} />}
     </div>
   );
 };
