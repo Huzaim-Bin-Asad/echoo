@@ -90,8 +90,8 @@ function Header({ goBack }) {
           <img
             src={displayData.profilePicture}
             alt="Profile"
-            width="30"
-            height="30"
+            width="46"
+            height="46"
             className="rounded-circle me-2 flex-shrink-0"
           />
         ) : (

@@ -1,11 +1,7 @@
 import React from "react";
 import Message from "./Message";
 
-function ChatDisplay() {
-  const messages = [
- 
-  ];
-
+function ChatDisplay({ messages }) {
   return (
     <div className="flex-grow-1 overflow-auto p-2" style={{ background: "#f8f9fa" }}>
       {messages.map((msg, index) => (
