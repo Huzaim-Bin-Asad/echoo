@@ -53,7 +53,7 @@ function Header({ goBack }) {
         } else {
         }
       } else if (contactedUserType === "currentUser" && user?.user) {
-        const fullName = `${user.user.first_name} ${user.user.last_name} `;
+        const fullName = `${user.user.full_name} `;
 
         setDisplayData((prev) => {
           if (

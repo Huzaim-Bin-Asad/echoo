@@ -22,7 +22,7 @@ const Profile = () => {
     );
   }
 
-  const { first_name, last_name, about_message, email, username } = user.user;
+  const { full_name, about_message, email, username } = user.user;
 
   const handleValueChange = (newValue) => {
     // Update state or trigger necessary re-render here
@@ -38,7 +38,7 @@ const Profile = () => {
       <ProfileInfoItem
         icon={<UserRound size={26} className="text-white me-2" />}
         label="Name"
-        value={`${first_name} ${last_name}`}
+        value={`${full_name}`}
         onValueChange={handleValueChange}
         id="name"
       />

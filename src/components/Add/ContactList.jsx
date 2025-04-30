@@ -13,7 +13,7 @@ const ContactList = () => {
 
   const currentUser = {
     id: user.user.user_id,
-    name: `${user.user.first_name} ${user.user.last_name} (You)`,
+    name: `${user.user.full_name} (You)`,
     message: "Message yourself",
     profilePicture: user.user.profile_picture,
   };

@@ -1,75 +1,106 @@
 import React, { useState } from "react";
-import { Camera, Paperclip, Mic, SendHorizontal } from "lucide-react"; // Import SendHorizontal
-import MediaOptions from "./MediaOptions"; // Import MediaOptions
+import { Camera, Paperclip, Mic, SendHorizontal } from "lucide-react";
+import MediaOptions from "./MediaOptions";
 
 const MessageInput = ({ addMessage }) => {
   const [showMediaOptions, setShowMediaOptions] = useState(false);
-  const [message, setMessage] = useState(""); // State to track the input message
+  const [message, setMessage] = useState("");
 
-  // Toggle media options visibility
   const handlePaperclipClick = () => {
     setShowMediaOptions(!showMediaOptions);
   };
 
-  // Handle text input change
   const handleInputChange = (e) => {
     setMessage(e.target.value);
   };
 
-  // Handle send message logic (for example, sending the message)
-  const handleSendClick = () => {
-    if (message.trim()) {
-      const newMessage = { from: "me", text: message.trim() };
-      addMessage(newMessage); // Add new message to the chat
-      setMessage(""); // Clear the input field
+  const handleSendClick = async () => {
+    if (!message.trim()) return;
+  
+    const user = JSON.parse(localStorage.getItem("user"));
+    const sender_id = user?.user_id;
+    const contact_id = localStorage.getItem("selectedContactId");
+  
+    if (!sender_id || !contact_id) {
+      console.error("Missing sender_id or contact_id");
+      return;
+    }
+  
+    const payload = {
+      sender_id,
+      contact_id,
+      message_text: message.trim(),
+      timestamp: new Date().toISOString(),
+      read_checker: "unread",
+    };
+  
+    try {
+      const res = await fetch("http://localhost:5000/api/Send-messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+  
+      if (!res.ok) {
+        throw new Error("Failed to send message");
+      }
+  
+      const savedMessage = await res.json(); // From backend
+      addMessage({ from: "me", text: savedMessage.message_text, time: savedMessage.timestamp });
+      setMessage("");
+    } catch (err) {
+      console.error("Error sending message:", err.message);
     }
   };
+  
 
   return (
     <div
-      className="p-2 d-flex align-items-center flex-wrap position-relative"
+      className="p-2 d-flex align-items-end flex-wrap position-relative"
       style={{
-        backgroundColor: "#f8f9fa", // Transparent background
-        border: "none", // No borders for container
+        backgroundColor: "#f8f9fa",
+        border: "none",
       }}
     >
-      {/* Input with Camera icon inside */}
-      <div className="position-relative flex-grow-1 me-2 my-1 d-flex align-items-center">
-        {/* Camera icon inside the input field */}
+      {/* Input container with Camera icon */}
+      <div className="position-relative flex-grow-1 me-2 my-1">
         <Camera
           size={24}
-          className="position-absolute ms-2"
+          className="position-absolute ms-2 mt-2"
           style={{ color: "#6c757d", pointerEvents: "none" }}
         />
 
-        {/* Input field */}
-        <input
-          type="text"
-          className="form-control ps-5"
+        <textarea
+          rows={1}
+          className="form-control ps-5 pe-5"
           placeholder="Type something"
-          value={message} // Bind input value to the state
-          onChange={handleInputChange} // Update message state on change
+          value={message}
+          onChange={handleInputChange}
           style={{
-            minWidth: 0,
-            backgroundColor: "white", // Transparent background
-            borderRadius: "20px", // Rounded corners
-            border: "1px solid white", // Light border for input (for placeholder)
-            paddingLeft: "2rem", // Space for camera icon
-            fontSize: "18px", // Larger font size
+            resize: "none",
+            overflowY: "auto",
+            maxHeight: "150px",
+            backgroundColor: "white",
+            borderRadius: "20px",
+            border: "1px solid #ccc",
+            paddingLeft: "2.5rem",
+            paddingRight: "2.5rem",
+            fontSize: "18px",
+            lineHeight: "1.5",
           }}
         />
 
-        {/* Paperclip inside the input (right side) */}
-        <div className="position-absolute end-0 d-flex align-items-center me-3">
+        {/* Paperclip icon on the right inside input */}
+        <div className="position-absolute end-0 top-50 translate-middle-y me-3">
           <Paperclip
             size={24}
             style={{ color: "#6c757d", cursor: "pointer" }}
-            onClick={handlePaperclipClick} // Trigger media options display
+            onClick={handlePaperclipClick}
           />
         </div>
       </div>
 
-      {/* Conditionally render Microphone or Send icon */}
+      {/* Send or Mic icon */}
       <div
         className="rounded-circle bg-success d-flex align-items-center justify-content-center"
         style={{
@@ -77,8 +108,8 @@ const MessageInput = ({ addMessage }) => {
           height: "48px",
           cursor: "pointer",
         }}
-        id={message.trim() ? "send" : "mic"} // Set ID based on message state
-        onClick={message.trim() ? handleSendClick : null} // Send message if text is present
+        id={message.trim() ? "send" : "mic"}
+        onClick={message.trim() ? handleSendClick : null}
       >
         {message.trim() ? (
           <SendHorizontal size={24} color="white" />
@@ -87,7 +118,7 @@ const MessageInput = ({ addMessage }) => {
         )}
       </div>
 
-      {/* Display media options when Paperclip is clicked */}
+      {/* Media options popup */}
       {showMediaOptions && <MediaOptions onClose={() => setShowMediaOptions(false)} />}
     </div>
   );

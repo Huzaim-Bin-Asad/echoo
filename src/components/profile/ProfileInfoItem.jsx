@@ -47,9 +47,7 @@ const ProfileInfoItem = ({ icon, label, value, onValueChange, type = 'text', pla
       }
 
       if (id === 'name') {
-        const [first_name, last_name] = newValue.split(' ');
-        storedUser.first_name = first_name || '';
-        storedUser.last_name = last_name || '';
+        storedUser.full_name = newValue || '';
       } else if (id === 'about') {
         storedUser.about_message = newValue;
       } else {
