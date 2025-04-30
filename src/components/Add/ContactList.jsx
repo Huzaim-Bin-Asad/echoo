@@ -19,7 +19,7 @@ const ContactList = () => {
   };
 
   const contacts = (user.contacts || []).map((contact) => ({
-    id: contact.contacted_id, // corrected to real contacted user ID
+    id: contact.contact_id, // corrected to real contacted user ID
     contactId: contact.contact_id,
     name: contact.contact_name,
     message: contact.about_message,

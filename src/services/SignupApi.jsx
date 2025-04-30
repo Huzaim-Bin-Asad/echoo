@@ -1,5 +1,5 @@
 // api.js
-const API_URL = process.env.API_URL || 'https://echoo-backend.vercel.app'; // Use local URL by default
+const API_URL = process.env.API_URL || 'http://localhost:5000'; // Use local URL by default
 
 
 export const checkCredentials = async ({ email, username }) => {
@@ -34,8 +34,8 @@ export const checkCredentials = async ({ email, username }) => {
   
     try {
       const submissionData = new FormData();
-      submissionData.append('firstName', formData.firstName);
-      submissionData.append('lastName', formData.lastName);
+      const fullName = `${formData.firstName} ${formData.lastName}`.trim();
+      submissionData.append('fullName', fullName);
       submissionData.append('email', formData.email);
       submissionData.append('username', formData.username);
       submissionData.append('password', formData.password);
@@ -65,16 +65,15 @@ export const checkCredentials = async ({ email, username }) => {
         throw responseData;
       }
   
-      // Save token, user, and timestamp to localStorage
       if (responseData.token && responseData.user) {
-        const savedAt = new Date().toISOString(); // Local device time in ISO format
+        const savedAt = new Date().toISOString();
         localStorage.setItem('token', responseData.token);
         localStorage.setItem('user', JSON.stringify(responseData.user));
         localStorage.setItem('token_saved_at', savedAt);
         console.log('[SUBMIT] Token, user, and save time stored in localStorage at:', savedAt);
       }
   
-      return responseData; // This should now include the profile picture URL.
+      return responseData;
   
     } catch (error) {
       console.error('[SUBMIT] Submission error:', {
