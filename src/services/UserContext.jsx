@@ -5,8 +5,9 @@ const UserContext = createContext();
 
 export const UserProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const userRef = useRef(null); // to keep the latest user state
+  const userRef = useRef(null);
   const [loading, setLoading] = useState(true);
+  const requestCountRef = useRef(0);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -15,29 +16,23 @@ export const UserProvider = ({ children }) => {
       return;
     }
 
-    let requestCount = 0;
-
     const fetchUser = () => {
       axios.get('http://localhost:5000/api/userinfo', {
         headers: { Authorization: `Bearer ${token}` },
       })
         .then(res => {
           const newUserData = res.data;
-          requestCount += 1;
+          requestCountRef.current += 1;
 
-          // Always print the response
-          console.log(`[Poll #${requestCount}] 👤 Received userinfo:`, newUserData);
-
-          if (requestCount === 10) {
-            console.log("✅ [10th Poll] Checking for user data change...");
-
+          // Print full response data every 10 requests
+          if (requestCountRef.current % 10 === 0) {
+            console.log(`📊 [${requestCountRef.current}th Response] Received user data:`, newUserData);
+            
             if (JSON.stringify(userRef.current) !== JSON.stringify(newUserData)) {
-              console.log("🆕 User data has changed. Updating context.");
+              console.log("🔄 Difference detected - updating context");
             } else {
-              console.log("🔁 User data is unchanged.");
+              console.log("✅ Data identical to previous");
             }
-
-            requestCount = 0;
           }
 
           setUser(newUserData);
@@ -52,10 +47,10 @@ export const UserProvider = ({ children }) => {
         });
     };
 
-    const intervalId = setInterval(fetchUser, 500); // Poll every 0.5s
+    const intervalId = setInterval(fetchUser, 500);
 
-    return () => clearInterval(intervalId); // Cleanup
-  }, []); // Run only once on mount
+    return () => clearInterval(intervalId);
+  }, []);
 
   return (
     <UserContext.Provider value={{ user, setUser, loading }}>

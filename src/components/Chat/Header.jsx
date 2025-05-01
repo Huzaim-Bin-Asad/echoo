@@ -1,16 +1,13 @@
 import React, { useEffect, useState } from "react";
-import {
-  ChevronLeft,
-  PhoneCall,
-  Video,
-  EllipsisVertical,
-} from "lucide-react";
+import { ChevronLeft, PhoneCall, Video, EllipsisVertical } from "lucide-react";
 import { useUser } from "../../services/UserContext";
+import axios from "axios"; // Import axios to make HTTP requests
 
 function Header({ goBack }) {
   const { user } = useUser();
   const [displayData, setDisplayData] = useState({
     profilePicture: "",
+    name: "",
   });
 
   const handleBack = () => {
@@ -19,63 +16,56 @@ function Header({ goBack }) {
   };
 
   useEffect(() => {
+    const intervalId = setInterval(async () => {
+      const senderId = localStorage.getItem("sender_id");
+      const receiverId = localStorage.getItem("receiver_id");
 
-    const intervalId = setInterval(() => {
-      const contactedUserType = localStorage.getItem("selectedContactType");
-      const contactedUserId = localStorage.getItem("selectedContactId");
-
-      if (!contactedUserType || !contactedUserId) {
+      if (!senderId || !receiverId) {
         return;
       }
 
+      const payload = {
+        sender_id: senderId,
+        receiver_id: receiverId,
+      };
 
-      if (contactedUserType === "contactUser" && user?.contacts?.length) {
-        const match = user.contacts.find(
-          (c) =>
-            c.contacted_id === contactedUserId || c.contact_id === contactedUserId
-        );
 
-        if (match) {
+      try {
+        // Make a POST request to the backend to get the contact details
+        const response = await axios.post('http://localhost:5000/api/contact-info', payload);
 
-          setDisplayData((prev) => {
-            if (
-              prev.name !== match.contact_name ||
-              prev.profilePicture !== match.profile_picture
-            ) {
-              return {
-                name: match.contact_name,
-                profilePicture: match.profile_picture,
-              };
-            } else {
-              return prev;
-            }
-          });
-        } else {
-        }
-      } else if (contactedUserType === "currentUser" && user?.user) {
-        const fullName = `${user.user.full_name} `;
 
+        const { contactName, profilePicture } = response.data;
+
+        // Update the display data
         setDisplayData((prev) => {
-          if (
-            prev.name !== fullName ||
-            prev.profilePicture !== user.user.profile_picture
-          ) {
-            return {
-              name: fullName,
-              profilePicture: user.user.profile_picture,
-            };
-          } else {
-            return prev;
+          if (prev.name !== contactName || prev.profilePicture !== profilePicture) {
+            return { name: contactName, profilePicture };
           }
+          return prev;
         });
-      } else {
+      } catch (error) {
+        console.error("Error fetching contact info:", error);
+        // Enhanced error handling
+        if (error.response) {
+          // Server responded with a status other than 2xx
+          console.error(`Backend returned error status: ${error.response.status}`);
+          console.error("Response data:", error.response.data);
+        } else if (error.request) {
+          // No response from server
+          console.error("No response from server:", error.request);
+        } else {
+          // Error setting up the request
+          console.error("Error setting up request:", error.message);
+        }
       }
-    }, 1);
+    }, 100); // Now checks every 0.5 second (500 ms)
 
     return () => {
-      clearInterval(intervalId);
+      clearInterval(intervalId); // Cleanup interval on component unmount
     };
   }, [user]);
+
 
   return (
     <div className="d-flex align-items-center justify-content-between p-2 border-bottom flex-wrap">
@@ -107,21 +97,9 @@ function Header({ goBack }) {
       </div>
 
       <div className="d-flex align-items-center justify-content-end flex-shrink-0 mt-2 mt-md-0">
-        <PhoneCall
-          size={24}
-          className="mx-2"
-          style={{ color: "black", cursor: "pointer" }}
-        />
-        <Video
-          size={24}
-          className="mx-2"
-          style={{ color: "black", cursor: "pointer" }}
-        />
-        <EllipsisVertical
-          size={24}
-          className="mx-2"
-          style={{ color: "black", cursor: "pointer" }}
-        />
+        <PhoneCall size={24} className="mx-2" style={{ color: "black", cursor: "pointer" }} />
+        <Video size={24} className="mx-2" style={{ color: "black", cursor: "pointer" }} />
+        <EllipsisVertical size={24} className="mx-2" style={{ color: "black", cursor: "pointer" }} />
       </div>
     </div>
   );

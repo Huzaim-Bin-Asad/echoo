@@ -21,7 +21,7 @@ const MessageInput = ({ addMessage, updateMessage }) => {
     if (!message.trim()) return;
 
     const sender_id = contextUser?.user?.user_id;
-    const contact_id = localStorage.getItem("selectedContactId");
+    const contact_id = localStorage.getItem("contact_id");
 
     if (!sender_id || !contact_id) {
       console.error("❌ Missing sender_id or selected contact_id");
@@ -31,7 +31,7 @@ const MessageInput = ({ addMessage, updateMessage }) => {
     const contact = contextUser.contacts?.find(
       (c) => c.contact_id === contact_id
     );
-    const receiver_id = contact?.contacted_id;
+    const receiver_id = contact?.receiver_id;
 
     if (!receiver_id) {
       console.error(

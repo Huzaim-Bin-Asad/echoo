@@ -12,36 +12,37 @@ const ContactList = () => {
   }
 
   const currentUser = {
-    id: user.user.user_id,
+    contactId: user.user.user_id, // Using user_id for current user
+    sender_id: user.user.user_id,
+    receiver_id: user.user.user_id,
     name: `${user.user.full_name} (You)`,
     message: "Message yourself",
     profilePicture: user.user.profile_picture,
   };
 
   const contacts = (user.contacts || []).map((contact) => ({
-    id: contact.contact_id, // corrected to real contacted user ID
     contactId: contact.contact_id,
+    sender_id: contact.sender_id,
+    receiver_id: contact.receiver_id,
     name: contact.contact_name,
     message: contact.about_message,
     profilePicture: contact.profile_picture,
   }));
 
-  const handleContactClick = (id, name) => {
-    console.log(`[Click] Contact clicked: ID=${id}, Name=${name}`);
-    localStorage.setItem("selectedContactId", id);
+  const handleContactClick = (senderId, receiverId, contactId, name) => {
+    console.log(`[Click] Contact clicked: ${name}`);
+    localStorage.setItem("sender_id", senderId);
+    localStorage.setItem("receiver_id", receiverId);
+    localStorage.setItem("contact_id", contactId);
 
-    const type = name.includes("(You)") ? "currentUser" : "contactUser";
-    localStorage.setItem("selectedContactType", type);
+    console.log(`[Set] sender_id = ${senderId}`);
+    console.log(`[Set] receiver_id = ${receiverId}`);
+    console.log(`[Set] contact_id = ${contactId}`);
+    console.log("[Redirect] Navigating to /echoo...");
 
-    console.log(`[Set] selectedContactId = ${id}`);
-    console.log(`[Set] selectedContactType = ${type}`);
-    console.log("[Redirect] Waiting 0.5 seconds before navigation...");
-
-    setTimeout(() => {
-      navigate("/echoo", { state: { openChat: true } });
-      console.log("[Redirect] Navigated to /echoo");
-    }, );
-  };
+    localStorage.setItem("echoo_active_view", "chat");
+    navigate("/echoo");
+      };
 
   return (
     <div className="pt-3">
@@ -50,24 +51,46 @@ const ContactList = () => {
       </small>
 
       <div className="d-flex flex-column mt-2 pb-5">
-        <div className="mb-4" key={currentUser.id} id={currentUser.id}>
+        <div
+          className="mb-4"
+          key={currentUser.contactId}
+          sender-id={currentUser.sender_id}
+          receiver-id={currentUser.receiver_id}
+        >
           <ContactItem
-            id={currentUser.id}
             name={currentUser.name}
             message={currentUser.message}
             profilePicture={currentUser.profilePicture}
-            onClick={() => handleContactClick(currentUser.id, currentUser.name)}
+            onClick={() =>
+              handleContactClick(
+                currentUser.sender_id,
+                currentUser.receiver_id,
+                currentUser.contactId,
+                currentUser.name
+              )
+            }
           />
         </div>
 
         {contacts.map((contact) => (
-          <div className="mb-4" key={contact.id} id={contact.id}>
+          <div
+            className="mb-4"
+            key={contact.contactId}
+            sender-id={contact.sender_id}
+            receiver-id={contact.receiver_id}
+          >
             <ContactItem
-              id={contact.id}
               name={contact.name}
               message={contact.message}
               profilePicture={contact.profilePicture}
-              onClick={() => handleContactClick(contact.id, contact.name)}
+              onClick={() =>
+                handleContactClick(
+                  contact.sender_id,
+                  contact.receiver_id,
+                  contact.contactId,
+                  contact.name
+                )
+              }
             />
           </div>
         ))}

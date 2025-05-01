@@ -12,12 +12,12 @@ const UserInfoPrinter = () => {
     if (user && !loading) {
       printCount.current += 1;
       if (printCount.current % 10 === 0) {
+        console.log('Checked user data');
       }
     }
   }, [user, loading]);
 
   const chatPreview = user ? user.chat_previews : null;
-
 
   return (
     <div className="flex-grow-1 overflow-auto p-3" style={{ backgroundColor: 'transparent' }}>

@@ -1,5 +1,5 @@
-import React, {useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import OpeningChat from "../components/OpeningChat/main/OpeningChat";
 import LinkedDevices from "../components/OpeningChat/linkedDevices/LinkedDevices";
 import StarredMessages from "../components/OpeningChat/StarredMessages";
@@ -7,11 +7,16 @@ import Chat from "../components/Chat/Chat";
 
 const Echoo = () => {
   const navigate = useNavigate(); 
-  const location = useLocation();
-
-  const initialView = location.state?.openChat ? "chat" : "main";
-  const [activeView, setActiveView] = useState(initialView);
+  const storedView = localStorage.getItem("echoo_active_view");
+  const [activeView, setActiveView] = useState(storedView || "main");
   const [scrollTrigger, setScrollTrigger] = useState(0); // trigger scroll
+
+  useEffect(() => {
+    if (storedView === "chat") {
+      setScrollTrigger(Date.now()); // scroll chat to bottom
+      localStorage.removeItem("echoo_active_view"); // prevent chat from showing on refresh
+    }
+  }, [storedView]);
 
   const handleCallClick = () => {
     navigate("/call");
@@ -27,7 +32,7 @@ const Echoo = () => {
 
   const goBack = () => setActiveView("main");
 
-  // Expose globally
+  // Expose globally for debugging or navigation
   window.showLinkedDevices = showLinkedDevices;
   window.showStarredMessages = showStarredMessages;
   window.showChat = showChat;
@@ -48,7 +53,9 @@ const Echoo = () => {
 
       {activeView === "linked" && <LinkedDevices goBack={goBack} />}
       {activeView === "starred" && <StarredMessages goBack={goBack} />}
-      {activeView === "chat" && <Chat goBack={goBack} scrollToBottomTrigger={scrollTrigger} />}
+      {activeView === "chat" && (
+        <Chat goBack={goBack} scrollToBottomTrigger={scrollTrigger} />
+      )}
     </div>
   );
 };
