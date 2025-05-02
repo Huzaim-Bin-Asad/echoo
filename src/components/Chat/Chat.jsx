@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import Header from "./Header";
 import ChatDisplay from "./ChatDisplay";
-import MessageInput from "./MessageInput";
 
 function Chat({ goBack }) {
   const [messages, setMessages] = useState([]);
@@ -29,7 +28,6 @@ function Chat({ goBack }) {
       >
         <ChatDisplay messages={messages} />
       </div>
-      <MessageInput addMessage={addMessage} />
     </div>
   );
 }

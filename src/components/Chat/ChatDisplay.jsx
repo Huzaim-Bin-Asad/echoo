@@ -1,149 +1,226 @@
-import React, { useEffect, useState } from "react";
+// File: UnifiedChatComponent.js
+import React, { useState, useEffect, useCallback } from 'react';
+import { Camera, Paperclip, Mic, SendHorizontal } from 'lucide-react';
+import { v4 as uuidv4 } from 'uuid';
+import { useUser } from '../../services/UserContext';
 
-// Regex to detect emoji-only messages (basic version)
 const isEmojiOnly = (text) => {
   const emojiRegex = /^[\p{Emoji}\s]+$/u;
   return emojiRegex.test(text.trim());
 };
 
-function ChatDisplay() {
+function UnifiedChatComponent() {
   const [messages, setMessages] = useState([]);
-  const [currentUser, setCurrentUser] = useState(null);
+  const [messageInput, setMessageInput] = useState('');
+  const [showMediaOptions, setShowMediaOptions] = useState(false);
+  const { user: contextUser } = useUser();
 
-  useEffect(() => {
-    // Load current user from localStorage
-    const userData = JSON.parse(localStorage.getItem("user"));
-    if (userData) {
-      setCurrentUser(userData);
-      console.log("Current user loaded:", userData);
-    } else {
-      console.warn("No user data found in localStorage under 'user'");
-    }
-  }, []);
+  // Format message for display
+  const formatMessage = useCallback((msg) => ({
+    ...msg,
+    text: msg.message_text,
+    from: msg.sender_id === contextUser?.user?.user_id ? 'me' : 'them',
+    isCurrentUser: msg.sender_id === contextUser?.user?.user_id
+  }), [contextUser]);
 
-  useEffect(() => {
-    if (!currentUser) return;
+  // Fetch initial messages
+  const fetchMessages = useCallback(async () => {
+    const senderId = contextUser?.user?.user_id;
+    const receiverId = localStorage.getItem('receiver_id');
 
-    const interval = setInterval(() => {
-      const target = document.querySelector('.flex-grow-1.overflow-auto');
-      if (!target) return;
+    if (!senderId || !receiverId) return;
 
-      // Retrieve sender and receiver IDs from localStorage and convert to number
-      const senderId = localStorage.getItem("sender_id");
-      const receiverId = localStorage.getItem("receiver_id");
-      
-      if (!senderId || !receiverId) {
-        console.warn("Missing sender_id or receiver_id in localStorage");
-        return;
-      }
-
-      console.log(`Fetching messages between ${senderId} (sender) and ${receiverId} (receiver)`);
-
-      fetch('http://localhost:5000/api/get-messages', {
+    try {
+      const res = await fetch('http://localhost:5000/api/get-messages', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sender_id: senderId, receiver_id: receiverId }),
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          if (!data || !Array.isArray(data.messages)) {
-            console.warn("Invalid response format:", data);
-            return;
-          }
+      });
 
-          const formatted = data.messages.map((msg) => {
-            const isCurrentUser = msg.sender_id === senderId;
-            return {
-              ...msg,
-              text: msg.message_text,
-              time: msg.timestamp,
-              from: isCurrentUser ? "me" : "them",
-              isCurrentUser,
-            };
-          });
+      const data = await res.json();
+      if (data?.messages) {
+        setMessages(data.messages.map(formatMessage));
+      }
+    } catch (err) {
+      console.error('Error fetching messages:', err);
+    }
+  }, [contextUser, formatMessage]);
 
-          // Only update state if messages have changed
-          if (JSON.stringify(messages) !== JSON.stringify(formatted)) {
-            setMessages(formatted);
-          }
-        })
-        .catch((err) => {
-          console.error("Fetch error:", err);
-        });
-    }, 500);
+  useEffect(() => {
+    fetchMessages();
+  }, [fetchMessages]);
 
-    return () => clearInterval(interval);
-  }, [currentUser, messages]);
+  // Send message handler
+  const handleSendMessage = async () => {
+    const messageText = messageInput.trim();
+    if (!messageText) return;
+
+    const sender_id = contextUser?.user?.user_id;
+    const contact_id = localStorage.getItem('contact_id');
+    const contact = contextUser.contacts?.find(c => c.contact_id === contact_id);
+    const receiver_id = contact?.receiver_id;
+
+    if (!sender_id || !contact_id || !receiver_id) {
+      console.error('Missing required IDs');
+      return;
+    }
+
+    const temp_id = uuidv4();
+    const timestamp = new Date().toISOString();
+
+    const newMessage = {
+      temp_id,
+      message_text: messageText,
+      contact_id,
+      sender_id,
+      receiver_id,
+      timestamp,
+      read_checker: 'unread'
+    };
+
+    setMessages(prev => [...prev, formatMessage(newMessage)]);
+    setMessageInput('');
+
+    try {
+      const res = await fetch('http://localhost:5000/api/Send-messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newMessage),
+      });
+
+      if (!res.ok) throw new Error('Failed to send message');
+
+      const data = await res.json();
+      setMessages(prev => prev.map(msg =>
+        msg.temp_id === temp_id ? { ...msg, message_id: data.message_id } : msg
+      ));
+    } catch (err) {
+      console.error('Error sending message:', err);
+      setMessages(prev => prev.map(msg =>
+        msg.temp_id === temp_id ? { ...msg, failed: true } : msg
+      ));
+    }
+  };
+
+  const sortedMessages = [...messages].sort((a, b) =>
+    new Date(a.timestamp) - new Date(b.timestamp)
+  );
 
   return (
-    <div className="flex-grow-1 overflow-auto p-2" style={{ background: "#f8f9fa" }}>
-      {messages.map((msg, index) => {
-        const isMe = msg.from === "me";
-        const emojiOnly = isEmojiOnly(msg.text);
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <div className="flex-grow-1 overflow-auto p-2" style={{ background: '#f8f9fa' }}>
+        {sortedMessages.map((msg) => {
+          const isMe = msg.from === 'me';
+          const emojiOnly = isEmojiOnly(msg.text);
 
-        const wrapperStyle = {
-          display: "flex",
-          justifyContent: isMe ? "flex-end" : "flex-start",
-        };
-
-        const bubbleStyles = {
-          maxWidth: '70%',
-          padding: emojiOnly ? '0' : '0.75rem 1rem',
-          backgroundColor: emojiOnly ? 'transparent' : isMe ? '#DCF8C6' : '#ffffff',
-          borderRadius: emojiOnly
-            ? '0'
-            : isMe
-              ? '20px 20px 0px 20px'
-              : '20px 20px 20px 0px',
-          wordWrap: 'break-word',
-          whiteSpace: 'pre-wrap',
-          overflowWrap: 'break-word',
-          boxShadow: emojiOnly ? 'none' : '0 1px 2px rgba(0, 0, 0, 0.1)',
-          textAlign: emojiOnly ? 'left' : 'inherit',
-          marginBottom: '0.5rem',
-        };
-
-        return (
-          <div key={index} style={wrapperStyle}>
-            <div style={bubbleStyles} data-temp-id={msg.temp_id}>
-              <div style={{ fontSize: emojiOnly ? '1.5rem' : '1rem' }}>
-                {msg.text}
-              </div>
-
-              <div
-                style={{
+          return (
+            <div key={msg.message_id || msg.temp_id} style={{
+              display: 'flex',
+              justifyContent: isMe ? 'flex-end' : 'flex-start',
+            }}>
+              <div style={{
+                maxWidth: '70%',
+                padding: emojiOnly ? '0' : '0.75rem 1rem',
+                backgroundColor: emojiOnly ? 'transparent' : isMe ? '#DCF8C6' : '#ffffff',
+                borderRadius: emojiOnly ? '0' : isMe ? '20px 20px 0px 20px' : '20px 20px 20px 0px',
+                wordWrap: 'break-word',
+                whiteSpace: 'pre-wrap',
+                boxShadow: emojiOnly ? 'none' : '0 1px 2px rgba(0, 0, 0, 0.1)',
+                marginBottom: '0.5rem',
+                opacity: msg.failed ? 0.6 : 1,
+                border: msg.failed ? '1px dashed #ff6b6b' : 'none'
+              }}>
+                <div style={{ fontSize: emojiOnly ? '1.5rem' : '1rem' }}>
+                  {msg.text}
+                </div>
+                <div style={{
                   fontSize: '0.75rem',
                   color: '#888',
-                  textAlign: emojiOnly ? 'left' : 'right',
-                  marginTop: '0.25rem',
-                }}
-              >
-                {msg.time
-                  ? new Date(msg.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                  : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </div>
-
-              {/* Debug info (only shown in development) */}
-              {process.env.NODE_ENV === 'development' && (
-                <div style={{
-                  fontSize: '0.65rem',
-                  color: '#bbb',
-                  marginTop: '0.25rem',
                   textAlign: 'right',
+                  marginTop: '0.25rem',
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  alignItems: 'center',
+                  gap: '4px'
                 }}>
-                  <div>Sender: {msg.sender_id}</div>
-                  <div>Receiver: {msg.receiver_id}</div>
-                  <div>Direction: {msg.from}</div>
+                  {msg.failed && <span style={{ color: '#ff6b6b' }}>Failed</span>}
+                  {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </div>
-              )}
+              </div>
             </div>
+          );
+        })}
+      </div>
+
+      <div className="p-2 d-flex align-items-end flex-wrap position-relative" style={{
+        backgroundColor: '#f8f9fa',
+        border: 'none',
+      }}>
+        <div className="position-relative flex-grow-1 me-2 my-1">
+          <Camera
+            size={24}
+            className="position-absolute ms-2 mt-2"
+            style={{ color: '#6c757d', pointerEvents: 'none' }}
+          />
+
+          <textarea
+            rows={1}
+            className="form-control ps-5 pe-5"
+            placeholder="Type something"
+            value={messageInput}
+            onChange={(e) => setMessageInput(e.target.value)}
+            onKeyPress={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSendMessage();
+              }
+            }}
+            style={{
+              resize: 'none',
+              overflowY: 'auto',
+              maxHeight: '150px',
+              backgroundColor: 'white',
+              borderRadius: '20px',
+              border: '1px solid #ccc',
+              paddingLeft: '2.5rem',
+              paddingRight: '2.5rem',
+              fontSize: '18px',
+              lineHeight: '1.5',
+            }}
+          />
+
+          <div className="position-absolute end-0 top-50 translate-middle-y me-3">
+            <Paperclip
+              size={24}
+              style={{ color: '#6c757d', cursor: 'pointer' }}
+              onClick={() => setShowMediaOptions(!showMediaOptions)}
+            />
           </div>
-        );
-      })}
+        </div>
+
+        <div
+          className="rounded-circle bg-success d-flex align-items-center justify-content-center"
+          style={{
+            width: '48px',
+            height: '48px',
+            cursor: 'pointer',
+            opacity: messageInput.trim() ? 1 : 0.7
+          }}
+          onClick={messageInput.trim() ? handleSendMessage : null}
+        >
+          {messageInput.trim() ? (
+            <SendHorizontal size={24} color="white" />
+          ) : (
+            <Mic size={24} color="white" />
+          )}
+        </div>
+
+        {showMediaOptions && (
+          <div>Media Options Component Here</div>
+        )}
+      </div>
     </div>
   );
 }
 
-export default ChatDisplay;
+export default UnifiedChatComponent;
