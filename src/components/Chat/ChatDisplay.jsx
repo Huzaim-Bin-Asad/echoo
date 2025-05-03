@@ -1,5 +1,4 @@
-// File: UnifiedChatComponent.js
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Camera, Paperclip, Mic, SendHorizontal } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { useUser } from '../../services/UserContext';
@@ -14,13 +13,14 @@ function UnifiedChatComponent() {
   const [messageInput, setMessageInput] = useState('');
   const [showMediaOptions, setShowMediaOptions] = useState(false);
   const { user: contextUser } = useUser();
+  const messageEndRef = useRef(null); // To scroll to the bottom
 
   // Format message for display
   const formatMessage = useCallback((msg) => ({
     ...msg,
     text: msg.message_text,
     from: msg.sender_id === contextUser?.user?.user_id ? 'me' : 'them',
-    isCurrentUser: msg.sender_id === contextUser?.user?.user_id
+    isCurrentUser: msg.sender_id === contextUser?.user?.user_id,
   }), [contextUser]);
 
   // Fetch initial messages
@@ -39,16 +39,33 @@ function UnifiedChatComponent() {
 
       const data = await res.json();
       if (data?.messages) {
-        setMessages(data.messages.map(formatMessage));
+        setMessages(prevMessages => {
+          const newMessages = data.messages.map(formatMessage);
+          // Only append new messages that don't already exist
+          return [...prevMessages.filter(msg => !newMessages.some(newMsg => newMsg.temp_id === msg.temp_id)), ...newMessages];
+        });
       }
     } catch (err) {
       console.error('Error fetching messages:', err);
     }
   }, [contextUser, formatMessage]);
 
+  // Set up interval to fetch messages every 0.5 seconds
   useEffect(() => {
-    fetchMessages();
+    const interval = setInterval(() => {
+      fetchMessages();
+    }, 500); // 500ms interval
+
+    // Clear the interval when the component unmounts
+    return () => clearInterval(interval);
   }, [fetchMessages]);
+
+  // Scroll to the bottom
+  const scrollToBottom = () => {
+    if (messageEndRef.current) {
+      messageEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
   // Send message handler
   const handleSendMessage = async () => {
@@ -75,11 +92,11 @@ function UnifiedChatComponent() {
       sender_id,
       receiver_id,
       timestamp,
-      read_checker: 'unread'
+      read_checker: 'unread',
     };
 
     setMessages(prev => [...prev, formatMessage(newMessage)]);
-    setMessageInput('');
+    setMessageInput(''); // Reset input field
 
     try {
       const res = await fetch('http://localhost:5000/api/Send-messages', {
@@ -101,6 +118,11 @@ function UnifiedChatComponent() {
       ));
     }
   };
+
+  // Scroll to the bottom whenever messages are updated
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   const sortedMessages = [...messages].sort((a, b) =>
     new Date(a.timestamp) - new Date(b.timestamp)
@@ -150,6 +172,7 @@ function UnifiedChatComponent() {
             </div>
           );
         })}
+        <div ref={messageEndRef} />
       </div>
 
       <div className="p-2 d-flex align-items-end flex-wrap position-relative" style={{
