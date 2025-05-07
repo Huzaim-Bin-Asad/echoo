@@ -1,17 +1,16 @@
-// pages/StatusPage.jsx
 import React, { useState } from 'react';
 import Header from '../components/Status/Header';
 import AddStatus from '../components/Status/AddStatus';
 import RecentUpdates from '../components/Status/RecentUpdates';
 import BottomNav from '../components/Status/BottomNav';
-import Popup from '../components/Status/Popup'; // Ensure this path is correct
+import Popup from '../components/Status/Popup';
 import StatusPrivacy from '../components/Status/StatusPrivacy';
-import StatusArchiveSettings from '../components/Status/StatusArchiveSettings'; // New component
+import StatusArchiveSettings from '../components/Status/StatusArchiveSettings';
 
 const StatusPage = () => {
   const [showPopup, setShowPopup] = useState(false);
   const [showPrivacyPage, setShowPrivacyPage] = useState(false);
-  const [showArchiveSettings, setShowArchiveSettings] = useState(false); // New state
+  const [showArchiveSettings, setShowArchiveSettings] = useState(false);
 
   const togglePopup = () => setShowPopup(prev => !prev);
 
@@ -26,8 +25,8 @@ const StatusPage = () => {
   };
 
   const handleBackClick = () => {
-    setShowPrivacyPage(false); // Go back to the main page
-    setShowArchiveSettings(false); // Hide archive settings
+    setShowPrivacyPage(false);
+    setShowArchiveSettings(false);
   };
 
   if (showPrivacyPage) {
@@ -35,27 +34,25 @@ const StatusPage = () => {
   }
 
   return (
-    <div className="bg-light vh-100 d-flex flex-column position-relative">
+    <div className="bg-light vh-100 d-flex flex-column position-relative" style={{ backgroundColor: '#f8f9fa' }}>
       <Header togglePopup={togglePopup} />
 
-      {/* 👇 Popup rendered here globally, but positioned absolutely */}
       {showPopup && (
-        <div style={{ position: 'absolute', top: '64px', right: '16px' }}>
+        <div style={{ position: 'absolute', top: '64px', right: '16px', zIndex: 1050 }}>
           <Popup
             showPopup={showPopup}
             togglePopup={togglePopup}
             onPrivacyClick={handlePrivacyClick}
-            onArchiveSettingsClick={handleArchiveSettingsClick} // Pass the new function
+            onArchiveSettingsClick={handleArchiveSettingsClick}
           />
         </div>
       )}
 
-      {/* 👇 Status Archive Settings animation */}
       {showArchiveSettings && (
         <StatusArchiveSettings handleBackClick={handleBackClick} />
       )}
 
-      <div className="flex-grow-1 overflow-auto">
+      <div className="flex-grow-1 overflow-auto" style={{ paddingBottom: '85px' }}>
         <AddStatus />
         <RecentUpdates />
       </div>

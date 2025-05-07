@@ -59,7 +59,7 @@ function ChatDisplay() {
 
     isConnectingRef.current = true;
     userIdRef.current = userId;
-    const socket = new WebSocket('ws://localhost:5000');
+    const socket = new WebSocket('ws://https://echoo-backend.vercel.app');
     socketRef.current = socket;
 
     socket.onopen = () => {
