@@ -8,14 +8,20 @@ const isEmojiOnly = (text) => {
   return emojiRegex.test(text.trim());
 };
 
-function UnifiedChatComponent() {
+function ChatDisplay() {
   const [messages, setMessages] = useState([]);
   const [messageInput, setMessageInput] = useState('');
   const [showMediaOptions, setShowMediaOptions] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState('Connecting...');
   const { user: contextUser } = useUser();
-  const messageEndRef = useRef(null); // To scroll to the bottom
+  const messageEndRef = useRef(null);
+  const socketRef = useRef(null);
+  const retryCountRef = useRef(0);
+  const pendingMessagesRef = useRef([]);
+  const isConnectingRef = useRef(false);
+  const userIdRef = useRef(null); // Track userId to prevent unnecessary reconnections
 
-  // Format message for display
   const formatMessage = useCallback((msg) => ({
     ...msg,
     text: msg.message_text,
@@ -23,54 +29,203 @@ function UnifiedChatComponent() {
     isCurrentUser: msg.sender_id === contextUser?.user?.user_id,
   }), [contextUser]);
 
-  // Fetch initial messages
-  const fetchMessages = useCallback(async () => {
-    const senderId = contextUser?.user?.user_id;
-    const receiverId = localStorage.getItem('receiver_id');
+  const sendPendingMessages = useCallback(() => {
+    if (socketRef.current?.readyState === WebSocket.OPEN) {
+      while (pendingMessagesRef.current.length > 0) {
+        const message = pendingMessagesRef.current.shift();
+        socketRef.current.send(JSON.stringify(message));
+      }
+    }
+  }, []);
 
-    if (!senderId || !receiverId) return;
+  const setupWebSocket = useCallback(() => {
+    const userId = contextUser?.user?.user_id;
+    if (!userId) {
+      console.warn('No user ID available for WebSocket connection');
+      setConnectionStatus('Waiting for user data...');
+      return;
+    }
 
-    try {
-      const res = await fetch('http://localhost:5000/api/get-messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sender_id: senderId, receiver_id: receiverId }),
-      });
+    // Prevent reinitialization if userId hasn’t changed
+    if (userId === userIdRef.current && socketRef.current?.readyState === WebSocket.OPEN) {
+      console.log('WebSocket already connected for user:', userId);
+      return;
+    }
 
-      const data = await res.json();
-      if (data?.messages) {
-        setMessages(prevMessages => {
-          const newMessages = data.messages.map(formatMessage);
-          // Only append new messages that don't already exist
-          return [...prevMessages.filter(msg => !newMessages.some(newMsg => newMsg.temp_id === msg.temp_id)), ...newMessages];
+    if (isConnectingRef.current) {
+      console.log('WebSocket connection already in progress');
+      return;
+    }
+
+    if (socketRef.current) {
+      console.log('Closing existing WebSocket');
+      socketRef.current.close(1000, 'Normal closure');
+      socketRef.current = null;
+    }
+
+    isConnectingRef.current = true;
+    userIdRef.current = userId;
+    const socket = new WebSocket('ws://localhost:5000');
+    socketRef.current = socket;
+
+    socket.onopen = () => {
+      console.log('✅ WebSocket connected for user:', userId);
+      setIsConnected(true);
+      setConnectionStatus('Connected');
+      retryCountRef.current = 0;
+      isConnectingRef.current = false;
+
+      socket.send(JSON.stringify({
+        type: 'identify',
+        user_id: userId
+      }));
+
+      sendPendingMessages();
+    };
+
+    socket.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'messages') {
+          const newMessages = data.payload?.messages?.map(formatMessage) || [];
+          setMessages(prev => {
+            const existingIds = new Set(prev.map(msg => msg.message_id || msg.temp_id));
+            const filtered = newMessages.filter(msg => !existingIds.has(msg.message_id || msg.temp_id));
+            return [...prev, ...filtered];
+          });
+        } else if (data.type === 'new_message') {
+          const msg = data.payload;
+          setMessages(prev => {
+            if (prev.some(m => m.temp_id === msg.temp_id)) return prev;
+            return [...prev, formatMessage(msg)];
+          });
+        } else if (data.type === 'read_receipt') {
+          const { message_ids } = data.payload;
+          setMessages(prev =>
+            prev.map(msg =>
+              message_ids.includes(msg.message_id) ? { ...msg, read_checker: 'read' } : msg
+            )
+          );
+        } else if (data.type === 'error') {
+          console.error('Server error:', data.payload);
+        } else if (data.type === 'pong') {
+          console.log('🏓 Received pong from server');
+          return; // Handle ping/pong for keep-alive
+        }
+      } catch (err) {
+        console.error('Error processing message:', err);
+      }
+    };
+
+    socket.onerror = (err) => {
+      console.error('❌ WebSocket error:', err);
+      setIsConnected(false);
+      setConnectionStatus('Connection error');
+      isConnectingRef.current = false;
+    };
+
+    socket.onclose = (event) => {
+      console.log(`🔌 WebSocket disconnected. Code: ${event.code}, Reason: ${event.reason || 'Unknown'}`);
+      setIsConnected(false);
+      isConnectingRef.current = false;
+
+      const maxRetries = 5;
+      if (retryCountRef.current >= maxRetries) {
+        setConnectionStatus('Failed to reconnect. Please refresh the page.');
+        return;
+      }
+
+      const retryDelay = Math.min(2000 * Math.pow(2, retryCountRef.current), 30000);
+      retryCountRef.current += 1;
+
+      setTimeout(() => {
+        setupWebSocket();
+      }, retryDelay);
+    };
+
+    return () => {
+      if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+        console.log('Cleaning up WebSocket on unmount');
+        socketRef.current.close(1000, 'Component unmount');
+      }
+      isConnectingRef.current = false;
+    };
+  }, [contextUser, formatMessage, sendPendingMessages]);
+
+  useEffect(() => {
+    const cleanup = setupWebSocket();
+    return cleanup;
+  }, [setupWebSocket]);
+
+  const fetchMessages = useCallback(() => {
+    if (!isConnected || !socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
+      const sender_id = contextUser?.user?.user_id;
+      const receiverId = localStorage.getItem('receiver_id');
+      if (sender_id && receiverId) {
+        pendingMessagesRef.current.push({
+          type: 'get_messages',
+          sender_id,
+          receiver_id: receiverId,
+          limit: 50
         });
       }
+      return;
+    }
+
+    const sender_id = contextUser?.user?.user_id;
+    const receiverId = localStorage.getItem('receiver_id');
+
+    if (!sender_id || !receiverId) {
+      console.warn('Missing sender_id or receiverId for fetching messages');
+      return;
+    }
+
+    try {
+      socketRef.current.send(
+        JSON.stringify({
+          type: 'get_messages',
+          sender_id,
+          receiver_id: receiverId,
+          limit: 50
+        })
+      );
     } catch (err) {
-      console.error('Error fetching messages:', err);
+      console.error('Failed to fetch messages:', err);
     }
-  }, [contextUser, formatMessage]);
+  }, [contextUser, isConnected]);
 
-  // Set up interval to fetch messages every 0.5 seconds
   useEffect(() => {
-    const interval = setInterval(() => {
+    if (isConnected) {
       fetchMessages();
-    }, 500); // 500ms interval
-
-    // Clear the interval when the component unmounts
-    return () => clearInterval(interval);
-  }, [fetchMessages]);
-
-  // Scroll to the bottom
-  const scrollToBottom = () => {
-    if (messageEndRef.current) {
-      messageEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
+  }, [fetchMessages, isConnected]);
+
+  // Ping server to keep connection alive
+  useEffect(() => {
+    if (!isConnected) return;
+    const interval = setInterval(() => {
+      if (socketRef.current?.readyState === WebSocket.OPEN) {
+        console.log('🏓 Sending ping to server');
+        socketRef.current.send(JSON.stringify({ type: 'ping' }));
+      }
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [isConnected]);
+
+  const scrollToBottom = () => {
+    messageEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // Send message handler
-  const handleSendMessage = async () => {
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const handleSendMessage = () => {
     const messageText = messageInput.trim();
-    if (!messageText) return;
+    if (!messageText || !isConnected || !socketRef.current) {
+      console.warn('Cannot send message: Not connected or empty message');
+      return;
+    }
 
     const sender_id = contextUser?.user?.user_id;
     const contact_id = localStorage.getItem('contact_id');
@@ -78,7 +233,7 @@ function UnifiedChatComponent() {
     const receiver_id = contact?.receiver_id;
 
     if (!sender_id || !contact_id || !receiver_id) {
-      console.error('Missing required IDs');
+      console.error('Missing required IDs:', { sender_id, contact_id, receiver_id });
       return;
     }
 
@@ -95,34 +250,31 @@ function UnifiedChatComponent() {
       read_checker: 'unread',
     };
 
-    setMessages(prev => [...prev, formatMessage(newMessage)]);
-    setMessageInput(''); // Reset input field
+    setMessages(prev => [...prev, {
+      ...formatMessage(newMessage),
+      status: 'sending'
+    }]);
+    setMessageInput('');
 
-    try {
-      const res = await fetch('http://localhost:5000/api/Send-messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newMessage),
+    if (socketRef.current.readyState === WebSocket.OPEN) {
+      try {
+        socketRef.current.send(JSON.stringify({
+          type: 'send_message',
+          ...newMessage
+        }));
+      } catch (err) {
+        console.error('Failed to send message:', err);
+        setMessages(prev => prev.map(msg =>
+          msg.temp_id === temp_id ? { ...msg, status: 'failed' } : msg
+        ));
+      }
+    } else {
+      pendingMessagesRef.current.push({
+        type: 'send_message',
+        ...newMessage
       });
-
-      if (!res.ok) throw new Error('Failed to send message');
-
-      const data = await res.json();
-      setMessages(prev => prev.map(msg =>
-        msg.temp_id === temp_id ? { ...msg, message_id: data.message_id } : msg
-      ));
-    } catch (err) {
-      console.error('Error sending message:', err);
-      setMessages(prev => prev.map(msg =>
-        msg.temp_id === temp_id ? { ...msg, failed: true } : msg
-      ));
     }
   };
-
-  // Scroll to the bottom whenever messages are updated
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
 
   const sortedMessages = [...messages].sort((a, b) =>
     new Date(a.timestamp) - new Date(b.timestamp)
@@ -130,10 +282,24 @@ function UnifiedChatComponent() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      {!isConnected && (
+        <div style={{
+          padding: '8px',
+          background: '#ffebee',
+          color: '#c62828',
+          textAlign: 'center',
+          fontSize: '0.9rem'
+        }}>
+          {connectionStatus} {retryCountRef.current > 0 && `(Attempt ${retryCountRef.current})`}
+        </div>
+      )}
+
       <div className="flex-grow-1 overflow-auto p-2" style={{ background: '#f8f9fa' }}>
         {sortedMessages.map((msg) => {
           const isMe = msg.from === 'me';
           const emojiOnly = isEmojiOnly(msg.text);
+          const isFailed = msg.status === 'failed';
+          const isSending = msg.status === 'sending';
 
           return (
             <div key={msg.message_id || msg.temp_id} style={{
@@ -149,8 +315,8 @@ function UnifiedChatComponent() {
                 whiteSpace: 'pre-wrap',
                 boxShadow: emojiOnly ? 'none' : '0 1px 2px rgba(0, 0, 0, 0.1)',
                 marginBottom: '0.5rem',
-                opacity: msg.failed ? 0.6 : 1,
-                border: msg.failed ? '1px dashed #ff6b6b' : 'none'
+                opacity: isFailed ? 0.6 : isSending ? 0.8 : 1,
+                border: isFailed ? '1px dashed #ff6b6b' : 'none'
               }}>
                 <div style={{ fontSize: emojiOnly ? '1.5rem' : '1rem' }}>
                   {msg.text}
@@ -165,7 +331,8 @@ function UnifiedChatComponent() {
                   alignItems: 'center',
                   gap: '4px'
                 }}>
-                  {msg.failed && <span style={{ color: '#ff6b6b' }}>Failed</span>}
+                  {isFailed && <span style={{ color: '#ff6b6b' }}>Failed</span>}
+                  {isSending && <span style={{ color: '#888' }}>Sending...</span>}
                   {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </div>
               </div>
@@ -246,4 +413,4 @@ function UnifiedChatComponent() {
   );
 }
 
-export default UnifiedChatComponent;
+export default ChatDisplay;
