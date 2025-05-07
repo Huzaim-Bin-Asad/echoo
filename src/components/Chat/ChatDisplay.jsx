@@ -13,7 +13,6 @@ function ChatDisplay() {
   const [messageInput, setMessageInput] = useState('');
   const [showMediaOptions, setShowMediaOptions] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState('Connecting...');
   const { user: contextUser } = useUser();
   const messageEndRef = useRef(null);
   const socketRef = useRef(null);
@@ -42,7 +41,6 @@ function ChatDisplay() {
     const userId = contextUser?.user?.user_id;
     if (!userId) {
       console.warn('No user ID available for WebSocket connection');
-      setConnectionStatus('Waiting for user data...');
       return;
     }
 
@@ -71,7 +69,6 @@ function ChatDisplay() {
     socket.onopen = () => {
       console.log('✅ WebSocket connected for user:', userId);
       setIsConnected(true);
-      setConnectionStatus('Connected');
       retryCountRef.current = 0;
       isConnectingRef.current = false;
 
@@ -95,10 +92,35 @@ function ChatDisplay() {
           });
         } else if (data.type === 'new_message') {
           const msg = data.payload;
+          console.log('new_message:', { temp_id: msg.temp_id, message_id: msg.message_id, text: msg.message_text });
           setMessages(prev => {
-            if (prev.some(m => m.temp_id === msg.temp_id)) return prev;
-            return [...prev, formatMessage(msg)];
+            // Check for existing message by temp_id or matching content
+            const existingIndex = prev.findIndex(m =>
+              (m.temp_id && m.temp_id === msg.temp_id) ||
+              (m.status === 'sending' && m.text === msg.message_text && m.sender_id === msg.sender_id &&
+               Math.abs(new Date(m.timestamp) - new Date(msg.timestamp)) < 1000)
+            );
+            if (existingIndex !== -1) {
+              // Update existing message
+              return prev.map((m, index) =>
+                index === existingIndex
+                  ? { ...formatMessage(msg), message_id: msg.message_id, status: 'sent' }
+                  : m
+              );
+            }
+            // Add new message if no match (e.g., from another user)
+            return [...prev, { ...formatMessage(msg), status: 'sent' }];
           });
+        } else if (data.type === 'message_sent') {
+          const { message_id, temp_id, savedMessage } = data.payload;
+          console.log('message_sent:', { temp_id, message_id, text: savedMessage.message_text });
+          setMessages(prev =>
+            prev.map(msg =>
+              msg.temp_id === temp_id
+                ? { ...formatMessage(savedMessage), message_id, status: 'sent' }
+                : msg
+            )
+          );
         } else if (data.type === 'read_receipt') {
           const { message_ids } = data.payload;
           setMessages(prev =>
@@ -108,6 +130,11 @@ function ChatDisplay() {
           );
         } else if (data.type === 'error') {
           console.error('Server error:', data.payload);
+          setMessages(prev =>
+            prev.map(msg =>
+              msg.status === 'sending' && msg.temp_id ? { ...msg, status: 'failed' } : msg
+            )
+          );
         } else if (data.type === 'pong') {
           console.log('🏓 Received pong from server');
           return; // Handle ping/pong for keep-alive
@@ -120,7 +147,6 @@ function ChatDisplay() {
     socket.onerror = (err) => {
       console.error('❌ WebSocket error:', err);
       setIsConnected(false);
-      setConnectionStatus('Connection error');
       isConnectingRef.current = false;
     };
 
@@ -131,7 +157,7 @@ function ChatDisplay() {
 
       const maxRetries = 5;
       if (retryCountRef.current >= maxRetries) {
-        setConnectionStatus('Failed to reconnect. Please refresh the page.');
+        console.log('Max retries reached. Stopping reconnection attempts.');
         return;
       }
 
@@ -139,6 +165,7 @@ function ChatDisplay() {
       retryCountRef.current += 1;
 
       setTimeout(() => {
+        console.log(`Reconnecting... Attempt ${retryCountRef.current}`);
         setupWebSocket();
       }, retryDelay);
     };
@@ -282,18 +309,6 @@ function ChatDisplay() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      {!isConnected && (
-        <div style={{
-          padding: '8px',
-          background: '#ffebee',
-          color: '#c62828',
-          textAlign: 'center',
-          fontSize: '0.9rem'
-        }}>
-          {connectionStatus} {retryCountRef.current > 0 && `(Attempt ${retryCountRef.current})`}
-        </div>
-      )}
-
       <div className="flex-grow-1 overflow-auto p-2" style={{ background: '#f8f9fa' }}>
         {sortedMessages.map((msg) => {
           const isMe = msg.from === 'me';
@@ -307,7 +322,7 @@ function ChatDisplay() {
               justifyContent: isMe ? 'flex-end' : 'flex-start',
             }}>
               <div style={{
-                maxWidth: '70%',
+                maxWidth: '85%',
                 padding: emojiOnly ? '0' : '0.75rem 1rem',
                 backgroundColor: emojiOnly ? 'transparent' : isMe ? '#DCF8C6' : '#ffffff',
                 borderRadius: emojiOnly ? '0' : isMe ? '20px 20px 0px 20px' : '20px 20px 20px 0px',
@@ -332,8 +347,9 @@ function ChatDisplay() {
                   gap: '4px'
                 }}>
                   {isFailed && <span style={{ color: '#ff6b6b' }}>Failed</span>}
-                  {isSending && <span style={{ color: '#888' }}>Sending...</span>}
-                  {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {isSending && <span>⌛</span>}
+                  {!isSending && !isFailed && <span>✔</span>}
+                  {!isSending && new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </div>
               </div>
             </div>
