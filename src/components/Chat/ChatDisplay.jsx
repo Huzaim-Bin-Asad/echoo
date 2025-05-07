@@ -140,7 +140,6 @@ function ChatDisplay() {
     };
 
     socket.onerror = (err) => {
-      console.error('❌ WebSocket error:', err);
       setIsConnected(false);
       isConnectingRef.current = false;
     };
