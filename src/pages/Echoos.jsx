@@ -6,7 +6,7 @@ import StarredMessages from "../components/OpeningChat/StarredMessages";
 import Chat from "../components/Chat/Chat";
 
 const Echoo = () => {
-  const navigate = useNavigate(); 
+  const navigate = useNavigate();
   const storedView = localStorage.getItem("echoo_active_view");
   const [activeView, setActiveView] = useState(storedView || "main");
   const [scrollTrigger, setScrollTrigger] = useState(0); // trigger scroll
@@ -38,7 +38,12 @@ const Echoo = () => {
   window.showChat = showChat;
 
   return (
-    <div className="max-w-[768px] mx-auto min-h-screen bg-white border border-gray-300">
+    <div
+      className="max-w-[768px] mx-auto bg-white border border-gray-300"
+      style={{
+        minHeight: activeView === "chat" ? "100vh" : "100vh", // Set height to 100vh for chat, min-height for others
+      }}
+    >
       {activeView === "main" && (
         <>
           <OpeningChat />

@@ -307,8 +307,8 @@ function ChatDisplay() {
   );
 
   return (
-    <div className="d-flex flex-column h-100">
-      <div className="flex-grow-1 overflow-auto p-2" style={{ background: '#f8f9fa' }}>
+<div className="d-flex flex-column h-100" style={{ height: '100vh' }}>
+     <div className="flex-grow-1 overflow-auto p-2" style={{ background: '#f8f9fa' }}>
         {sortedMessages.map((msg) => {
           const isMe = msg.from === 'me';
           const emojiOnly = isEmojiOnly(msg.text);

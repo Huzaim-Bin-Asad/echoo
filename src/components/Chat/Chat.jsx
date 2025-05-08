@@ -15,7 +15,7 @@ function Chat({ goBack }) {
   }, [scrollToBottomTrigger]);
 
   return (
-    <div className="d-flex flex-column" style={{ height: '93vh', maxWidth: '768px', margin: '0 auto' }}>
+    <div className="d-flex flex-column" style={{ height: '100vh', maxWidth: '768px', margin: '0 auto' }}>
       <Header goBack={goBack} />
       <div
         ref={scrollContainerRef}
