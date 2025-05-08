@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Mic, Text as TextIcon, Camera, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, Text as TextIcon, Camera, ChevronDown, ChevronUp } from 'lucide-react';
 
 const StatusHeader = ({ onClose, folderListVisible, toggleFolderList, folders }) => {
   return (
@@ -70,36 +70,6 @@ const StatusHeader = ({ onClose, folderListVisible, toggleFolderList, folders })
           )}
         </div>
       )}
-
-      <div className="d-flex justify-content-center gap-3 mt-3 mb-3">
-        <button
-          className="d-flex align-items-center gap-2 px-4 py-3"
-          style={{
-            borderRadius: '13px',
-            backgroundColor: '#1e1e1e',
-            border: '1px solid #888',
-            color: 'white',
-          }}
-        >
-          <TextIcon size={28} className="text-white" />
-          <span className="fs-5 fw-semibold">Text</span>
-        </button>
-        <button
-          className="d-flex align-items-center gap-2 px-4 py-3"
-          style={{
-            borderRadius: '13px',
-            backgroundColor: '#1e1e1e',
-            border: '1px solid #888',
-            color: 'white',
-          }}
-        >
-          <Mic size={28} className="text-white" />
-          <span className="fs-5 fw-semibold">Voice</span>
-        </button>
-      </div>
-
-      <hr className="border-light my-1" />
-      <div className="h-px bg-secondary mx-auto" style={{ width: '90%' }}></div>
     </div>
   );
 };
@@ -156,7 +126,7 @@ const StatusBottomGrid = ({ hasGalleryPermission, mediaItems }) => {
 
 const StatusPopup = ({ onClose }) => {
   const [translateY, setTranslateY] = useState(1000);
-  const [ setIsDragging] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const startY = useRef(null);
   const [hasGalleryPermission, setHasGalleryPermission] = useState(false);
   const [folderListVisible, setFolderListVisible] = useState(false);
@@ -170,15 +140,22 @@ const StatusPopup = ({ onClose }) => {
         const directoryHandle = await window.showDirectoryPicker();
         const imageFolders = [];
 
-        // Iterate through the directories and check for image files
+        // Iterate through the directories and check for image and video files
         for await (const [folderName, folderHandle] of directoryHandle.entries()) {
           const folder = { name: folderName, latestImage: '', count: 0 };
+          let latestFileDate = 0;
+
           for await (const fileHandle of folderHandle.values()) {
-            if (fileHandle.name.endsWith('.jpg') || fileHandle.name.endsWith('.png')) {
-              folder.latestImage = URL.createObjectURL(await fileHandle.getFile());
+            if (fileHandle.name.endsWith('.jpg') || fileHandle.name.endsWith('.png') || fileHandle.name.endsWith('.mp4')) {
+              const file = await fileHandle.getFile();
+              if (file.lastModified > latestFileDate) {
+                folder.latestImage = URL.createObjectURL(file);
+                latestFileDate = file.lastModified;
+              }
               folder.count += 1;
             }
           }
+
           if (folder.count > 0) imageFolders.push(folder);
         }
 
