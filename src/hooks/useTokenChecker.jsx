@@ -1,49 +1,45 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const useTokenChecker = (currentPath) => {
   const [tokenMissing, setTokenMissing] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    // Don't check token on auth pages
-    const isAuthPage = currentPath === '/signup' || 
-                      currentPath === '/login' || 
-                      currentPath === '/';
+    const isLandingOrAuthPage = 
+      currentPath === '/' || 
+      currentPath === '/login' || 
+      currentPath === '/signup';
 
-    if (isAuthPage) {
-      setShowModal(false);
-      return;
+    const token = localStorage.getItem('token');
+    const tokenSavedAt = localStorage.getItem('token_saved_at');
+
+    if (token && tokenSavedAt) {
+      const savedAt = new Date(tokenSavedAt);
+      const currentTime = new Date();
+      const timeDifference = (currentTime - savedAt) / 1000;
+
+      if (timeDifference < 86400) {
+        setTokenMissing(false);
+        setShowModal(false);
+
+        // ✅ Redirect only if user is on landing/auth pages
+        if (isLandingOrAuthPage) {
+          navigate('/echoo');
+        }
+
+        return;
+      } else {
+        localStorage.removeItem('token');
+        localStorage.removeItem('token_saved_at');
+      }
     }
 
-    const intervalId = setInterval(() => {
-      const token = localStorage.getItem('token');
-      const tokenSavedAt = localStorage.getItem('token_saved_at');
-
-      if (token && tokenSavedAt) {
-        const savedAt = new Date(tokenSavedAt);
-        const currentTime = new Date();
-        const timeDifference = (currentTime - savedAt) / 1000; // in seconds
-        
-        if (timeDifference >= 86400) {
-          localStorage.removeItem('token');
-          localStorage.removeItem('token_saved_at');
-          console.log('Token expired and removed');
-          setTokenMissing(true);
-          setShowModal(true);
-        } else {
-          setTokenMissing(false);
-          setShowModal(false);
-        }
-      } else {
-        setTokenMissing(true);
-        setShowModal(true);
-      }
-    }, 500);
-
-    return () => {
-      clearInterval(intervalId);
-    };
-  }, [currentPath]);
+    // If token is missing or expired
+    setTokenMissing(true);
+    setShowModal(true);
+  }, [currentPath, navigate]);
 
   const AuthModal = ({ handleLogin, handleSignup }) => {
     if (!showModal) return null;
