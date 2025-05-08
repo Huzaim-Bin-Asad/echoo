@@ -57,7 +57,7 @@ const StatusHeader = ({
               onClick={() => onFolderSelect(folder.name)}
             >
               <img
-                src={folder.latestImage}
+                src={folder.latestImage || 'https://via.placeholder.com/50'}
                 alt={folder.name}
                 className="rounded"
                 style={{ width: '50px', height: '50px', objectFit: 'cover', marginRight: '10px' }}
@@ -94,7 +94,11 @@ const StatusBottomGrid = ({ hasGalleryPermission, mediaItems }) => {
     <div className="flex-grow-1 overflow-y-auto px-4 pb-5">
       {!hasGalleryPermission ? (
         <div className="text-center text-secondary">
-          Gallery access required. Please grant permission.
+          No media available. Please select photos or videos.
+        </div>
+      ) : mediaItems.length === 0 ? (
+        <div className="text-center text-secondary">
+          No media found in the selected folder.
         </div>
       ) : (
         <div className="row row-cols-3 g-2 mt-2">
@@ -121,13 +125,14 @@ const StatusBottomGrid = ({ hasGalleryPermission, mediaItems }) => {
                 }}
               >
                 <img
-                  src={item.thumbnail}
+                  src={item.thumbnail || 'https://via.placeholder.com/100'}
                   alt="media"
                   className="w-100 h-100 object-cover"
+                  onError={(e) => { e.target.src = 'https://via.placeholder.com/100'; }}
                 />
                 {item.isVideo && (
                   <span className="position-absolute bottom-0 end-0 text-xs text-white bg-dark bg-opacity-75 px-1 rounded m-1">
-                    {item.duration}
+                    {item.duration || '0:00'}
                   </span>
                 )}
               </div>
@@ -142,25 +147,29 @@ const StatusBottomGrid = ({ hasGalleryPermission, mediaItems }) => {
 const StatusPopup = ({ onClose }) => {
   const [translateY, setTranslateY] = useState(1000);
   const [isDragging, setIsDragging] = useState(false);
-  const startY = useRef(null);
   const [hasGalleryPermission, setHasGalleryPermission] = useState(false);
   const [folderListVisible, setFolderListVisible] = useState(false);
   const [folders, setFolders] = useState([]);
   const [selectedFolderName, setSelectedFolderName] = useState('Recent');
   const [selectedMedia, setSelectedMedia] = useState([]);
+  const [error, setError] = useState(null);
   const fileInputRef = useRef(null);
+  const startY = useRef(null);
 
-  console.log('Rendering StatusPopup, translateY:', translateY);
+  console.log('Rendering StatusPopup, translateY:', translateY, 'hasGalleryPermission:', hasGalleryPermission);
 
   const requestGalleryPermission = async () => {
     console.log('requestGalleryPermission called, isMobile:', isMobileDevice());
+    setError(null);
     if (isMobileDevice()) {
       try {
-        console.log('Mobile: Setting hasGalleryPermission to true');
-        setHasGalleryPermission(true);
+        console.log('Mobile: Prompting file input');
+        // Trigger file input automatically on mobile
+        fileInputRef.current.click();
       } catch (error) {
         console.error('Mobile gallery access error:', error);
         setHasGalleryPermission(false);
+        setError('Failed to access gallery. Please try again.');
       }
     } else {
       if ('showDirectoryPicker' in window) {
@@ -213,14 +222,17 @@ const StatusPopup = ({ onClose }) => {
             setHasGalleryPermission(true);
           } else {
             setHasGalleryPermission(false);
+            setError('No media found in the selected directory.');
           }
         } catch (error) {
           console.error('Desktop gallery access error:', error);
           setHasGalleryPermission(false);
+          setError('Failed to access directory. Please grant permission.');
         }
       } else {
         console.log('File System Access API not supported');
         setHasGalleryPermission(false);
+        setError('Gallery access not supported in this browser.');
       }
     }
   };
@@ -228,7 +240,7 @@ const StatusPopup = ({ onClose }) => {
   const handleFileSelect = (event) => {
     console.log('handleFileSelect called');
     try {
-      const files = Array.from(event.target.files);
+      const files = Array.from(event.target.files).slice(0, 50); // Limit to 50 files
       console.log('Selected files:', files);
       const imageFolders = [{ name: 'Recent', latestImage: '', count: 0, media: [] }];
       const allMedia = [];
@@ -261,10 +273,12 @@ const StatusPopup = ({ onClose }) => {
         setHasGalleryPermission(true);
       } else {
         setHasGalleryPermission(false);
+        setError('No valid media files selected.');
       }
     } catch (error) {
       console.error('Error processing files:', error);
       setHasGalleryPermission(false);
+      setError('Failed to process selected files.');
     }
   };
 
@@ -272,6 +286,14 @@ const StatusPopup = ({ onClose }) => {
     setTranslateY(0); // Animate popup into view
     requestGalleryPermission();
   }, []);
+
+  useEffect(() => {
+    return () => {
+      // Clean up object URLs to prevent memory leaks
+      selectedMedia.forEach((item) => URL.revokeObjectURL(item.thumbnail));
+      folders.forEach((folder) => URL.revokeObjectURL(folder.latestImage));
+    };
+  }, [selectedMedia, folders]);
 
   const handleTouchStart = (e) => {
     setIsDragging(true);
@@ -294,7 +316,7 @@ const StatusPopup = ({ onClose }) => {
   };
 
   const handleFolderSelect = (folderName) => {
-    setSelectedFolderName(folderName); // Fixed syntax error
+    setSelectedFolderName(folderName);
     setFolderListVisible(false);
 
     if (folderName === 'Recent') {
@@ -315,7 +337,7 @@ const StatusPopup = ({ onClose }) => {
       style={{
         position: 'fixed',
         inset: 0,
-        backgroundColor: 'transparent',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent backdrop
         zIndex: 2000,
         display: 'flex',
         justifyContent: 'flex-end',
@@ -340,6 +362,11 @@ const StatusPopup = ({ onClose }) => {
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
+        {error && (
+          <div className="text-center text-danger py-3">
+            {error}
+          </div>
+        )}
         <StatusHeader
           onClose={onClose}
           folderListVisible={folderListVisible}
@@ -352,7 +379,7 @@ const StatusPopup = ({ onClose }) => {
           hasGalleryPermission={hasGalleryPermission}
           mediaItems={selectedMedia}
         />
-        {isMobileDevice() && !hasGalleryPermission && (
+        {isMobileDevice() && (
           <div className="text-center py-3">
             <button
               className="btn btn-primary"
