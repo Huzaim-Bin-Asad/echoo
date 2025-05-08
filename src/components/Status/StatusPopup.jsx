@@ -90,6 +90,7 @@ const StatusHeader = ({
 };
 
 const StatusBottomGrid = ({ hasGalleryPermission, mediaItems }) => {
+  console.log('StatusBottomGrid rendering, hasGalleryPermission:', hasGalleryPermission, 'mediaItems:', mediaItems);
   return (
     <div className="flex-grow-1 overflow-y-auto px-4 pb-5">
       {!hasGalleryPermission ? (
@@ -98,7 +99,7 @@ const StatusBottomGrid = ({ hasGalleryPermission, mediaItems }) => {
         </div>
       ) : mediaItems.length === 0 ? (
         <div className="text-center text-secondary">
-          No media found in the selected folder.
+          No media found. Please select files.
         </div>
       ) : (
         <div className="row row-cols-3 g-2 mt-2">
@@ -121,7 +122,8 @@ const StatusBottomGrid = ({ hasGalleryPermission, mediaItems }) => {
                 style={{
                   aspectRatio: '1/1',
                   backgroundColor: '#1e1e1e',
-                  border: (idx + 1) % 5 === 0 ? '2px solid #555' : 'none',
+                  border: (idx + 1) % 5 === 0 ? '2px solid #555' : '1px solid #333',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
                 }}
               >
                 <img
@@ -144,7 +146,7 @@ const StatusBottomGrid = ({ hasGalleryPermission, mediaItems }) => {
   );
 };
 
-const StatusPopup = ({ onClose }) => {
+const StatusPopup = ({ onClose, openGalleryOnMount = false }) => {
   const [translateY, setTranslateY] = useState(1000);
   const [isDragging, setIsDragging] = useState(false);
   const [hasGalleryPermission, setHasGalleryPermission] = useState(false);
@@ -155,22 +157,15 @@ const StatusPopup = ({ onClose }) => {
   const [error, setError] = useState(null);
   const fileInputRef = useRef(null);
   const startY = useRef(null);
+  const hasTriggeredGallery = useRef(false); // Prevent multiple triggers
 
-  console.log('Rendering StatusPopup, translateY:', translateY, 'hasGalleryPermission:', hasGalleryPermission);
+  console.log('Rendering StatusPopup, translateY:', translateY, 'hasGalleryPermission:', hasGalleryPermission, 'selectedMedia:', selectedMedia, 'openGalleryOnMount:', openGalleryOnMount);
 
   const requestGalleryPermission = async () => {
     console.log('requestGalleryPermission called, isMobile:', isMobileDevice());
     setError(null);
     if (isMobileDevice()) {
-      try {
-        console.log('Mobile: Prompting file input');
-        // Trigger file input automatically on mobile
-        fileInputRef.current.click();
-      } catch (error) {
-        console.error('Mobile gallery access error:', error);
-        setHasGalleryPermission(false);
-        setError('Failed to access gallery. Please try again.');
-      }
+      setHasGalleryPermission(true); // Show the file selection button
     } else {
       if ('showDirectoryPicker' in window) {
         try {
@@ -288,6 +283,14 @@ const StatusPopup = ({ onClose }) => {
   }, []);
 
   useEffect(() => {
+    if (isMobileDevice() && openGalleryOnMount && !hasTriggeredGallery.current) {
+      console.log('Triggering file input on mount');
+      hasTriggeredGallery.current = true;
+      fileInputRef.current.click();
+    }
+  }, [openGalleryOnMount]);
+
+  useEffect(() => {
     return () => {
       // Clean up object URLs to prevent memory leaks
       selectedMedia.forEach((item) => URL.revokeObjectURL(item.thumbnail));
@@ -337,7 +340,7 @@ const StatusPopup = ({ onClose }) => {
       style={{
         position: 'fixed',
         inset: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent backdrop
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
         zIndex: 2000,
         display: 'flex',
         justifyContent: 'flex-end',

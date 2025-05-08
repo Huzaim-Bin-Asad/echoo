@@ -25,7 +25,6 @@ const AddStatus = () => {
       }
 
       console.log('Requesting permissions...');
-      // Removed 'gallery' since it's not a standard permission
       const result = await requestMultiplePermissions(['camera', 'microphone']);
       console.log('Permission request result:', result);
 
@@ -106,7 +105,12 @@ const AddStatus = () => {
         </div>
       </div>
 
-      {isPopupOpen && <StatusPopup onClose={() => setIsPopupOpen(false)} />}
+      {isPopupOpen && (
+        <StatusPopup
+          onClose={() => setIsPopupOpen(false)}
+          openGalleryOnMount={true} // Trigger gallery on mobile
+        />
+      )}
     </div>
   );
 };
