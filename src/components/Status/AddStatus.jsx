@@ -17,29 +17,32 @@ const AddStatus = () => {
 
   // Handle permission check + popup open logic
   const checkPermissionsAndOpenPopup = async () => {
+    console.log('checkPermissionsAndOpenPopup called');
     try {
       const camStatus = permissionStatus.camera;
       const micStatus = permissionStatus.microphone;
+      console.log('Camera status:', camStatus, 'Microphone status:', micStatus);
   
       if (camStatus === 'granted' && micStatus === 'granted') {
+        console.log('Permissions granted, opening popup');
         setIsPopupOpen(true);
         return;
       }
   
-      // Attempt to request permissions interactively
+      console.log('Requesting permissions...');
       const result = await requestMultiplePermissions(['camera', 'microphone', 'gallery']);
+      console.log('Permission request result:', result);
   
-      // If granted, open popup
       if (result.camera === 'granted' && result.microphone === 'granted') {
+        console.log('Permissions granted after request, opening popup');
         setIsPopupOpen(true);
       } else {
-        // 👇 Show popup anyway, but maybe in limited mode
-        console.warn('Permissions denied, but opening popup with limited access');
+        console.warn('Permissions denied, opening popup in limited mode');
         setIsPopupOpen(true);
       }
     } catch (error) {
       console.error('Permission error:', error);
-      // 👇 Show popup even if error occurs, as a fallback
+      console.log('Opening popup as fallback');
       setIsPopupOpen(true);
     }
   };

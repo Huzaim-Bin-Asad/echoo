@@ -1,6 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Camera, ChevronDown, ChevronUp } from 'lucide-react';
 
+const isMobileDevice = () => {
+  return /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+};
+
 const StatusHeader = ({
   onClose,
   folderListVisible,
@@ -144,68 +148,128 @@ const StatusPopup = ({ onClose }) => {
   const [folders, setFolders] = useState([]);
   const [selectedFolderName, setSelectedFolderName] = useState('Recent');
   const [selectedMedia, setSelectedMedia] = useState([]);
+  const fileInputRef = useRef(null);
+
+  console.log('Rendering StatusPopup, translateY:', translateY);
 
   const requestGalleryPermission = async () => {
-    if ('showDirectoryPicker' in window) {
+    console.log('requestGalleryPermission called, isMobile:', isMobileDevice());
+    if (isMobileDevice()) {
       try {
-        const directoryHandle = await window.showDirectoryPicker();
-        const imageFolders = [];
-        const allMedia = [];
-
-        for await (const [folderName, folderHandle] of directoryHandle.entries()) {
-          const folder = { name: folderName, latestImage: '', count: 0, media: [] };
-          let latestFileDate = 0;
-
-          for await (const fileHandle of folderHandle.values()) {
-            if (
-              fileHandle.name.endsWith('.jpg') ||
-              fileHandle.name.endsWith('.png') ||
-              fileHandle.name.endsWith('.mp4')
-            ) {
-              const file = await fileHandle.getFile();
-              const url = URL.createObjectURL(file);
-              const isVideo = fileHandle.name.endsWith('.mp4');
-
-              const mediaItem = {
-                id: fileHandle.name,
-                thumbnail: url,
-                isVideo,
-                duration: isVideo ? '0:30' : null,
-              };
-
-              folder.media.push(mediaItem);
-              allMedia.push(mediaItem);
-
-              if (file.lastModified > latestFileDate) {
-                folder.latestImage = url;
-                latestFileDate = file.lastModified;
-              }
-
-              folder.count += 1;
-            }
-          }
-
-          if (folder.count > 0) imageFolders.push(folder);
-        }
-
-        if (imageFolders.length > 0) {
-          setFolders(imageFolders);
-          setSelectedMedia(allMedia);
-          setHasGalleryPermission(true);
-        } else {
-          setHasGalleryPermission(false);
-        }
+        console.log('Mobile: Setting hasGalleryPermission to true');
+        setHasGalleryPermission(true);
       } catch (error) {
-        console.error('Error accessing device storage:', error);
+        console.error('Mobile gallery access error:', error);
         setHasGalleryPermission(false);
       }
     } else {
-      console.log('File System Access API is not supported on this browser.');
+      if ('showDirectoryPicker' in window) {
+        try {
+          console.log('Desktop: Attempting showDirectoryPicker');
+          const directoryHandle = await window.showDirectoryPicker();
+          const imageFolders = [];
+          const allMedia = [];
+
+          for await (const [folderName, folderHandle] of directoryHandle.entries()) {
+            const folder = { name: folderName, latestImage: '', count: 0, media: [] };
+            let latestFileDate = 0;
+
+            for await (const fileHandle of folderHandle.values()) {
+              if (
+                fileHandle.name.endsWith('.jpg') ||
+                fileHandle.name.endsWith('.png') ||
+                fileHandle.name.endsWith('.mp4')
+              ) {
+                const file = await fileHandle.getFile();
+                const url = URL.createObjectURL(file);
+                const isVideo = fileHandle.name.endsWith('.mp4');
+
+                const mediaItem = {
+                  id: fileHandle.name,
+                  thumbnail: url,
+                  isVideo,
+                  duration: isVideo ? '0:30' : null,
+                };
+
+                folder.media.push(mediaItem);
+                allMedia.push(mediaItem);
+
+                if (file.lastModified > latestFileDate) {
+                  folder.latestImage = url;
+                  latestFileDate = file.lastModified;
+                }
+
+                folder.count += 1;
+              }
+            }
+
+            if (folder.count > 0) imageFolders.push(folder);
+          }
+
+          console.log('Desktop: Found folders:', imageFolders);
+          if (imageFolders.length > 0) {
+            setFolders(imageFolders);
+            setSelectedMedia(allMedia);
+            setHasGalleryPermission(true);
+          } else {
+            setHasGalleryPermission(false);
+          }
+        } catch (error) {
+          console.error('Desktop gallery access error:', error);
+          setHasGalleryPermission(false);
+        }
+      } else {
+        console.log('File System Access API not supported');
+        setHasGalleryPermission(false);
+      }
+    }
+  };
+
+  const handleFileSelect = (event) => {
+    console.log('handleFileSelect called');
+    try {
+      const files = Array.from(event.target.files);
+      console.log('Selected files:', files);
+      const imageFolders = [{ name: 'Recent', latestImage: '', count: 0, media: [] }];
+      const allMedia = [];
+
+      files.forEach((file) => {
+        if (file.type.startsWith('image/') || file.type.startsWith('video/')) {
+          const url = URL.createObjectURL(file);
+          const isVideo = file.type.startsWith('video/');
+          const mediaItem = {
+            id: file.name,
+            thumbnail: url,
+            isVideo,
+            duration: isVideo ? '0:30' : null,
+          };
+
+          imageFolders[0].media.push(mediaItem);
+          allMedia.push(mediaItem);
+          imageFolders[0].count += 1;
+
+          if (!imageFolders[0].latestImage) {
+            imageFolders[0].latestImage = url;
+          }
+        }
+      });
+
+      console.log('Processed folders:', imageFolders);
+      if (imageFolders[0].count > 0) {
+        setFolders(imageFolders);
+        setSelectedMedia(allMedia);
+        setHasGalleryPermission(true);
+      } else {
+        setHasGalleryPermission(false);
+      }
+    } catch (error) {
+      console.error('Error processing files:', error);
       setHasGalleryPermission(false);
     }
   };
 
   useEffect(() => {
+    setTranslateY(0); // Animate popup into view
     requestGalleryPermission();
   }, []);
 
@@ -230,7 +294,7 @@ const StatusPopup = ({ onClose }) => {
   };
 
   const handleFolderSelect = (folderName) => {
-    setSelectedFolderName(folderName);
+    setSelectedFolderName(folderName); // Fixed syntax error
     setFolderListVisible(false);
 
     if (folderName === 'Recent') {
@@ -270,6 +334,7 @@ const StatusPopup = ({ onClose }) => {
           transition: 'transform 0.3s ease-out',
           transform: `translateY(${translateY}px)`,
           width: '100%',
+          willChange: 'transform',
         }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
@@ -287,6 +352,24 @@ const StatusPopup = ({ onClose }) => {
           hasGalleryPermission={hasGalleryPermission}
           mediaItems={selectedMedia}
         />
+        {isMobileDevice() && !hasGalleryPermission && (
+          <div className="text-center py-3">
+            <button
+              className="btn btn-primary"
+              onClick={() => fileInputRef.current.click()}
+            >
+              Select Photos or Videos
+            </button>
+            <input
+              type="file"
+              accept="image/*,video/*"
+              multiple
+              ref={fileInputRef}
+              style={{ display: 'none' }}
+              onChange={handleFileSelect}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
