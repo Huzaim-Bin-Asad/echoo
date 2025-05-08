@@ -1,14 +1,50 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { User, Plus } from 'lucide-react';
-import { useUser } from '../../services/UserContext'; // Adjust path as needed
+import { useUser } from '../../services/UserContext';
+import StatusPopup from './StatusPopup';
+import useDevicePermissions from '../../hooks/useDevicePermissions'; // Custom hook
 
 const AddStatus = () => {
-  const { user } = useUser(); // user.user.profile_picture is the actual image path
+  const { user } = useUser();
   const profileImageUrl = user?.user?.profile_picture;
+  const [isPopupOpen, setIsPopupOpen] = useState(false);
+
+  // Use custom permissions hook
+  const {
+    permissionStatus,
+    requestMultiplePermissions,
+  } = useDevicePermissions();
+
+  // Handle permission check + popup open logic
+  const checkPermissionsAndOpenPopup = async () => {
+    try {
+      const camStatus = permissionStatus.camera;
+      const micStatus = permissionStatus.microphone;
+
+      // If already granted, open popup
+      if (camStatus === 'granted' && micStatus === 'granted') {
+        setIsPopupOpen(true);
+        return;
+      }
+
+      // Otherwise, request permissions interactively
+      const result = await requestMultiplePermissions(['camera', 'microphone']);
+
+      if (result.camera === 'granted' && result.microphone === 'granted') {
+        setIsPopupOpen(true);
+      } else {
+        alert('Please allow camera and microphone access to add a status.');
+      }
+    } catch (error) {
+      console.error('Permission error:', error);
+      alert('An error occurred while requesting permissions.');
+    }
+  };
 
   return (
     <div className="px-3 pt-3">
       <h5 className="fw-bold mb-3" style={{ fontSize: '1.1rem' }}>Status</h5>
+
       <div 
         className="d-flex align-items-center p-3 bg-white rounded-3 shadow-sm"
         style={{
@@ -18,6 +54,7 @@ const AddStatus = () => {
         }}
         onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
         onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'white'}
+        onClick={checkPermissionsAndOpenPopup}
       >
         <div className="position-relative">
           <div 
@@ -56,11 +93,16 @@ const AddStatus = () => {
             <Plus color="white" size={14} />
           </div>
         </div>
+
         <div className="ms-3">
           <strong style={{ fontSize: '0.95rem' }}>My Status</strong>
-          <p className="mb-0 text-muted" style={{ fontSize: '0.85rem' }}>Tap to add status update</p>
+          <p className="mb-0 text-muted" style={{ fontSize: '0.85rem' }}>
+            Tap to add status update
+          </p>
         </div>
       </div>
+
+      {isPopupOpen && <StatusPopup onClose={() => setIsPopupOpen(false)} />}
     </div>
   );
 };

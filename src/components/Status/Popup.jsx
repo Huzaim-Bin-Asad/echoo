@@ -27,7 +27,7 @@ const Popup = ({ togglePopup, onPrivacyClick, onArchiveSettingsClick }) => {
         <li>
           <button
             className="dropdown-item d-flex align-items-center py-3 px-3"
-            onClick={onArchiveSettingsClick}
+            onClick={onArchiveSettingsClick} // Trigger the click handler here
             style={{ fontSize: '0.9rem' }}
           >
             <Archive size={18} className="me-2" />
