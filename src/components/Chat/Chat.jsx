@@ -3,14 +3,10 @@ import Header from "./Header";
 import ChatDisplay from "./ChatDisplay";
 
 function Chat({ goBack }) {
-  const [messages, setMessages] = useState([]);
-  const [scrollToBottomTrigger, setScrollToBottomTrigger] = useState(false);
+  const [messages] = useState([]);
+  const [scrollToBottomTrigger] = useState(false);
   const scrollContainerRef = useRef(null);
 
-  const addMessage = (newMessage) => {
-    setMessages(prevMessages => [...prevMessages, newMessage]);
-    setScrollToBottomTrigger(prev => !prev);
-  };
 
   useEffect(() => {
     if (scrollContainerRef.current) {

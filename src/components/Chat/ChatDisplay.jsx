@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Camera, Paperclip, Mic, SendHorizontal } from 'lucide-react';
-import { v4 as uuidv4 } from 'uuid';
-import { useUser } from '../../services/UserContext';
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { Camera, Paperclip, Mic, SendHorizontal } from "lucide-react";
+import { v4 as uuidv4 } from "uuid";
+import { useUser } from "../../services/UserContext";
 
 const isEmojiOnly = (text) => {
   const emojiRegex = /^[\p{Emoji}\s]+$/u;
@@ -10,7 +10,7 @@ const isEmojiOnly = (text) => {
 
 function ChatDisplay() {
   const [messages, setMessages] = useState([]);
-  const [messageInput, setMessageInput] = useState('');
+  const [messageInput, setMessageInput] = useState("");
   const [showMediaOptions, setShowMediaOptions] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const { user: contextUser } = useUser();
@@ -21,12 +21,15 @@ function ChatDisplay() {
   const isConnectingRef = useRef(false);
   const userIdRef = useRef(null); // Track userId to prevent unnecessary reconnections
 
-  const formatMessage = useCallback((msg) => ({
-    ...msg,
-    text: msg.message_text,
-    from: msg.sender_id === contextUser?.user?.user_id ? 'me' : 'them',
-    isCurrentUser: msg.sender_id === contextUser?.user?.user_id,
-  }), [contextUser]);
+  const formatMessage = useCallback(
+    (msg) => ({
+      ...msg,
+      text: msg.message_text,
+      from: msg.sender_id === contextUser?.user?.user_id ? "me" : "them",
+      isCurrentUser: msg.sender_id === contextUser?.user?.user_id,
+    }),
+    [contextUser]
+  );
 
   const sendPendingMessages = useCallback(() => {
     if (socketRef.current?.readyState === WebSocket.OPEN) {
@@ -44,7 +47,10 @@ function ChatDisplay() {
     }
 
     // Prevent reinitialization if userId hasn’t changed
-    if (userId === userIdRef.current && socketRef.current?.readyState === WebSocket.OPEN) {
+    if (
+      userId === userIdRef.current &&
+      socketRef.current?.readyState === WebSocket.OPEN
+    ) {
       return;
     }
 
@@ -53,13 +59,13 @@ function ChatDisplay() {
     }
 
     if (socketRef.current) {
-      socketRef.current.close(1000, 'Normal closure');
+      socketRef.current.close(1000, "Normal closure");
       socketRef.current = null;
     }
 
     isConnectingRef.current = true;
     userIdRef.current = userId;
-    const socket = new WebSocket('ws://https://echoo-backend.vercel.app');
+    const socket = new WebSocket("wss://echoo-backend-production.up.railway.app");
     socketRef.current = socket;
 
     socket.onopen = () => {
@@ -67,10 +73,12 @@ function ChatDisplay() {
       retryCountRef.current = 0;
       isConnectingRef.current = false;
 
-      socket.send(JSON.stringify({
-        type: 'identify',
-        user_id: userId
-      }));
+      socket.send(
+        JSON.stringify({
+          type: "identify",
+          user_id: userId,
+        })
+      );
 
       sendPendingMessages();
     };
@@ -78,64 +86,80 @@ function ChatDisplay() {
     socket.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        if (data.type === 'messages') {
+        if (data.type === "messages") {
           const newMessages = data.payload?.messages?.map(formatMessage) || [];
-          setMessages(prev => {
-            const existingIds = new Set(prev.map(msg => msg.message_id || msg.temp_id));
-            const filtered = newMessages.filter(msg => !existingIds.has(msg.message_id || msg.temp_id));
+          setMessages((prev) => {
+            const existingIds = new Set(
+              prev.map((msg) => msg.message_id || msg.temp_id)
+            );
+            const filtered = newMessages.filter(
+              (msg) => !existingIds.has(msg.message_id || msg.temp_id)
+            );
             return [...prev, ...filtered];
           });
-        } else if (data.type === 'new_message') {
+        } else if (data.type === "new_message") {
           const msg = data.payload;
           // Skip if this is the sender's own message (rely on message_sent)
           if (msg.sender_id === contextUser?.user?.user_id) {
             return;
           }
-          setMessages(prev => {
+          setMessages((prev) => {
             // Check for existing message by temp_id or content
-            const existingIndex = prev.findIndex(m =>
-              (m.temp_id && m.temp_id === msg.temp_id) ||
-              (m.status === 'sending' && m.text === msg.message_text && m.sender_id === msg.sender_id &&
-               Math.abs(new Date(m.timestamp) - new Date(msg.timestamp)) < 2000)
+            const existingIndex = prev.findIndex(
+              (m) =>
+                (m.temp_id && m.temp_id === msg.temp_id) ||
+                (m.status === "sending" &&
+                  m.text === msg.message_text &&
+                  m.sender_id === msg.sender_id &&
+                  Math.abs(new Date(m.timestamp) - new Date(msg.timestamp)) <
+                    2000)
             );
             if (existingIndex !== -1) {
               return prev.map((m, index) =>
                 index === existingIndex
-                  ? { ...formatMessage(msg), message_id: msg.message_id, status: 'sent' }
+                  ? {
+                      ...formatMessage(msg),
+                      message_id: msg.message_id,
+                      status: "sent",
+                    }
                   : m
               );
             }
             // Add new message for other users
-            return [...prev, { ...formatMessage(msg), status: 'sent' }];
+            return [...prev, { ...formatMessage(msg), status: "sent" }];
           });
-        } else if (data.type === 'message_sent') {
+        } else if (data.type === "message_sent") {
           const { message_id, temp_id, savedMessage } = data.payload;
-          setMessages(prev =>
-            prev.map(msg =>
+          setMessages((prev) =>
+            prev.map((msg) =>
               msg.temp_id === temp_id
-                ? { ...formatMessage(savedMessage), message_id, status: 'sent' }
+                ? { ...formatMessage(savedMessage), message_id, status: "sent" }
                 : msg
             )
           );
-        } else if (data.type === 'read_receipt') {
+        } else if (data.type === "read_receipt") {
           const { message_ids } = data.payload;
-          setMessages(prev =>
-            prev.map(msg =>
-              message_ids.includes(msg.message_id) ? { ...msg, read_checker: 'read' } : msg
+          setMessages((prev) =>
+            prev.map((msg) =>
+              message_ids.includes(msg.message_id)
+                ? { ...msg, read_checker: "read" }
+                : msg
             )
           );
-        } else if (data.type === 'error') {
-          console.error('Server error:', data.payload);
-          setMessages(prev =>
-            prev.map(msg =>
-              msg.status === 'sending' && msg.temp_id ? { ...msg, status: 'failed' } : msg
+        } else if (data.type === "error") {
+          console.error("Server error:", data.payload);
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.status === "sending" && msg.temp_id
+                ? { ...msg, status: "failed" }
+                : msg
             )
           );
-        } else if (data.type === 'pong') {
+        } else if (data.type === "pong") {
           return; // Handle ping/pong for keep-alive
         }
       } catch (err) {
-        console.error('Error processing message:', err);
+        console.error("Error processing message:", err);
       }
     };
 
@@ -153,7 +177,10 @@ function ChatDisplay() {
         return;
       }
 
-      const retryDelay = Math.min(2000 * Math.pow(2, retryCountRef.current), 30000);
+      const retryDelay = Math.min(
+        2000 * Math.pow(2, retryCountRef.current),
+        30000
+      );
       retryCountRef.current += 1;
 
       setTimeout(() => {
@@ -162,8 +189,11 @@ function ChatDisplay() {
     };
 
     return () => {
-      if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-        socketRef.current.close(1000, 'Component unmount');
+      if (
+        socketRef.current &&
+        socketRef.current.readyState === WebSocket.OPEN
+      ) {
+        socketRef.current.close(1000, "Component unmount");
       }
       isConnectingRef.current = false;
     };
@@ -175,22 +205,26 @@ function ChatDisplay() {
   }, [setupWebSocket]);
 
   const fetchMessages = useCallback(() => {
-    if (!isConnected || !socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
+    if (
+      !isConnected ||
+      !socketRef.current ||
+      socketRef.current.readyState !== WebSocket.OPEN
+    ) {
       const sender_id = contextUser?.user?.user_id;
-      const receiverId = localStorage.getItem('receiver_id');
+      const receiverId = localStorage.getItem("receiver_id");
       if (sender_id && receiverId) {
         pendingMessagesRef.current.push({
-          type: 'get_messages',
+          type: "get_messages",
           sender_id,
           receiver_id: receiverId,
-          limit: 50
+          limit: 50,
         });
       }
       return;
     }
 
     const sender_id = contextUser?.user?.user_id;
-    const receiverId = localStorage.getItem('receiver_id');
+    const receiverId = localStorage.getItem("receiver_id");
 
     if (!sender_id || !receiverId) {
       return;
@@ -199,14 +233,14 @@ function ChatDisplay() {
     try {
       socketRef.current.send(
         JSON.stringify({
-          type: 'get_messages',
+          type: "get_messages",
           sender_id,
           receiver_id: receiverId,
-          limit: 50
+          limit: 50,
         })
       );
     } catch (err) {
-      console.error('Failed to fetch messages:', err);
+      console.error("Failed to fetch messages:", err);
     }
   }, [contextUser, isConnected]);
 
@@ -221,14 +255,14 @@ function ChatDisplay() {
     if (!isConnected) return;
     const interval = setInterval(() => {
       if (socketRef.current?.readyState === WebSocket.OPEN) {
-        socketRef.current.send(JSON.stringify({ type: 'ping' }));
+        socketRef.current.send(JSON.stringify({ type: "ping" }));
       }
     }, 30000);
     return () => clearInterval(interval);
   }, [isConnected]);
 
   const scrollToBottom = () => {
-    messageEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   useEffect(() => {
@@ -242,12 +276,18 @@ function ChatDisplay() {
     }
 
     const sender_id = contextUser?.user?.user_id;
-    const contact_id = localStorage.getItem('contact_id');
-    const contact = contextUser.contacts?.find(c => c.contact_id === contact_id);
+    const contact_id = localStorage.getItem("contact_id");
+    const contact = contextUser.contacts?.find(
+      (c) => c.contact_id === contact_id
+    );
     const receiver_id = contact?.receiver_id;
 
     if (!sender_id || !contact_id || !receiver_id) {
-      console.error('Missing required IDs:', { sender_id, contact_id, receiver_id });
+      console.error("Missing required IDs:", {
+        sender_id,
+        contact_id,
+        receiver_id,
+      });
       return;
     }
 
@@ -261,82 +301,113 @@ function ChatDisplay() {
       sender_id,
       receiver_id,
       timestamp,
-      read_checker: 'unread',
+      read_checker: "unread",
     };
 
-    setMessages(prev => [...prev, {
-      ...formatMessage(newMessage),
-      status: 'sending'
-    }]);
-    setMessageInput('');
+    setMessages((prev) => [
+      ...prev,
+      {
+        ...formatMessage(newMessage),
+        status: "sending",
+      },
+    ]);
+    setMessageInput("");
 
     if (socketRef.current.readyState === WebSocket.OPEN) {
       try {
-        socketRef.current.send(JSON.stringify({
-          type: 'send_message',
-          ...newMessage
-        }));
+        socketRef.current.send(
+          JSON.stringify({
+            type: "send_message",
+            ...newMessage,
+          })
+        );
       } catch (err) {
-        console.error('Failed to send message:', err);
-        setMessages(prev => prev.map(msg =>
-          msg.temp_id === temp_id ? { ...msg, status: 'failed' } : msg
-        ));
+        console.error("Failed to send message:", err);
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.temp_id === temp_id ? { ...msg, status: "failed" } : msg
+          )
+        );
       }
     } else {
       pendingMessagesRef.current.push({
-        type: 'send_message',
-        ...newMessage
+        type: "send_message",
+        ...newMessage,
       });
     }
   };
 
-  const sortedMessages = [...messages].sort((a, b) =>
-    new Date(a.timestamp) - new Date(b.timestamp)
+  const sortedMessages = [...messages].sort(
+    (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
   );
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div className="flex-grow-1 overflow-auto p-2" style={{ background: '#f8f9fa' }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+      <div
+        className="flex-grow-1 overflow-auto p-2"
+        style={{ background: "#f8f9fa" }}
+      >
         {sortedMessages.map((msg) => {
-          const isMe = msg.from === 'me';
+          const isMe = msg.from === "me";
           const emojiOnly = isEmojiOnly(msg.text);
-          const isFailed = msg.status === 'failed';
-          const isSending = msg.status === 'sending';
+          const isFailed = msg.status === "failed";
+          const isSending = msg.status === "sending";
 
           return (
-            <div key={msg.message_id || msg.temp_id} style={{
-              display: 'flex',
-              justifyContent: isMe ? 'flex-end' : 'flex-start',
-            }}>
-              <div style={{
-                maxWidth: '85%',
-                padding: emojiOnly ? '0' : '0.75rem 1rem',
-                backgroundColor: emojiOnly ? 'transparent' : isMe ? '#DCF8C6' : '#ffffff',
-                borderRadius: emojiOnly ? '0' : isMe ? '20px 20px 0px 20px' : '20px 20px 20px 0px',
-                wordWrap: 'break-word',
-                whiteSpace: 'pre-wrap',
-                boxShadow: emojiOnly ? 'none' : '0 1px 2px rgba(0, 0, 0, 0.1)',
-                marginBottom: '0.5rem',
-                opacity: isFailed ? 0.6 : isSending ? 0.8 : 1,
-                border: isFailed ? '1px dashed #ff6b6b' : 'none'
-              }}>
-                <div style={{ fontSize: emojiOnly ? '1.5rem' : '1rem' }}>
+            <div
+              key={msg.message_id || msg.temp_id}
+              style={{
+                display: "flex",
+                justifyContent: isMe ? "flex-end" : "flex-start",
+              }}
+            >
+              <div
+                style={{
+                  maxWidth: "85%",
+                  padding: emojiOnly ? "0" : "0.75rem 1rem",
+                  backgroundColor: emojiOnly
+                    ? "transparent"
+                    : isMe
+                    ? "#DCF8C6"
+                    : "#ffffff",
+                  borderRadius: emojiOnly
+                    ? "0"
+                    : isMe
+                    ? "20px 20px 0px 20px"
+                    : "20px 20px 20px 0px",
+                  wordWrap: "break-word",
+                  whiteSpace: "pre-wrap",
+                  boxShadow: emojiOnly
+                    ? "none"
+                    : "0 1px 2px rgba(0, 0, 0, 0.1)",
+                  marginBottom: "0.5rem",
+                  opacity: isFailed ? 0.6 : isSending ? 0.8 : 1,
+                  border: isFailed ? "1px dashed #ff6b6b" : "none",
+                }}
+              >
+                <div style={{ fontSize: emojiOnly ? "1.5rem" : "1rem" }}>
                   {msg.text}
                 </div>
-                <div style={{
-                  fontSize: '0.75rem',
-                  color: '#888',
-                  textAlign: 'right',
-                  marginTop: '0.25rem',
-                  display: 'flex',
-                  justifyContent: 'flex-end',
-                  alignItems: 'center',
-                  gap: '4px'
-                }}>
-                  {isFailed && <span style={{ color: '#ff6b6b' }}>Failed</span>}
+                <div
+                  style={{
+                    fontSize: "0.75rem",
+                    color: "#888",
+                    textAlign: "right",
+                    marginTop: "0.25rem",
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    alignItems: "center",
+                    gap: "4px",
+                  }}
+                >
+                  {isFailed && <span style={{ color: "#ff6b6b" }}>Failed</span>}
                   {isSending && <span>⌛</span>}
                   {!isSending && !isFailed && <span>✔</span>}
-                  {!isSending && new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {!isSending &&
+                    new Date(msg.timestamp).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
                 </div>
               </div>
             </div>
@@ -345,15 +416,18 @@ function ChatDisplay() {
         <div ref={messageEndRef} />
       </div>
 
-      <div className="p-2 d-flex align-items-end flex-wrap position-relative" style={{
-        backgroundColor: '#f8f9fa',
-        border: 'none',
-      }}>
+      <div
+        className="p-2 d-flex align-items-end flex-wrap position-relative"
+        style={{
+          backgroundColor: "#f8f9fa",
+          border: "none",
+        }}
+      >
         <div className="position-relative flex-grow-1 me-2 my-1">
           <Camera
             size={24}
             className="position-absolute ms-2 mt-2"
-            style={{ color: '#6c757d', pointerEvents: 'none' }}
+            style={{ color: "#6c757d", pointerEvents: "none" }}
           />
 
           <textarea
@@ -363,29 +437,29 @@ function ChatDisplay() {
             value={messageInput}
             onChange={(e) => setMessageInput(e.target.value)}
             onKeyPress={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
+              if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
                 handleSendMessage();
               }
             }}
             style={{
-              resize: 'none',
-              overflowY: 'auto',
-              maxHeight: '150px',
-              backgroundColor: 'white',
-              borderRadius: '20px',
-              border: '1px solid #ccc',
-              paddingLeft: '2.5rem',
-              paddingRight: '2.5rem',
-              fontSize: '18px',
-              lineHeight: '1.5',
+              resize: "none",
+              overflowY: "auto",
+              maxHeight: "150px",
+              backgroundColor: "white",
+              borderRadius: "20px",
+              border: "1px solid #ccc",
+              paddingLeft: "2.5rem",
+              paddingRight: "2.5rem",
+              fontSize: "18px",
+              lineHeight: "1.5",
             }}
           />
 
           <div className="position-absolute end-0 top-50 translate-middle-y me-3">
             <Paperclip
               size={24}
-              style={{ color: '#6c757d', cursor: 'pointer' }}
+              style={{ color: "#6c757d", cursor: "pointer" }}
               onClick={() => setShowMediaOptions(!showMediaOptions)}
             />
           </div>
@@ -394,10 +468,10 @@ function ChatDisplay() {
         <div
           className="rounded-circle bg-success d-flex align-items-center justify-content-center"
           style={{
-            width: '48px',
-            height: '48px',
-            cursor: 'pointer',
-            opacity: messageInput.trim() ? 1 : 0.7
+            width: "48px",
+            height: "48px",
+            cursor: "pointer",
+            opacity: messageInput.trim() ? 1 : 0.7,
           }}
           onClick={messageInput.trim() ? handleSendMessage : null}
         >
@@ -408,9 +482,7 @@ function ChatDisplay() {
           )}
         </div>
 
-        {showMediaOptions && (
-          <div>Media Options Component Here</div>
-        )}
+        {showMediaOptions && <div>Media Options Component Here</div>}
       </div>
     </div>
   );
