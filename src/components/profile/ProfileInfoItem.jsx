@@ -54,7 +54,7 @@ const ProfileInfoItem = ({ icon, label, value, onValueChange, type = 'text', pla
         storedUser[id] = newValue;
       }
 
-      const url = `http://localhost:5000/api/users/update`;
+      const url = `https://echoo-backend.vercel.app/api/users/update`;
       await axios.put(url, storedUser);
       localStorage.setItem("user", JSON.stringify(storedUser));
       console.log('Profile updated successfully');

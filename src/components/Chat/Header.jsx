@@ -32,7 +32,7 @@ function Header({ goBack }) {
 
       try {
         // Make a POST request to the backend to get the contact details
-        const response = await axios.post('http://localhost:5000/api/contact-info', payload);
+        const response = await axios.post('https://echoo-backend.vercel.app/api/contact-info', payload);
 
 
         const { contactName, profilePicture } = response.data;
