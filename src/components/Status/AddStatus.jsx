@@ -1,44 +1,44 @@
-import React, { useState } from 'react';
+import React, { useRef } from 'react';
 import { User, Plus } from 'lucide-react';
 import { useUser } from '../../services/UserContext';
-import StatusPopup from './StatusPopup';
 import useDevicePermissions from '../../hooks/useDevicePermissions';
+
+const isMobileDevice = () => {
+  return /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+};
 
 const AddStatus = () => {
   const { user } = useUser();
   const profileImageUrl = user?.user?.profile_picture;
-  const [isPopupOpen, setIsPopupOpen] = useState(false);
-
+  const fileInputRef = useRef(null);
   const { permissionStatus, requestMultiplePermissions } = useDevicePermissions();
 
-  const checkPermissionsAndOpenPopup = async () => {
-    console.log('checkPermissionsAndOpenPopup called');
+  const checkPermissionsAndOpenPicker = async () => {
+    console.log('checkPermissionsAndOpenPicker called');
     try {
       const camStatus = permissionStatus.camera;
       const micStatus = permissionStatus.microphone;
       console.log('Camera status:', camStatus, 'Microphone status:', micStatus);
 
-      if (camStatus === 'granted' && micStatus === 'granted') {
-        console.log('Permissions granted, opening popup');
-        setIsPopupOpen(true);
-        return;
+      if (camStatus !== 'granted' || micStatus !== 'granted') {
+        console.log('Requesting permissions...');
+        const result = await requestMultiplePermissions(['camera', 'microphone']);
+        console.log('Permission request result:', result);
+        if (result.camera !== 'granted' || result.microphone !== 'granted') {
+          console.warn('Permissions denied, proceeding anyway');
+        }
       }
 
-      console.log('Requesting permissions...');
-      const result = await requestMultiplePermissions(['camera', 'microphone']);
-      console.log('Permission request result:', result);
-
-      if (result.camera === 'granted' && result.microphone === 'granted') {
-        console.log('Permissions granted after request, opening popup');
-        setIsPopupOpen(true);
-      } else {
-        console.warn('Permissions denied, opening popup in limited mode');
-        setIsPopupOpen(true);
+      if (isMobileDevice()) {
+        console.log('Mobile: Triggering file input');
+        fileInputRef.current.click();
       }
     } catch (error) {
       console.error('Permission error:', error);
-      console.log('Opening popup as fallback');
-      setIsPopupOpen(true);
+      if (isMobileDevice()) {
+        console.log('Mobile: Triggering file input as fallback');
+        fileInputRef.current.click();
+      }
     }
   };
 
@@ -56,8 +56,8 @@ const AddStatus = () => {
         }}
         onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
         onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'white'}
-        onClick={checkPermissionsAndOpenPopup}
-        onTouchStart={checkPermissionsAndOpenPopup}
+        onClick={checkPermissionsAndOpenPicker}
+        onTouchStart={checkPermissionsAndOpenPicker}
       >
         <div className="position-relative">
           <div
@@ -105,12 +105,13 @@ const AddStatus = () => {
         </div>
       </div>
 
-      {isPopupOpen && (
-        <StatusPopup
-          onClose={() => setIsPopupOpen(false)}
-          openGalleryOnMount={true} // Trigger gallery on mobile
-        />
-      )}
+      <input
+        type="file"
+        accept="image/*,video/*"
+        multiple
+        ref={fileInputRef}
+        style={{ display: 'none' }}
+      />
     </div>
   );
 };
