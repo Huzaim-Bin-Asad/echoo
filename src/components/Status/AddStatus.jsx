@@ -7,7 +7,7 @@ const isMobileDevice = () => {
   return /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 };
 
-const AddStatus = () => {
+const AddStatus = ({ onFileSelected }) => {
   const { user } = useUser();
   const profileImageUrl = user?.user?.profile_picture;
   const fileInputRef = useRef(null);
@@ -39,6 +39,15 @@ const AddStatus = () => {
         console.log('Mobile: Triggering file input as fallback');
         fileInputRef.current.click();
       }
+    }
+  };
+
+  const handleFileSelect = (event) => {
+    const file = event.target.files[0]; // Take the first file
+    if (file && onFileSelected) {
+      console.log('Selected file:', file);
+      const url = URL.createObjectURL(file);
+      onFileSelected(url, file.type);
     }
   };
 
@@ -111,6 +120,7 @@ const AddStatus = () => {
         multiple
         ref={fileInputRef}
         style={{ display: 'none' }}
+        onChange={handleFileSelect}
       />
     </div>
   );
