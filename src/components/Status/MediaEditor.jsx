@@ -35,10 +35,11 @@ const MediaEditor = ({ fileUrl, fileType, onClose }) => {
   const mediaStyle = {
     ...styles.video,
     width: '100%',
-    height: 'auto',
+    height: '85.5vh', // or something like '300px' if you prefer fixed height
     maxWidth: '100%',
     objectFit: 'contain',
   };
+  
 
   useEffect(() => {
     if (!isVideo) return;
