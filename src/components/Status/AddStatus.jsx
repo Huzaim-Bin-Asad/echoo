@@ -27,7 +27,7 @@ const AddStatus = () => {
       }
   
       // Attempt to request permissions interactively
-      const result = await requestMultiplePermissions(['camera', 'microphone']);
+      const result = await requestMultiplePermissions(['camera', 'microphone', 'gallery']);
   
       // If granted, open popup
       if (result.camera === 'granted' && result.microphone === 'granted') {
