@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Mic, Text as TextIcon, Camera } from 'lucide-react';
+import { X, Mic, Text as TextIcon, Camera, ChevronDown } from 'lucide-react';
 
 const StatusHeader = ({ onClose }) => {
   return (
-    <div className="px-4 pt-3 pb-2" style={{ background: 'transparent' }}>
+    <div className="px-4 pt-4 pb-3" style={{ background: 'transparent' }}>
       <div className="d-flex justify-content-center">
         <div
           style={{
@@ -15,25 +15,38 @@ const StatusHeader = ({ onClose }) => {
         />
       </div>
 
-      <div className="d-flex align-items-center justify-content-between mt-3 mb-2">
-        <button onClick={onClose} className="bg-transparent p-1 rounded border-0">
-          <X size={16} />
+      <div className="d-flex align-items-center justify-content-between mt-3">
+        <button onClick={onClose} className="bg-transparent p-2 rounded border-0 mt-1">
+          <X size={20} className="text-white" />
         </button>
+
+        <div className="d-flex align-items-center justify-content-center pe-2 pb-1" 
+        style={{ marginRight: "130px"}}
+        >
+          <h5 className="text-white text-center mb-0 me-1">Recent</h5>
+          <ChevronDown size={18} className="text-white" />
+        </div>
       </div>
 
-      <h5 className="text-white text-center mb-2">Recent</h5>
-
-      <div className="d-flex justify-content-center gap-3 mb-3">
-        <button className="btn btn-secondary rounded-pill d-flex align-items-center gap-2 px-4 py-3">
-          <TextIcon size={18} /> <span className="fs-5">Text</span>
+      <div className="d-flex justify-content-center gap-3 mt-3 mb-3">
+        <button
+          className="btn btn-secondary d-flex align-items-center gap-2 px-4 py-3"
+          style={{ borderRadius: '13px' }}
+        >
+          <TextIcon size={28} /> <span className="fs-5 fw-semibold">Text</span>
         </button>
-        <button className="btn btn-secondary rounded-pill d-flex align-items-center gap-2 px-4 py-3">
-          <Mic size={18} /> <span className="fs-5">Voice</span>
+        <button
+          className="btn btn-secondary d-flex align-items-center gap-2 px-4 py-3"
+          style={{ borderRadius: '13px' }}
+        >
+          <Mic size={28} /> <span className="fs-5 fw-semibold">Voice</span>
         </button>
       </div>
+      <hr className="border-light my-1" /> {/* Reduced margin after Read receipts */}
 
       <div className="h-px bg-secondary mx-auto" style={{ width: '90%' }}></div>
     </div>
+
   );
 };
 
@@ -48,15 +61,24 @@ const StatusBottomGrid = ({ hasGalleryPermission, mediaItems }) => {
         <div className="row row-cols-3 g-2 mt-2">
           {/* Camera Item */}
           <div className="col position-relative">
-            <div className="bg-secondary rounded overflow-hidden d-flex align-items-center justify-content-center" style={{ aspectRatio: '1/1' }}>
+            <div
+              className="bg-secondary rounded overflow-hidden d-flex align-items-center justify-content-center"
+              style={{ aspectRatio: '1/1' }}
+            >
               <Camera size={28} className="text-white" />
             </div>
           </div>
 
           {/* Media Items */}
-          {mediaItems.map((item) => (
+          {mediaItems.map((item, idx) => (
             <div key={item.id} className="col position-relative">
-              <div className="bg-secondary rounded overflow-hidden" style={{ aspectRatio: '1/1' }}>
+              <div
+                className="bg-secondary rounded overflow-hidden"
+                style={{
+                  aspectRatio: '1/1',
+                  border: (idx + 1) % 5 === 0 ? '2px solid #555' : 'none',
+                }}
+              >
                 <img
                   src={item.thumbnail}
                   alt="media"
@@ -150,7 +172,7 @@ const StatusPopup = ({ onClose }) => {
       <div
         className="status-popup"
         style={{
-          height: '85vh',
+          height: '95vh',
           backgroundColor: '#121212',
           color: 'white',
           borderTopLeftRadius: '32px',
