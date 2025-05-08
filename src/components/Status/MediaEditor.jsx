@@ -31,6 +31,15 @@ const MediaEditor = ({ fileUrl, fileType, onClose }) => {
   const [paths, setPaths] = useState([]);
   const [currentPath, setCurrentPath] = useState([]);
 
+  // Ensure media fits the container responsively
+  const mediaStyle = {
+    ...styles.video,
+    width: '100%',
+    height: 'auto',
+    maxWidth: '100%',
+    objectFit: 'contain',
+  };
+
   useEffect(() => {
     if (!isVideo) return;
     const video = videoRef.current;
@@ -149,7 +158,47 @@ const MediaEditor = ({ fileUrl, fileType, onClose }) => {
 
   const undo = () => setPaths((prev) => prev.slice(0, -1));
 
-  const exitDrawingMode = () => {
+  const generateSVG = async () => {
+    const canvas = drawingRef.current;
+    const media = isVideo ? videoRef.current : drawingRef.current; // For images, use drawing canvas as placeholder
+    const width = canvas.width;
+    const height = canvas.height;
+
+    // Get media as base64
+    let mediaDataUrl = fileUrl;
+    if (isVideo) {
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = width;
+      tempCanvas.height = height;
+      const ctx = tempCanvas.getContext('2d');
+      ctx.drawImage(videoRef.current, 0, 0, width, height);
+      mediaDataUrl = tempCanvas.toDataURL('image/png');
+    }
+
+    // Generate SVG paths
+    const svgPaths = paths.map((path) => {
+      const points = path.points.map((pt, i) => `${i === 0 ? 'M' : 'L'}${pt.x},${pt.y}`).join(' ');
+      return `<path d="${points}" stroke="${path.color}" stroke-width="${path.thickness}" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`;
+    }).join('');
+
+    // Create SVG string
+    const svg = `
+      <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+        <image href="${mediaDataUrl}" width="${width}" height="${height}"/>
+        ${svgPaths}
+      </svg>
+    `;
+
+    return svg;
+  };
+
+  const exitDrawingMode = async () => {
+    if (paths.length > 0) {
+      // Generate SVG when exiting drawing mode
+      const svgContent = await generateSVG();
+      console.log('Generated SVG:', svgContent);
+      // Optionally, you can save or process the SVG here
+    }
     setDrawingMode(false);
     setDrawingColor(COLORS[0]);
     setDrawingThickness(THICKNESS[1]);
@@ -190,7 +239,16 @@ const MediaEditor = ({ fileUrl, fileType, onClose }) => {
 
     paths.forEach((p) => drawLine(p.points, p.color, p.thickness));
     if (currentPath.length > 0) drawLine(currentPath, drawingColor, drawingThickness);
-  }, [paths, currentPath]);
+
+    // Adjust canvas size to match media
+    if (isVideo && videoRef.current) {
+      canvas.width = videoRef.current.offsetWidth;
+      canvas.height = videoRef.current.offsetHeight;
+    } else {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight * 0.6; // Adjust based on your layout
+    }
+  }, [paths, currentPath, isVideo]);
 
   return (
     <div style={styles.wrapper}>
@@ -311,21 +369,26 @@ const MediaEditor = ({ fileUrl, fileType, onClose }) => {
           <video 
             ref={videoRef} 
             src={fileUrl} 
-            style={styles.video} 
+            style={mediaStyle} 
             playsInline 
           />
         ) : (
           <img 
             src={fileUrl} 
             alt="preview" 
-            style={styles.video} 
+            style={mediaStyle} 
           />
         )}
         <canvas
           ref={drawingRef}
-          width={window.innerWidth}
-          height={window.innerHeight}
-          style={styles.drawingCanvas}
+          style={{
+            ...styles.drawingCanvas,
+            width: '100%',
+            height: isVideo ? videoRef.current?.offsetHeight : 'auto',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+          }}
           onMouseDown={handleStart}
           onMouseMove={handleMove}
           onMouseUp={handleEnd}
