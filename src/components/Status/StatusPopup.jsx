@@ -1,7 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Text as TextIcon, Camera, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, Camera, ChevronDown, ChevronUp } from 'lucide-react';
 
-const StatusHeader = ({ onClose, folderListVisible, toggleFolderList, folders }) => {
+const StatusHeader = ({
+  onClose,
+  folderListVisible,
+  toggleFolderList,
+  folders,
+  selectedFolderName,
+  onFolderSelect
+}) => {
   return (
     <div className="px-4 pt-4 pb-3" style={{ background: 'transparent' }}>
       <div className="d-flex justify-content-center">
@@ -25,7 +32,9 @@ const StatusHeader = ({ onClose, folderListVisible, toggleFolderList, folders })
           style={{ marginRight: '130px', cursor: 'pointer' }}
           onClick={toggleFolderList}
         >
-          <h5 className="text-white bg-transparent text-center mb-0 me-1">Recent</h5>
+          <h5 className="text-white bg-transparent text-center mb-0 me-1">
+            {selectedFolderName}
+          </h5>
           {folderListVisible ? (
             <ChevronUp size={18} className="text-white" />
           ) : (
@@ -41,6 +50,7 @@ const StatusHeader = ({ onClose, folderListVisible, toggleFolderList, folders })
               key={index}
               className="d-flex align-items-center justify-content-between bg-dark text-white rounded py-2 px-2 mb-2"
               style={{ height: '60px', cursor: 'pointer' }}
+              onClick={() => onFolderSelect(folder.name)}
             >
               <img
                 src={folder.latestImage}
@@ -61,6 +71,7 @@ const StatusHeader = ({ onClose, folderListVisible, toggleFolderList, folders })
             <div
               className="d-flex align-items-center justify-content-between bg-dark text-white rounded py-2 px-3 mb-2"
               style={{ height: '60px', cursor: 'pointer' }}
+              onClick={() => console.log('Open full folder list')}
             >
               <div className="d-flex align-items-center">
                 <Camera size={24} className="me-3 text-white" />
@@ -96,7 +107,7 @@ const StatusBottomGrid = ({ hasGalleryPermission, mediaItems }) => {
           </div>
 
           {mediaItems.map((item, idx) => (
-            <div key={item.id} className="col position-relative">
+            <div key={item.id || idx} className="col position-relative">
               <div
                 className="rounded overflow-hidden"
                 style={{
@@ -131,27 +142,45 @@ const StatusPopup = ({ onClose }) => {
   const [hasGalleryPermission, setHasGalleryPermission] = useState(false);
   const [folderListVisible, setFolderListVisible] = useState(false);
   const [folders, setFolders] = useState([]);
+  const [selectedFolderName, setSelectedFolderName] = useState('Recent');
+  const [selectedMedia, setSelectedMedia] = useState([]);
 
-  // Request permission to access the gallery and fetch image folders
   const requestGalleryPermission = async () => {
     if ('showDirectoryPicker' in window) {
       try {
-        // Open a directory picker
         const directoryHandle = await window.showDirectoryPicker();
         const imageFolders = [];
+        const allMedia = [];
 
-        // Iterate through the directories and check for image and video files
         for await (const [folderName, folderHandle] of directoryHandle.entries()) {
-          const folder = { name: folderName, latestImage: '', count: 0 };
+          const folder = { name: folderName, latestImage: '', count: 0, media: [] };
           let latestFileDate = 0;
 
           for await (const fileHandle of folderHandle.values()) {
-            if (fileHandle.name.endsWith('.jpg') || fileHandle.name.endsWith('.png') || fileHandle.name.endsWith('.mp4')) {
+            if (
+              fileHandle.name.endsWith('.jpg') ||
+              fileHandle.name.endsWith('.png') ||
+              fileHandle.name.endsWith('.mp4')
+            ) {
               const file = await fileHandle.getFile();
+              const url = URL.createObjectURL(file);
+              const isVideo = fileHandle.name.endsWith('.mp4');
+
+              const mediaItem = {
+                id: fileHandle.name,
+                thumbnail: url,
+                isVideo,
+                duration: isVideo ? '0:30' : null,
+              };
+
+              folder.media.push(mediaItem);
+              allMedia.push(mediaItem);
+
               if (file.lastModified > latestFileDate) {
-                folder.latestImage = URL.createObjectURL(file);
+                folder.latestImage = url;
                 latestFileDate = file.lastModified;
               }
+
               folder.count += 1;
             }
           }
@@ -161,6 +190,7 @@ const StatusPopup = ({ onClose }) => {
 
         if (imageFolders.length > 0) {
           setFolders(imageFolders);
+          setSelectedMedia(allMedia);
           setHasGalleryPermission(true);
         } else {
           setHasGalleryPermission(false);
@@ -186,9 +216,7 @@ const StatusPopup = ({ onClose }) => {
 
   const handleTouchMove = (e) => {
     const deltaY = e.touches[0].clientY - startY.current;
-    if (deltaY > 0) {
-      setTranslateY(deltaY);
-    }
+    if (deltaY > 0) setTranslateY(deltaY);
   };
 
   const handleTouchEnd = () => {
@@ -198,6 +226,19 @@ const StatusPopup = ({ onClose }) => {
       setTimeout(() => onClose(), 300);
     } else {
       setTranslateY(0);
+    }
+  };
+
+  const handleFolderSelect = (folderName) => {
+    setSelectedFolderName(folderName);
+    setFolderListVisible(false);
+
+    if (folderName === 'Recent') {
+      const allMedia = folders.flatMap((f) => f.media);
+      setSelectedMedia(allMedia);
+    } else {
+      const folder = folders.find((f) => f.name === folderName);
+      setSelectedMedia(folder?.media || []);
     }
   };
 
@@ -239,10 +280,12 @@ const StatusPopup = ({ onClose }) => {
           folderListVisible={folderListVisible}
           toggleFolderList={() => setFolderListVisible(!folderListVisible)}
           folders={folders}
+          selectedFolderName={selectedFolderName}
+          onFolderSelect={handleFolderSelect}
         />
         <StatusBottomGrid
           hasGalleryPermission={hasGalleryPermission}
-          mediaItems={folders}
+          mediaItems={selectedMedia}
         />
       </div>
     </div>
