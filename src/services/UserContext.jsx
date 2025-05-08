@@ -17,7 +17,7 @@ export const UserProvider = ({ children }) => {
     }
 
     const fetchUser = () => {
-      axios.get('https://echoo-backend.vercel.app/api/userinfo', {
+      axios.get('http://localhost:5000/api/userinfo', {
         headers: { Authorization: `Bearer ${token}` },
       })
         .then(res => {

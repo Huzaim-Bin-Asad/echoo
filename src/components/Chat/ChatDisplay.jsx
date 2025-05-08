@@ -367,75 +367,84 @@ function ChatDisplay() {
       </div>
   
       <div
-        className="p-2 d-flex align-items-end flex-wrap position-relative"
-        style={{
-          backgroundColor: '#f8f9fa',
-          border: 'none',
+  className="p-2 d-flex align-items-end flex-wrap position-relative"
+  style={{
+    backgroundColor: '#f8f9fa',
+    border: 'none',
+  }}
+>
+  {/* Wrapper for Input and Button */}
+  <div className="d-flex align-items-end flex-grow-1">
+    {/* Text Input Area */}
+    <div className="position-relative flex-grow-1 me-2">
+      <Camera
+        size={20}
+        className="position-absolute ms-2 mt-2"
+        style={{ color: '#6c757d', pointerEvents: 'none' }}
+      />
+
+      <textarea
+        rows={1}
+        className="form-control ps-5 pe-5"
+        placeholder="Type something"
+        value={messageInput}
+        onChange={(e) => setMessageInput(e.target.value)}
+        onKeyPress={(e) => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleSendMessage();
+          }
         }}
-      >
-        <div className="position-relative flex-grow-1 me-2 my-1">
-          <Camera
-            size={24}
-            className="position-absolute ms-2 mt-2"
-            style={{ color: '#6c757d', pointerEvents: 'none' }}
-          />
-  
-          <textarea
-            rows={1}
-            className="form-control ps-5 pe-5"
-            placeholder="Type something"
-            value={messageInput}
-            onChange={(e) => setMessageInput(e.target.value)}
-            onKeyPress={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleSendMessage();
-              }
-            }}
-            style={{
-              resize: 'none',
-              overflowY: 'auto',
-              maxHeight: '150px',
-              backgroundColor: 'white',
-              borderRadius: '20px',
-              border: '1px solid #ccc',
-              paddingLeft: '2.5rem',
-              paddingRight: '2.5rem',
-              fontSize: '1rem',
-              lineHeight: '1.5',
-            }}
-          />
-  
-          <div className="position-absolute end-0 top-50 translate-middle-y me-3">
-            <Paperclip
-              size={24}
-              style={{ color: '#6c757d', cursor: 'pointer' }}
-              onClick={() => setShowMediaOptions(!showMediaOptions)}
-            />
-          </div>
-        </div>
-  
-        <div
-          className="rounded-circle bg-success d-flex align-items-center justify-content-center"
-          style={{
-            width: '48px',
-            height: '48px',
-            cursor: 'pointer',
-            opacity: messageInput.trim() ? 1 : 0.7,
-          }}
-          onClick={messageInput.trim() ? handleSendMessage : null}
-        >
-          {messageInput.trim() ? (
-            <SendHorizontal size={24} color="white" />
-          ) : (
-            <Mic size={24} color="white" />
-          )}
-        </div>
-  
-        {showMediaOptions && (
-          <div className="w-100 mt-2">Media Options Component Here</div>
-        )}
+        style={{
+          resize: 'none',
+          overflowY: 'auto',
+          maxHeight: '150px',
+          backgroundColor: 'white',
+          borderRadius: '20px',
+          border: '1px solid #ccc',
+          paddingLeft: '2.5rem',
+          paddingRight: '2.5rem',
+          fontSize: '1rem',
+          lineHeight: '1.5',
+        }}
+      />
+
+      <div className="position-absolute end-0 top-50 translate-middle-y me-3">
+        <Paperclip
+          size={20}
+          style={{ color: '#6c757d', cursor: 'pointer' }}
+          onClick={() => setShowMediaOptions(!showMediaOptions)}
+        />
       </div>
+    </div>
+
+    {/* Send / Mic Button */}
+    <div
+      className="rounded-circle bg-success d-flex align-items-center justify-content-center"
+      style={{
+        width: '44px',
+        height: '44px',
+        cursor: 'pointer',
+        opacity: messageInput.trim() ? 1 : 0.7,
+        flexShrink: 0,
+      }}
+      onClick={messageInput.trim() ? handleSendMessage : null}
+    >
+      {messageInput.trim() ? (
+        <SendHorizontal size={20} color="white" />
+      ) : (
+        <Mic size={20} color="white" />
+      )}
+    </div>
+  </div>
+
+  {/* Media Options */}
+  {showMediaOptions && (
+    <div className="w-100 mt-2">Media Options Component Here</div>
+  )}
+</div>
+
+
     </div>
   );
 }

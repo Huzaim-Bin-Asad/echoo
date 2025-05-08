@@ -40,7 +40,7 @@ const ProfileImage = () => {
     formData.append('userId', userId);
   
     try {
-      const response = await axios.post('https://echoo-backend.vercel.app/api/upload-profile-picture', formData, {
+      const response = await axios.post('http://localhost:5000/api/upload-profile-picture', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
