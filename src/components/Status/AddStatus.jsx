@@ -20,26 +20,30 @@ const AddStatus = () => {
     try {
       const camStatus = permissionStatus.camera;
       const micStatus = permissionStatus.microphone;
-
-      // If already granted, open popup
+  
       if (camStatus === 'granted' && micStatus === 'granted') {
         setIsPopupOpen(true);
         return;
       }
-
-      // Otherwise, request permissions interactively
+  
+      // Attempt to request permissions interactively
       const result = await requestMultiplePermissions(['camera', 'microphone']);
-
+  
+      // If granted, open popup
       if (result.camera === 'granted' && result.microphone === 'granted') {
         setIsPopupOpen(true);
       } else {
-        alert('Please allow camera and microphone access to add a status.');
+        // 👇 Show popup anyway, but maybe in limited mode
+        console.warn('Permissions denied, but opening popup with limited access');
+        setIsPopupOpen(true);
       }
     } catch (error) {
       console.error('Permission error:', error);
-      alert('An error occurred while requesting permissions.');
+      // 👇 Show popup even if error occurs, as a fallback
+      setIsPopupOpen(true);
     }
   };
+  
 
   return (
     <div className="px-3 pt-3">
