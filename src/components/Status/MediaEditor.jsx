@@ -554,9 +554,9 @@ const MediaEditor = ({ fileUrl, fileType, onClose }) => {
         <div
           style={{
             position: 'absolute',
-            right: '10px',
+            right: '24px',
             top: '50%',
-            transform: 'translateY(-50%)',
+            transform: 'translateY(-68%)',
             display: 'flex',
             flexDirection: 'column',
             gap: '5px',
@@ -565,8 +565,8 @@ const MediaEditor = ({ fileUrl, fileType, onClose }) => {
           <div
             onClick={() => setDrawingColor(drawingColor)}
             style={{
-              width: '30px',
-              height: '30px',
+              width: '24px',
+              height: '24px',
               borderRadius: '50%',
               backgroundColor: drawingColor,
               border: '2px solid #fff',
@@ -578,8 +578,8 @@ const MediaEditor = ({ fileUrl, fileType, onClose }) => {
               key={c}
               onClick={() => setDrawingColor(c)}
               style={{
-                width: '30px',
-                height: '30px',
+                width: '24px',
+                height: '24px',
                 borderRadius: '50%',
                 backgroundColor: c,
                 border: '2px solid transparent',
