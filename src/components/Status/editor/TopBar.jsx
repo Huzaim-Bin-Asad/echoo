@@ -68,6 +68,7 @@ const TopBar = ({
                 borderRadius: '50%',
                 backgroundColor: 'rgb(51, 51, 51)',
                 display: 'flex',
+                marginLeft: "-230px",
                 justifyContent: 'center',
                 alignItems: 'center',
                 cursor: 'pointer',
