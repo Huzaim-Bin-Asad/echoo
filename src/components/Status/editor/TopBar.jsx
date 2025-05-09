@@ -13,12 +13,15 @@ const TopBar = ({
   COLORS,
   captionMode,
   toggleCaptionMode,
+  exitCaptionMode,
+  toggleCaptionColorMode,
+  cycleTextAlign,
 }) => {
   return (
     <div style={styles.topBar}>
       {(drawingMode || captionMode) ? (
         <div
-          onClick={drawingMode ? exitDrawingMode : toggleCaptionMode}
+          onClick={drawingMode ? exitDrawingMode : exitCaptionMode}
           style={{
             backgroundColor: '#ccc',
             color: '#000',
@@ -41,7 +44,10 @@ const TopBar = ({
       )}
       <div style={{ display: 'flex', gap: '10px', position: 'relative', marginLeft: 'auto' }}>
         {!drawingMode && !captionMode && (
-          <button onClick={toggleCaptionMode} style={styles.iconBtn}>
+          <button
+            onClick={toggleCaptionMode}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#fff', fontSize: '1.2rem' }}
+          >
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="24"
@@ -62,25 +68,12 @@ const TopBar = ({
         {captionMode && (
           <>
             <div
+              onClick={toggleCaptionColorMode}
               style={{
                 width: '40px',
                 height: '40px',
                 borderRadius: '50%',
-                backgroundColor: 'rgb(51, 51, 51)',
-                display: 'flex',
-                marginLeft: "-230px",
-                justifyContent: 'center',
-                alignItems: 'center',
-                cursor: 'pointer',
-              }}
-            >
-              <WrapText size={24} color="#fff" />
-            </div>
-            <div
-              style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '50%',
+                marginLeft: '-230px',
                 backgroundColor: 'rgb(51, 51, 51)',
                 display: 'flex',
                 justifyContent: 'center',
@@ -89,6 +82,21 @@ const TopBar = ({
               }}
             >
               <MessageSquareDashed size={24} color="#fff" />
+            </div>
+            <div
+              onClick={cycleTextAlign}
+              style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '50%',
+                backgroundColor: 'rgb(51, 51, 51)',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                cursor: 'pointer',
+              }}
+            >
+              <WrapText size={24} color="#fff" />
             </div>
           </>
         )}

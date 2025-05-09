@@ -1,6 +1,6 @@
-import React, { useRef, useEffect } from 'react';
+import React from 'react';
 
-const FontSelector = () => {
+const FontSelector = ({ onFontSelect }) => {
   const fontStyles = [
     { fontFamily: 'Arial', size: '1rem' },
     { fontFamily: 'Times New Roman', size: '1rem' },
@@ -12,43 +12,35 @@ const FontSelector = () => {
     { fontFamily: 'Comic Sans MS', size: '1rem' },
   ];
 
-  const scrollRef = useRef(null);
-
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollLeft = 0; // Ensure it starts at the leftmost position
-    }
-  }, []);
-
   return (
     <div
-      ref={scrollRef}
       style={{
         display: 'flex',
         overflowX: 'auto',
         gap: '10px',
-        padding: '10px 20px', // More padding for better spacing
+        padding: '10px 20px',
         whiteSpace: 'nowrap',
         position: 'absolute',
         bottom: '20px',
         left: '50%',
         transform: 'translateX(-50%)',
-        width: '80%', // Wider container to fit more items
-        scrollBehavior: 'smooth', // Smooth scrolling
-        scrollbarWidth: 'none', // Firefox
-        '-ms-overflow-style': 'none', // IE and Edge
+        width: '80%',
+        scrollBehavior: 'smooth',
+        scrollbarWidth: 'none',
+        '-ms-overflow-style': 'none',
       }}
     >
       <style>
         {`
           div::-webkit-scrollbar {
-            display: none; /* Chrome, Safari, Opera */
+            display: none;
           }
         `}
       </style>
       {fontStyles.map((style, index) => (
         <div
           key={index}
+          onClick={() => onFontSelect(style.fontFamily)}
           style={{
             width: '50px',
             height: '50px',

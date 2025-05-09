@@ -2,10 +2,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import TopBar from './editor/TopBar';
 import MediaArea from './editor/MediaArea';
 import Controls from './editor/Controls';
-import CaptionArea from './editor/CaptionArea';
 import DrawingTools from './editor/DrawingTools';
 import ThumbnailStrip from './editor/ThumbnailStrip';
 import FontSelector from './editor/FontSelector';
+import CaptionArea from './editor/CaptionArea';
+import { MessageSquareDashed, WrapText } from 'lucide-react';
 import styles from './editor/styles';
 
 const COLORS = [
@@ -23,9 +24,9 @@ const MediaEditor = ({ fileUrl, fileType, onClose }) => {
   const stripRef = useRef(null);
   const scrubberRef = useRef(null);
   const topRef = useRef(null);
+  const textAreaRef = useRef(null);
 
   const [isPlaying, setIsPlaying] = useState(false);
-  const [caption, setCaption] = useState('');
   const [thumbnails, setThumbnails] = useState([]);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
@@ -37,6 +38,17 @@ const MediaEditor = ({ fileUrl, fileType, onClose }) => {
   const [paths, setPaths] = useState([]);
   const [currentPath, setCurrentPath] = useState([]);
   const [captionMode, setCaptionMode] = useState(false);
+  const [showCaptionBg, setShowCaptionBg] = useState(true);
+  const [textContent, setTextContent] = useState('');
+  const [textColor, setTextColor] = useState('#ffffff');
+  const [selectedFont, setSelectedFont] = useState('Arial');
+  const [textAlign, setTextAlign] = useState('center');
+  const [savedTexts, setSavedTexts] = useState([]);
+  const [editingTextIndex, setEditingTextIndex] = useState(null);
+  const [draggingTextIndex, setDraggingTextIndex] = useState(null);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [initialTextPos, setInitialTextPos] = useState({ x: 0, y: 0 });
+  const [caption, setCaption] = useState('');
 
   const mediaStyle = {
     ...styles.video,
@@ -75,6 +87,159 @@ const MediaEditor = ({ fileUrl, fileType, onClose }) => {
       if (ref) ref.style.left = `${percent}%`;
     });
   }, [currentTime, duration]);
+
+  // Sync textColor with drawingColor when in caption mode
+  useEffect(() => {
+    if (captionMode) {
+      setTextColor(drawingColor);
+    }
+  }, [drawingColor, captionMode]);
+
+  // Handle canvas click to edit text
+  useEffect(() => {
+    const canvas = drawingRef.current;
+    if (!canvas) return;
+
+    const handleClick = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const x = (e.clientX - rect.left) * scaleX;
+      const y = (e.clientY - rect.top) * scaleY;
+      console.log(`Canvas clicked at x: ${x}, y: ${y}`);
+
+      for (let i = savedTexts.length - 1; i >= 0; i--) {
+        const text = savedTexts[i];
+        const ctx = canvas.getContext('2d');
+        ctx.font = `20px "${text.font}"`;
+        ctx.textAlign = text.align;
+        ctx.textBaseline = 'middle';
+        const lines = text.content.split('\n');
+        const lineHeight = 25;
+        const xPos = text.x || (canvas.width / 2);
+        const yPos = text.y || (canvas.height / 2 - (lines.length * lineHeight) / 2 + (i * lineHeight * 2));
+        let textWidth = 0;
+
+        lines.forEach((line, lineIndex) => {
+          const width = ctx.measureText(line).width;
+          textWidth = Math.max(textWidth, width);
+          console.log(`Text ${i}, Line ${lineIndex}: "${line}", Width: ${width}, xPos: ${xPos}, yPos: ${yPos + lineIndex * lineHeight}`);
+        });
+
+        const padding = 10;
+        const textHeight = lines.length * lineHeight;
+        const hitX = text.align === 'center' ? xPos - textWidth / 2 : xPos;
+        const hitWidth = text.align === 'end' ? textWidth : textWidth;
+
+        if (x >= hitX - padding && x <= hitX + hitWidth + padding &&
+            y >= yPos - textHeight / 2 - padding && y <= yPos + textHeight / 2 + padding) {
+          console.log(`Text ${i} clicked: ${text.content}`);
+          setCaptionMode(true);
+          setTextContent(text.content);
+          setTextColor(text.color);
+          setSelectedFont(text.font);
+          setTextAlign(text.align);
+          setEditingTextIndex(i);
+          break;
+        } else {
+          console.log(`Click missed text ${i}: x ${x} not in [${hitX - padding}, ${hitX + hitWidth + padding}], y ${y} not in [${yPos - textHeight / 2 - padding}, ${yPos + textHeight / 2 + padding}]`);
+        }
+      }
+    };
+
+    canvas.addEventListener('click', handleClick);
+    return () => canvas.removeEventListener('click', handleClick);
+  }, [savedTexts]);
+
+  // Handle text dragging
+  useEffect(() => {
+    const canvas = drawingRef.current;
+    if (!canvas) return;
+
+    const handleMouseDown = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const x = (e.clientX - rect.left) * scaleX;
+      const y = (e.clientY - rect.top) * scaleY;
+
+      for (let i = savedTexts.length - 1; i >= 0; i--) {
+        const text = savedTexts[i];
+        const ctx = canvas.getContext('2d');
+        ctx.font = `20px "${text.font}"`;
+        ctx.textAlign = text.align;
+        ctx.textBaseline = 'middle';
+        const lines = text.content.split('\n');
+        const lineHeight = 25;
+        const xPos = text.x || (canvas.width / 2);
+        const yPos = text.y || (canvas.height / 2 - (lines.length * lineHeight) / 2 + (i * lineHeight * 2));
+        let textWidth = 0;
+
+        lines.forEach((line) => {
+          const width = ctx.measureText(line).width;
+          textWidth = Math.max(textWidth, width);
+        });
+
+        const padding = 10;
+        const textHeight = lines.length * lineHeight;
+        const hitX = text.align === 'center' ? xPos - textWidth / 2 : xPos;
+        const hitWidth = text.align === 'end' ? textWidth : textWidth;
+
+        if (x >= hitX - padding && x <= hitX + hitWidth + padding &&
+            y >= yPos - textHeight / 2 - padding && y <= yPos + textHeight / 2 + padding) {
+          setDraggingTextIndex(i);
+          setDragStart({ x: e.clientX, y: e.clientY });
+          setInitialTextPos({ x: xPos, y: yPos });
+          break;
+        }
+      }
+    };
+
+    const handleMouseMove = (e) => {
+      if (draggingTextIndex === null) return;
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const currentX = e.clientX;
+      const currentY = e.clientY;
+      const dx = (currentX - dragStart.x) * scaleX;
+      const dy = (currentY - dragStart.y) * scaleY;
+      setSavedTexts((prev) =>
+        prev.map((text, index) =>
+          index === draggingTextIndex
+            ? { ...text, x: initialTextPos.x + dx, y: initialTextPos.y + dy }
+            : text
+        )
+      );
+    };
+
+    const handleMouseUp = () => {
+      setDraggingTextIndex(null);
+      setInitialTextPos({ x: 0, y: 0 });
+    };
+
+    canvas.addEventListener('mousedown', handleMouseDown);
+    canvas.addEventListener('mousemove', handleMouseMove);
+    canvas.addEventListener('mouseup', handleMouseUp);
+    canvas.addEventListener('touchstart', (e) => {
+      const touch = e.touches[0];
+      handleMouseDown(touch);
+    }, { passive: true });
+    canvas.addEventListener('touchmove', (e) => {
+      const touch = e.touches[0];
+      handleMouseMove(touch);
+    }, { passive: true });
+    canvas.addEventListener('touchend', handleMouseUp);
+
+    return () => {
+      canvas.removeEventListener('mousedown', handleMouseDown);
+      canvas.removeEventListener('mousemove', handleMouseMove);
+      canvas.removeEventListener('mouseup', handleMouseUp);
+      canvas.removeEventListener('touchstart', handleMouseDown);
+      canvas.removeEventListener('touchmove', handleMouseMove);
+      canvas.removeEventListener('touchend', handleMouseUp);
+    };
+  }, [savedTexts, draggingTextIndex]);
 
   const seekTo = (time) =>
     new Promise((res) => {
@@ -191,10 +356,15 @@ const MediaEditor = ({ fileUrl, fileType, onClose }) => {
       return `<path d="${points}" stroke="${path.color}" stroke-width="${path.thickness}" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`;
     }).join('');
 
+    const svgTexts = savedTexts.map((text, index) => (
+      `<text x="${text.x || 50}%" y="${text.y || (50 + index * 5)}%" text-anchor="middle" dominant-baseline="middle" fill="${text.color}" font-family="${text.font}" font-size="20">${text.content}</text>`
+    )).join('');
+
     const svg = `
       <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
         <image href="${mediaDataUrl}" width="${width}" height="${height}"/>
         ${svgPaths}
+        ${svgTexts}
       </svg>
     `;
 
@@ -202,7 +372,7 @@ const MediaEditor = ({ fileUrl, fileType, onClose }) => {
   };
 
   const exitDrawingMode = async () => {
-    if (paths.length > 0) {
+    if (paths.length > 0 || savedTexts.length > 0) {
       const svgContent = await generateSVG();
       console.log('Generated SVG:', svgContent);
     }
@@ -212,20 +382,63 @@ const MediaEditor = ({ fileUrl, fileType, onClose }) => {
     setCurrentPath([]);
   };
 
-  const toggleCaptionMode = () => {
-    setCaptionMode(!captionMode);
-    if (!captionMode) {
-      setDrawingMode(false);
+  const exitCaptionMode = async () => {
+    if (textContent) {
+      const newText = { content: textContent, color: textColor, font: selectedFont, align: textAlign, x: savedTexts[editingTextIndex]?.x || null, y: savedTexts[editingTextIndex]?.y || null };
+      if (editingTextIndex !== null) {
+        setSavedTexts((prev) =>
+          prev.map((text, index) => (index === editingTextIndex ? newText : text))
+        );
+      } else {
+        setSavedTexts((prev) => [...prev, newText]);
+      }
     }
+    setCaptionMode(false);
+    setShowCaptionBg(true);
+    setTextContent('');
+    setEditingTextIndex(null);
+  };
+
+  const toggleCaptionMode = () => {
+    setCaptionMode((prev) => {
+      console.log('Toggling captionMode to:', !prev);
+      if (!prev) {
+        setDrawingMode(false);
+        setShowCaptionBg(true);
+        setTextColor(drawingColor);
+        setSelectedFont('Arial');
+        setTextAlign('center');
+        setEditingTextIndex(null);
+      }
+      return !prev;
+    });
+  };
+
+  const toggleCaptionColorMode = () => {
+    setShowCaptionBg(!showCaptionBg);
+  };
+
+  const cycleTextAlign = () => {
+    setTextAlign((prev) => {
+      if (prev === 'center') return 'end';
+      if (prev === 'end') return 'start';
+      return 'center';
+    });
   };
 
   const closeEditor = () => {
     setDrawingMode(false);
     setCaptionMode(false);
+    setShowCaptionBg(true);
     setDrawingColor(COLORS[0]);
     setDrawingThickness(THICKNESS[1]);
     setPaths([]);
     setCurrentPath([]);
+    setTextContent('');
+    setSavedTexts([]);
+    setEditingTextIndex(null);
+    setDraggingTextIndex(null);
+    setInitialTextPos({ x: 0, y: 0 });
     setCaption('');
     if (isVideo) {
       setIsPlaying(false);
@@ -268,7 +481,35 @@ const MediaEditor = ({ fileUrl, fileType, onClose }) => {
 
     paths.forEach((p) => drawLine(p.points, p.color, p.thickness));
     if (currentPath.length > 0) drawLine(currentPath, drawingColor, drawingThickness);
-  }, [paths, currentPath, isVideo, drawingColor, drawingThickness]);
+
+    console.log('Rendering savedTexts:', savedTexts);
+    savedTexts.forEach((text, index) => {
+      if (captionMode && editingTextIndex === index) return;
+
+      ctx.fillStyle = text.color;
+      ctx.font = `20px "${text.font}"`;
+      ctx.textAlign = text.align;
+      ctx.textBaseline = 'middle';
+      const lines = text.content.split('\n');
+      const lineHeight = 25;
+      const xPos = text.x || (canvasWidth / 2);
+      const yPos = text.y || (canvasHeight / 2 - (lines.length * lineHeight) / 2 + (index * lineHeight * 2));
+      lines.forEach((line, lineIndex) => {
+        const x = text.align === 'center' ? xPos :
+                  text.align === 'end' ? xPos - ctx.measureText(line).width : xPos;
+        ctx.fillText(line, x, yPos + lineIndex * lineHeight);
+        console.log(`Drawing text ${index}: "${line}" at x: ${x}, y: ${yPos + lineIndex * lineHeight}`);
+      });
+    });
+  }, [paths, currentPath, isVideo, drawingColor, drawingThickness, savedTexts, captionMode, editingTextIndex]);
+
+  useEffect(() => {
+    const textarea = textAreaRef.current;
+    if (textarea && captionMode) {
+      textarea.style.height = 'auto';
+      textarea.style.height = `${Math.min(textarea.scrollHeight, drawingRef.current.height * 0.4)}px`;
+    }
+  }, [textContent, captionMode]);
 
   return (
     <div style={styles.wrapper}>
@@ -283,6 +524,9 @@ const MediaEditor = ({ fileUrl, fileType, onClose }) => {
         COLORS={COLORS}
         captionMode={captionMode}
         toggleCaptionMode={toggleCaptionMode}
+        exitCaptionMode={exitCaptionMode}
+        toggleCaptionColorMode={toggleCaptionColorMode}
+        cycleTextAlign={cycleTextAlign}
       />
       {isVideo && !drawingMode && !captionMode && (
         <ThumbnailStrip
@@ -310,22 +554,22 @@ const MediaEditor = ({ fileUrl, fileType, onClose }) => {
         <div
           style={{
             position: 'absolute',
-            right: '23px',
+            right: '10px',
             top: '50%',
-            transform: 'translateY(-67%)',
+            transform: 'translateY(-50%)',
             display: 'flex',
             flexDirection: 'column',
             gap: '5px',
           }}
         >
           <div
-            onClick={() => setDrawingColor(drawingColor)} // Keep the current color at the top (no change)
+            onClick={() => setDrawingColor(drawingColor)}
             style={{
-              width: '24px',
-              height: '24px',
+              width: '30px',
+              height: '30px',
               borderRadius: '50%',
               backgroundColor: drawingColor,
-              border: '2px solid #fff', // Highlight the selected color
+              border: '2px solid #fff',
               cursor: 'pointer',
             }}
           />
@@ -334,8 +578,8 @@ const MediaEditor = ({ fileUrl, fileType, onClose }) => {
               key={c}
               onClick={() => setDrawingColor(c)}
               style={{
-                width: '24px',
-                height: '24px',
+                width: '30px',
+                height: '30px',
                 borderRadius: '50%',
                 backgroundColor: c,
                 border: '2px solid transparent',
@@ -345,11 +589,49 @@ const MediaEditor = ({ fileUrl, fileType, onClose }) => {
           ))}
         </div>
       )}
+      {captionMode && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: '50%',
+            height: '20%',
+            minHeight: '40px',
+            backgroundColor: showCaptionBg ? 'rgba(70, 70, 70, 0.8)' : 'transparent',
+            border: '1px solid #fff',
+            borderRadius: '10px',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: '10px',
+            boxSizing: 'border-box',
+            zIndex: '10',
+          }}
+        >
+          <textarea
+            ref={textAreaRef}
+            value={textContent}
+            onChange={(e) => setTextContent(e.target.value)}
+            placeholder="Add subtitle..."
+            style={{
+              width: '100%',
+              height: '100%',
+              background: 'transparent',
+              border: 'none',
+              color: textColor,
+              fontFamily: selectedFont,
+              fontSize: '20px',
+              textAlign: textAlign,
+              resize: 'none',
+              outline: 'none',
+            }}
+          />
+        </div>
+      )}
       {isVideo && !drawingMode && !captionMode && (
         <Controls isPlaying={isPlaying} togglePlay={togglePlay} />
-      )}
-      {!drawingMode && !captionMode && (
-        <CaptionArea caption={caption} setCaption={setCaption} closeEditor={closeEditor} />
       )}
       {drawingMode && (
         <DrawingTools
@@ -358,7 +640,14 @@ const MediaEditor = ({ fileUrl, fileType, onClose }) => {
           THICKNESS={THICKNESS}
         />
       )}
-      {captionMode && <FontSelector />}
+      {captionMode && <FontSelector onFontSelect={setSelectedFont} />}
+      {!drawingMode && !captionMode && (
+        <CaptionArea
+          caption={caption}
+          setCaption={setCaption}
+          closeEditor={closeEditor}
+        />
+      )}
       {!drawingMode && !captionMode && (
         <div style={styles.footer}>
           <span>Status (Contacts)</span>
