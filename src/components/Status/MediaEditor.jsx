@@ -312,7 +312,7 @@ const MediaEditor = ({ fileUrl, fileType, onClose }) => {
             position: 'absolute',
             right: '23px',
             top: '50%',
-            transform: 'translateY(-70%)',
+            transform: 'translateY(-67%)',
             display: 'flex',
             flexDirection: 'column',
             gap: '5px',
