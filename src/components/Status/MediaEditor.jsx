@@ -5,6 +5,7 @@ import Controls from './editor/Controls';
 import CaptionArea from './editor/CaptionArea';
 import DrawingTools from './editor/DrawingTools';
 import ThumbnailStrip from './editor/ThumbnailStrip';
+import FontSelector from './editor/FontSelector';
 import styles from './editor/styles';
 
 const COLORS = [
@@ -35,6 +36,7 @@ const MediaEditor = ({ fileUrl, fileType, onClose }) => {
   const [drawingThickness, setDrawingThickness] = useState(THICKNESS[1]);
   const [paths, setPaths] = useState([]);
   const [currentPath, setCurrentPath] = useState([]);
+  const [captionMode, setCaptionMode] = useState(false);
 
   const mediaStyle = {
     ...styles.video,
@@ -142,7 +144,7 @@ const MediaEditor = ({ fileUrl, fileType, onClose }) => {
     if (!drawingMode) return;
     const canvas = drawingRef.current;
     const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width; // Account for CSS scaling
+    const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
     const x = ((e.touches?.[0]?.clientX ?? e.clientX) - rect.left) * scaleX;
     const y = ((e.touches?.[0]?.clientY ?? e.clientY) - rect.top) * scaleY;
@@ -210,8 +212,16 @@ const MediaEditor = ({ fileUrl, fileType, onClose }) => {
     setCurrentPath([]);
   };
 
+  const toggleCaptionMode = () => {
+    setCaptionMode(!captionMode);
+    if (!captionMode) {
+      setDrawingMode(false);
+    }
+  };
+
   const closeEditor = () => {
     setDrawingMode(false);
+    setCaptionMode(false);
     setDrawingColor(COLORS[0]);
     setDrawingThickness(THICKNESS[1]);
     setPaths([]);
@@ -230,22 +240,19 @@ const MediaEditor = ({ fileUrl, fileType, onClose }) => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Set canvas dimensions to match media
     let canvasWidth, canvasHeight;
     if (isVideo && videoRef.current) {
       canvasWidth = videoRef.current.offsetWidth;
       canvasHeight = videoRef.current.offsetHeight;
     } else {
-      canvasWidth = drawingRef.current.parentElement.offsetWidth; // Match parent container
+      canvasWidth = drawingRef.current.parentElement.offsetWidth;
       canvasHeight = drawingRef.current.parentElement.offsetHeight * 0.6;
     }
     canvas.width = canvasWidth;
     canvas.height = canvasHeight;
 
-    // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Draw all paths
     const drawLine = (points, color, thickness) => {
       ctx.strokeStyle = color;
       ctx.lineWidth = thickness;
@@ -274,8 +281,10 @@ const MediaEditor = ({ fileUrl, fileType, onClose }) => {
         setDrawingColor={setDrawingColor}
         undo={undo}
         COLORS={COLORS}
+        captionMode={captionMode}
+        toggleCaptionMode={toggleCaptionMode}
       />
-      {isVideo && !drawingMode && (
+      {isVideo && !drawingMode && !captionMode && (
         <ThumbnailStrip
           thumbnails={thumbnails}
           thumbWidth={thumbWidth}
@@ -297,10 +306,38 @@ const MediaEditor = ({ fileUrl, fileType, onClose }) => {
         handleMove={handleMove}
         handleEnd={handleEnd}
       />
-      {isVideo && !drawingMode && (
+      {(drawingMode || captionMode) && (
+        <div
+          style={{
+            position: 'absolute',
+            right: '10px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '5px',
+          }}
+        >
+          {COLORS.map((c) => (
+            <div
+              key={c}
+              onClick={() => setDrawingColor(c)}
+              style={{
+                width: '30px',
+                height: '30px',
+                borderRadius: '50%',
+                backgroundColor: c,
+                border: drawingColor === c ? '2px solid #fff' : '2px solid transparent',
+                cursor: 'pointer',
+              }}
+            />
+          ))}
+        </div>
+      )}
+      {isVideo && !drawingMode && !captionMode && (
         <Controls isPlaying={isPlaying} togglePlay={togglePlay} />
       )}
-      {!drawingMode && (
+      {!drawingMode && !captionMode && (
         <CaptionArea caption={caption} setCaption={setCaption} closeEditor={closeEditor} />
       )}
       {drawingMode && (
@@ -310,7 +347,8 @@ const MediaEditor = ({ fileUrl, fileType, onClose }) => {
           THICKNESS={THICKNESS}
         />
       )}
-      {!drawingMode && (
+      {captionMode && <FontSelector />}
+      {!drawingMode && !captionMode && (
         <div style={styles.footer}>
           <span>Status (Contacts)</span>
           <span>{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
