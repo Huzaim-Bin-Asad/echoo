@@ -310,24 +310,35 @@ const MediaEditor = ({ fileUrl, fileType, onClose }) => {
         <div
           style={{
             position: 'absolute',
-            right: '10px',
+            right: '23px',
             top: '50%',
-            transform: 'translateY(-50%)',
+            transform: 'translateY(-70%)',
             display: 'flex',
             flexDirection: 'column',
             gap: '5px',
           }}
         >
-          {COLORS.map((c) => (
+          <div
+            onClick={() => setDrawingColor(drawingColor)} // Keep the current color at the top (no change)
+            style={{
+              width: '24px',
+              height: '24px',
+              borderRadius: '50%',
+              backgroundColor: drawingColor,
+              border: '2px solid #fff', // Highlight the selected color
+              cursor: 'pointer',
+            }}
+          />
+          {COLORS.filter((c) => c !== drawingColor).map((c) => (
             <div
               key={c}
               onClick={() => setDrawingColor(c)}
               style={{
-                width: '30px',
-                height: '30px',
+                width: '24px',
+                height: '24px',
                 borderRadius: '50%',
                 backgroundColor: c,
-                border: drawingColor === c ? '2px solid #fff' : '2px solid transparent',
+                border: '2px solid transparent',
                 cursor: 'pointer',
               }}
             />

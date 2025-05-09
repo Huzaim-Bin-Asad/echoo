@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 
 const FontSelector = () => {
   const fontStyles = [
@@ -12,18 +12,29 @@ const FontSelector = () => {
     { fontFamily: 'Comic Sans MS', size: '1rem' },
   ];
 
+  const scrollRef = useRef(null);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollLeft = 0; // Ensure it starts at the leftmost position
+    }
+  }, []);
+
   return (
     <div
+      ref={scrollRef}
       style={{
         display: 'flex',
         overflowX: 'auto',
         gap: '10px',
-        padding: '10px',
+        padding: '10px 20px', // More padding for better spacing
         whiteSpace: 'nowrap',
         position: 'absolute',
         bottom: '20px',
         left: '50%',
         transform: 'translateX(-50%)',
+        width: '80%', // Wider container to fit more items
+        scrollBehavior: 'smooth', // Smooth scrolling
         scrollbarWidth: 'none', // Firefox
         '-ms-overflow-style': 'none', // IE and Edge
       }}

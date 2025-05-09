@@ -63,8 +63,8 @@ const TopBar = ({
           <>
             <div
               style={{
-                width: '50px',
-                height: '50px',
+                width: '40px',
+                height: '40px',
                 borderRadius: '50%',
                 backgroundColor: 'rgb(51, 51, 51)',
                 display: 'flex',
@@ -77,8 +77,8 @@ const TopBar = ({
             </div>
             <div
               style={{
-                width: '50px',
-                height: '50px',
+                width: '40px',
+                height: '40px',
                 borderRadius: '50%',
                 backgroundColor: 'rgb(51, 51, 51)',
                 display: 'flex',

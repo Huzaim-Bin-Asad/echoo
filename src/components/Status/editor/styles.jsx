@@ -126,8 +126,8 @@ const styles = {
       zIndex: 1000,
     },
     colorDot: {
-      width: 24,
-      height: 24,
+      width: 18,
+      height: 18,
       borderRadius: '50%',
       border: '2px solid #fff',
       cursor: 'pointer',
