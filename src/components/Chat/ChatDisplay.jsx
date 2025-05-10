@@ -63,7 +63,7 @@ function ChatDisplay() {
 
     isConnectingRef.current = true;
     userIdRef.current = userId;
-    const socket = new WebSocket("ws://localhost:5000");
+    const socket = new WebSocket("wss://echoo-backend-production.up.railway.app");
     socketRef.current = socket;
     socket.onopen = () => {
       console.log('✅ WebSocket connected for user:', userId);

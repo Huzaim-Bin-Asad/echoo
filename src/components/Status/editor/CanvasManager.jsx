@@ -16,33 +16,41 @@ const CanvasManager = ({
   saveImageCallback,
 }) => {
   const [dimensions, setDimensions] = useState(null);
-  const lastRender = useRef({ pathsLength: 0, currentPathLength: 0, savedTextsLength: 0 });
-  const mediaDrawn = useRef(false);
 
   const updateCanvasDimensions = useCallback(() => {
     const canvas = drawingRef.current;
     if (!canvas) return { canvasWidth: 0, canvasHeight: 0 };
 
-    let mediaWidth, mediaHeight;
+    let mediaWidth, mediaHeight, naturalWidth, naturalHeight;
     if (isVideo && videoRef.current) {
-      mediaWidth = videoRef.current.offsetWidth;
-      mediaHeight = videoRef.current.offsetHeight;
+      mediaWidth = window.innerWidth;
+      mediaHeight = window.innerHeight;
+      naturalWidth = videoRef.current.videoWidth;
+      naturalHeight = videoRef.current.videoHeight;
     } else {
       const img = new Image();
       img.src = fileUrl;
       img.style.width = '100%';
-      img.style.height = '85.5vh';
-      img.style.objectFit = 'contain';
-      img.style.position = 'absolute';
+      img.style.height = '100vh';
+      img.style.objectFit= 'cover';
+      img.style.position= 'absolute';
       img.style.visibility = 'hidden';
       document.body.appendChild(img);
-      mediaWidth = img.offsetWidth;
-      mediaHeight = img.offsetHeight;
+      mediaWidth = window.innerWidth;
+      mediaHeight = window.innerHeight;
+      naturalWidth = img.naturalWidth;
+      naturalHeight = img.naturalHeight;
       document.body.removeChild(img);
     }
 
-    const canvasWidth = mediaWidth;
-    const canvasHeight = mediaHeight;
+    const aspectRatio = naturalWidth / naturalHeight;
+    let canvasWidth = mediaWidth;
+    let canvasHeight = mediaWidth / aspectRatio;
+
+    if (canvasHeight > mediaHeight) {
+      canvasHeight = mediaHeight;
+      canvasWidth = mediaHeight * aspectRatio;
+    }
 
     canvas.width = canvasWidth * 2;
     canvas.height = canvasHeight * 2;
@@ -66,76 +74,76 @@ const CanvasManager = ({
 
     const { canvasWidth, canvasHeight } = dimensions;
 
-    const draw = () => {
-      const needsRedraw =
-        paths.length !== lastRender.current.pathsLength ||
-        currentPath.length !== lastRender.current.currentPathLength ||
-        savedTexts.length !== lastRender.current.savedTextsLength;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      if (needsRedraw || !mediaDrawn.current) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        // Draw media only once unless dimensions change
-        if (!mediaDrawn.current) {
-          if (isVideo && videoRef.current) {
-            ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-          } else {
-            const img = new Image();
-            img.src = fileUrl;
-            img.onload = () => {
-              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            };
-          }
-          mediaDrawn.current = true;
-        }
-
-        // Draw paths
-        const drawLine = (points, color, thickness) => {
-          ctx.strokeStyle = color;
-          ctx.lineWidth = thickness;
-          ctx.lineCap = 'round';
-          ctx.lineJoin = 'round';
-          ctx.beginPath();
-          points.forEach((pt, i) => {
-            if (i === 0) ctx.moveTo(pt.x, pt.y);
-            else ctx.lineTo(pt.x, pt.y);
-          });
-          ctx.stroke();
-        };
-        paths.forEach((p) => drawLine(p.points, p.color, p.thickness));
-        if (currentPath.length > 0) drawLine(currentPath, drawingColor, drawingThickness);
-
-        // Draw saved texts
-        const scaleX = canvas.width / canvasWidth;
-        const scaleY = canvas.height / canvasHeight;
-        savedTexts.forEach((text, index) => {
-          if (captionMode && editingTextIndex === index) return;
-          ctx.fillStyle = text.color;
-          ctx.font = `${(text.fontSize || 20) * Math.min(scaleX, scaleY)}px "${text.font}"`;
-          ctx.textAlign = text.align;
-          ctx.textBaseline = 'middle';
-          const lines = text.content.split('\n');
-          const lineHeight = (text.fontSize || 20) * 1.2 * Math.min(scaleX, scaleY);
-          const xPos = (text.x || (canvasWidth / 2)) * scaleX;
-          const yPos = (text.y || (canvasHeight / 2 - (lines.length * lineHeight) / 2 + (index * lineHeight * 2))) * scaleY;
-          lines.forEach((line, lineIndex) => {
-            const x = text.align === 'center' ? xPos :
-                      text.align === 'end' ? xPos - ctx.measureText(line).width : xPos;
-            ctx.fillText(line, x, yPos + lineIndex * lineHeight);
-          });
-        });
-
-        lastRender.current = {
-          pathsLength: paths.length,
-          currentPathLength: currentPath.length,
-          savedTextsLength: savedTexts.length,
-        };
+    if (isVideo && videoRef.current) {
+      const aspectRatio = videoRef.current.videoWidth / videoRef.current.videoHeight;
+      let drawWidth = canvas.width;
+      let drawHeight = canvas.width / aspectRatio;
+      if (drawHeight < canvas.height) {
+        drawHeight = canvas.height;
+        drawWidth = canvas.height * aspectRatio;
       }
+      ctx.drawImage(
+        videoRef.current,
+        (canvas.width - drawWidth) / 2,
+        (canvas.height - drawHeight) / 2,
+        drawWidth,
+        drawHeight
+      );
+    } else {
+      const img = new Image();
+      img.src = fileUrl;
+      img.onload = () => {
+        const aspectRatio = img.naturalWidth / img.naturalHeight;
+        let drawWidth = canvas.width;
+        let drawHeight = canvas.width / aspectRatio;
+        if (drawHeight < canvas.height) {
+          drawHeight = canvas.height;
+          drawWidth = canvas.height * aspectRatio;
+        }
+        ctx.drawImage(
+          img,
+          (canvas.width - drawWidth) / 2,
+          (canvas.height - drawHeight) / 2,
+          drawWidth,
+          drawHeight
+        );
+      };
+    }
 
-      requestAnimationFrame(draw);
+    const drawLine = (points, color, thickness) => {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = thickness;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      points.forEach((pt, i) => {
+        if (i === 0) ctx.moveTo(pt.x, pt.y);
+        else ctx.lineTo(pt.x, pt.y);
+      });
+      ctx.stroke();
     };
+    paths.forEach((p) => drawLine(p.points, p.color, p.thickness));
+    if (currentPath.length > 0) drawLine(currentPath, drawingColor, drawingThickness);
 
-    draw();
+    const scaleX = canvas.width / canvasWidth;
+    const scaleY = canvas.height / canvasHeight;
+    savedTexts.forEach((text, index) => {
+      if (captionMode && editingTextIndex === index) return;
+      ctx.fillStyle = text.color;
+      ctx.font = `${(text.fontSize || 20) * Math.min(scaleX, scaleY)}px "${text.font}"`;
+      ctx.textAlign = text.align;
+      ctx.textBaseline = 'middle';
+      const lines = text.content.split('\n');
+      const lineHeight = (text.fontSize || 20) * 1.2 * Math.min(scaleX, scaleY);
+      const xPos = (text.x || canvasWidth / 2) * scaleX;
+      const yPos = (text.y || canvasHeight / 2) * scaleY;
+      lines.forEach((line, lineIndex) => {
+        const x = text.align === 'center' ? xPos : text.align === 'end' ? xPos - ctx.measureText(line).width : xPos;
+        ctx.fillText(line, x, yPos + lineIndex * lineHeight);
+      });
+    });
   }, [dimensions, paths, currentPath, drawingColor, drawingThickness, savedTexts, captionMode, editingTextIndex, isVideo, videoRef, fileUrl, drawingRef]);
 
   const saveImage = useCallback(async () => {
@@ -157,56 +165,60 @@ const CanvasManager = ({
       naturalHeight = img.height;
     }
 
-    const scaleX = canvas.width / naturalWidth;
-    const scaleY = canvas.height / naturalHeight;
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = naturalWidth;
+    tempCanvas.height = naturalHeight;
+    const tempCtx = tempCanvas.getContext('2d');
 
     if (isVideo && videoRef.current) {
-      ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+      tempCtx.drawImage(videoRef.current, 0, 0, naturalWidth, naturalHeight);
     } else {
       const img = new Image();
       img.src = fileUrl;
       await new Promise((resolve) => (img.onload = resolve));
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      tempCtx.drawImage(img, 0, 0, naturalWidth, naturalHeight);
     }
 
+    const scaleX = naturalWidth / canvasWidth;
+    const scaleY = naturalHeight / canvasHeight;
+
     const drawLine = (points, color, thickness) => {
-      ctx.strokeStyle = color;
-      ctx.lineWidth = thickness;
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      ctx.beginPath();
+      tempCtx.strokeStyle = color;
+      tempCtx.lineWidth = thickness * Math.min(scaleX, scaleY);
+      tempCtx.lineCap = 'round';
+      tempCtx.lineJoin = 'round';
+      tempCtx.beginPath();
       points.forEach((pt, i) => {
-        if (i === 0) ctx.moveTo(pt.x, pt.y);
-        else ctx.lineTo(pt.x, pt.y);
+        if (i === 0) tempCtx.moveTo(pt.x * scaleX, pt.y * scaleY);
+        else tempCtx.lineTo(pt.x * scaleX, pt.y * scaleY);
       });
-      ctx.stroke();
+      tempCtx.stroke();
     };
     paths.forEach((p) => drawLine(p.points, p.color, p.thickness));
     if (currentPath.length > 0) drawLine(currentPath, drawingColor, drawingThickness);
 
     savedTexts.forEach((text, index) => {
-      ctx.fillStyle = text.color;
-      ctx.font = `${(text.fontSize || 20) * Math.min(scaleX, scaleY)}px "${text.font}"`;
-      ctx.textAlign = text.align;
-      ctx.textBaseline = 'middle';
+      tempCtx.fillStyle = text.color;
+      tempCtx.font = `${(text.fontSize || 20) * Math.min(scaleX, scaleY)}px "${text.font}"`;
+      tempCtx.textAlign = text.align;
+      tempCtx.textBaseline = 'middle';
       const lines = text.content.split('\n');
       const lineHeight = (text.fontSize || 20) * 1.2 * Math.min(scaleX, scaleY);
-      const xPos = (text.x || (naturalWidth / 2)) * scaleX;
-      const yPos = (text.y || (naturalHeight / 2 - (lines.length * lineHeight) / 2 + (index * lineHeight * 2))) * scaleY;
+      const xPos = (text.x || canvasWidth / 2) * scaleX;
+      const yPos = (text.y || canvasHeight / 2) * scaleY;
       lines.forEach((line, lineIndex) => {
-        const x = text.align === 'center' ? xPos :
-                  text.align === 'end' ? xPos - ctx.measureText(line).width : xPos;
-        ctx.fillText(line, x, yPos + lineIndex * lineHeight);
+        const x = text.align === 'center' ? xPos : text.align === 'end' ? xPos - tempCtx.measureText(line).width : xPos;
+        tempCtx.fillText(line, x, yPos + lineIndex * lineHeight);
       });
     });
 
-    ctx.fillStyle = '#ffffff';
-    ctx.font = `${16 * Math.min(scaleX, scaleY)}px Arial`;
-    ctx.textBaseline = 'bottom';
-    const padding = 10 * (canvas.width / canvasWidth);
-    ctx.fillText(caption, padding, canvasHeight - padding);
+    tempCtx.fillStyle = '#ffffff';
+    tempCtx.font = `${16 * Math.min(scaleX, scaleY)}px Arial`;
+    tempCtx.textBaseline = 'bottom';
+    const padding = 10 * scaleX;
+    tempCtx.fillText(caption, padding, naturalHeight - padding);
 
-    const dataUrl = canvas.toDataURL('image/png');
+    const dataUrl = tempCanvas.toDataURL('image/png');
     const blob = await (await fetch(dataUrl)).blob();
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');

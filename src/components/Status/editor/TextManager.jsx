@@ -53,12 +53,10 @@ const TextManager = ({
 
       const ctx = canvas.getContext('2d');
       const rect = canvas.getBoundingClientRect();
-      const scrollX = window.scrollX || window.pageXOffset;
-      const scrollY = window.scrollY || window.pageYOffset;
       const clientX = e.touches?.[0]?.clientX ?? e.clientX;
       const clientY = e.touches?.[0]?.clientY ?? e.clientY;
-      const x = (clientX - rect.left + scrollX) * (canvas.width / rect.width);
-      const y = (clientY - rect.top + scrollY) * (canvas.height / rect.height);
+      const x = ((clientX - rect.left) / rect.width) * canvas.width;
+      const y = ((clientY - rect.top) / rect.height) * canvas.height;
 
       const scaleX = canvas.width / rect.width;
       const scaleY = canvas.height / rect.height;
@@ -67,61 +65,29 @@ const TextManager = ({
 
       const adjustedXPos = text.align === 'center' ? xPos - width / 2 : text.align === 'end' ? xPos - width : xPos;
 
-      console.log('Click at:', { x, y, adjustedXPos, yPos, width, height });
-
       if (
         x >= adjustedXPos &&
         x <= adjustedXPos + width &&
         y >= yPos - height / 2 &&
         y <= yPos + height / 2
       ) {
-        console.log('Text clicked at index:', index);
-        if (editingTextIndex === index) {
-          if (draggingTextIndex === null) {
-            setDraggingTextIndex(index);
-            offsetRef.current = { x: x - xPos, y: y - yPos };
-            setScaleControlsVisible(true);
-            console.log('Starting drag for index:', index);
-          } else {
-            setDraggingTextIndex(null);
-            setEditingTextIndex(index);
-            setTextContent(text.content);
-            setTextColor(text.color);
-            setSelectedFont(text.font);
-            setTextAlign(text.align);
-            if (textAreaRef.current) {
-              console.log('Focusing textarea');
-              textAreaRef.current.focus();
-            }
-          }
-        } else {
+        if (e.detail === 2) {
           setEditingTextIndex(index);
           setTextContent(text.content);
           setTextColor(text.color);
           setSelectedFont(text.font);
           setTextAlign(text.align);
           if (textAreaRef.current) {
-            console.log('Focusing textarea');
             textAreaRef.current.focus();
           }
+        } else if (draggingTextIndex === null) {
+          setDraggingTextIndex(index);
+          offsetRef.current = { x: x - xPos, y: y - yPos };
+          setScaleControlsVisible(true);
         }
       }
     },
-    [
-      captionMode,
-      drawingRef,
-      savedTexts,
-      editingTextIndex,
-      draggingTextIndex,
-      setDraggingTextIndex,
-      setEditingTextIndex,
-      setTextContent,
-      setTextColor,
-      setSelectedFont,
-      setTextAlign,
-      textAreaRef,
-      getTextBounds,
-    ]
+    [captionMode, drawingRef, savedTexts, draggingTextIndex, setDraggingTextIndex, setEditingTextIndex, setTextContent, setTextColor, setSelectedFont, setTextAlign, textAreaRef, getTextBounds]
   );
 
   const handleTextDrag = useCallback(
@@ -132,17 +98,13 @@ const TextManager = ({
       if (!canvas) return;
 
       const rect = canvas.getBoundingClientRect();
-      const scrollX = window.scrollX || window.pageXOffset;
-      const scrollY = window.scrollY || window.pageYOffset;
       const clientX = e.touches?.[0]?.clientX ?? e.clientX;
       const clientY = e.touches?.[0]?.clientY ?? e.clientY;
-      const x = (clientX - rect.left + scrollX) * (canvas.width / rect.width);
-      const y = (clientY - rect.top + scrollY) * (canvas.height / rect.height);
+      const x = ((clientX - rect.left) / rect.width) * canvas.width;
+      const y = ((clientY - rect.top) / rect.height) * canvas.height;
 
       const newX = (x - offsetRef.current.x) / (canvas.width / rect.width);
       const newY = (y - offsetRef.current.y) / (canvas.height / rect.height);
-
-      console.log('Dragging to:', { newX, newY });
 
       setSavedTexts((prev) =>
         prev.map((text, index) =>
@@ -154,15 +116,14 @@ const TextManager = ({
   );
 
   const handleTextDragEnd = useCallback(() => {
-    console.log('Drag ended');
     setDraggingTextIndex(null);
     offsetRef.current = { x: 0, y: 0 };
   }, [setDraggingTextIndex]);
 
   const handlePinch = useCallback(
     (e) => {
-      if (e.touches.length !== 2 || editingTextIndex === null) return;
-
+      if (!captionMode || e.touches.length !== 2 || editingTextIndex === null) return;
+      e.preventDefault();
       const touch1 = e.touches[0];
       const touch2 = e.touches[1];
       const distance = Math.sqrt(
@@ -170,15 +131,12 @@ const TextManager = ({
         Math.pow(touch1.clientY - touch2.clientY, 2)
       );
 
-      console.log('Pinch distance:', distance);
-
       if (touchDistanceRef.current === null) {
         touchDistanceRef.current = distance;
         initialFontSizeRef.current = savedTexts[editingTextIndex]?.fontSize || 20;
       } else {
         const scale = distance / touchDistanceRef.current;
         const newFontSize = Math.max(10, Math.min(100, initialFontSizeRef.current * scale));
-        console.log('New font size:', newFontSize);
         setSavedTexts((prev) =>
           prev.map((text, index) =>
             index === editingTextIndex ? { ...text, fontSize: newFontSize } : text
@@ -186,11 +144,10 @@ const TextManager = ({
         );
       }
     },
-    [editingTextIndex, savedTexts, setSavedTexts]
+    [captionMode, editingTextIndex, savedTexts, setSavedTexts]
   );
 
   const handlePinchEnd = useCallback(() => {
-    console.log('Pinch ended');
     touchDistanceRef.current = null;
     initialFontSizeRef.current = null;
   }, []);
@@ -198,75 +155,75 @@ const TextManager = ({
   const adjustFontSize = useCallback(
     (delta) => {
       if (editingTextIndex === null) return;
-      setSavedTexts((prev) => {
-        const newTexts = prev.map((text, index) =>
+      setSavedTexts((prev) =>
+        prev.map((text, index) =>
           index === editingTextIndex
             ? { ...text, fontSize: Math.max(10, Math.min(100, (text.fontSize || 20) + delta)) }
             : text
-        );
-        console.log('Adjusted font size:', newTexts[editingTextIndex]?.fontSize);
-        return newTexts;
-      });
+        )
+      );
     },
     [editingTextIndex, setSavedTexts]
   );
 
-  useEffect(() => {
-    const canvas = drawingRef.current;
-    if (!canvas) return;
+useEffect(() => {
+  const canvas = drawingRef.current;
+  if (!canvas) return;
 
-    const handleMouseDown = (e) => {
-      if (!captionMode) return;
-      savedTexts.forEach((_, index) => handleTextClick(e, index));
-    };
+  const handleMouseDown = (e) => {
+    if (!captionMode) return;
+    savedTexts.forEach((_, index) => handleTextClick(e, index));
+  };
 
-    const handleMouseMove = (e) => handleTextDrag(e);
-    const handleMouseUp = () => handleTextDragEnd();
+  const handleMouseMove = (e) => handleTextDrag(e);
+  const handleMouseUp = () => handleTextDragEnd();
 
-    const handleTouchStart = (e) => {
-      if (!captionMode) return;
-      savedTexts.forEach((_, index) => handleTextClick(e, index));
-      if (e.touches.length === 2) handlePinch(e);
-    };
+  const handleTouchStart = (e) => {
+    e.preventDefault();
+    if (!captionMode) return;
+    savedTexts.forEach((_, index) => handleTextClick(e, index));
+    if (e.touches.length === 2 && editingTextIndex !== null) handlePinch(e);
+  };
 
-    const handleTouchMove = (e) => {
-      if (e.touches.length === 2) handlePinch(e);
-      else handleTextDrag(e);
-    };
+  const handleTouchMove = (e) => {
+    e.preventDefault();
+    if (e.touches.length === 2 && captionMode && editingTextIndex !== null) handlePinch(e);
+    else handleTextDrag(e);
+  };
 
-    const handleTouchEnd = (e) => {
-      handleTextDragEnd();
-      handlePinchEnd();
-    };
+  const handleTouchEnd = (e) => {
+    e.preventDefault();
+    handleTextDragEnd();
+    handlePinchEnd();
+  };
 
-    canvas.addEventListener('mousedown', handleMouseDown);
-    canvas.addEventListener('mousemove', handleMouseMove);
-    canvas.addEventListener('mouseup', handleMouseUp);
-    canvas.addEventListener('touchstart', handleTouchStart);
-    canvas.addEventListener('touchmove', handleTouchMove);
-    canvas.addEventListener('touchend', handleTouchEnd);
+  canvas.addEventListener('mousedown', handleMouseDown);
+  canvas.addEventListener('mousemove', handleMouseMove);
+  canvas.addEventListener('mouseup', handleMouseUp);
+  canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+  canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+  canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
 
-    return () => {
-      canvas.removeEventListener('mousedown', handleMouseDown);
-      canvas.removeEventListener('mousemove', handleMouseMove);
-      canvas.removeEventListener('mouseup', handleMouseUp);
-      canvas.removeEventListener('touchstart', handleTouchStart);
-      canvas.removeEventListener('touchmove', handleTouchMove);
-      canvas.removeEventListener('touchend', handleTouchEnd);
-    };
-  }, [
-    drawingRef,
-    savedTexts,
-    captionMode,
-    draggingTextIndex,
-    editingTextIndex,
-    handleTextClick,
-    handleTextDrag,
-    handleTextDragEnd,
-    handlePinch,
-    handlePinchEnd,
-  ]);
-
+  return () => {
+    canvas.removeEventListener('mousedown', handleMouseDown);
+    canvas.removeEventListener('mousemove', handleMouseMove);
+    canvas.removeEventListener('mouseup', handleMouseUp);
+    canvas.removeEventListener('touchstart', handleTouchStart, { passive: false });
+    canvas.removeEventListener('touchmove', handleTouchMove, { passive: false });
+    canvas.removeEventListener('touchend', handleTouchEnd, { passive: false });
+  };
+}, [
+  drawingRef,
+  savedTexts,
+  captionMode,
+  draggingTextIndex,
+  editingTextIndex,
+  handleTextClick,
+  handleTextDrag,
+  handleTextDragEnd,
+  handlePinch,
+  handlePinchEnd,
+]);
   return (
     <>
       {captionMode && scaleControlsVisible && editingTextIndex !== null && (
