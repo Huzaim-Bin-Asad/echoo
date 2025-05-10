@@ -7,9 +7,9 @@ const useTokenChecker = (currentPath) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const isLandingOrAuthPage = 
-      currentPath === '/' || 
-      currentPath === '/login' || 
+    const isLandingOrAuthPage =
+      currentPath === '/' ||
+      currentPath === '/login' ||
       currentPath === '/signup';
 
     const token = localStorage.getItem('token');
@@ -24,7 +24,6 @@ const useTokenChecker = (currentPath) => {
         setTokenMissing(false);
         setShowModal(false);
 
-        // ✅ Redirect only if user is on landing/auth pages
         if (isLandingOrAuthPage) {
           navigate('/echoo');
         }
@@ -36,13 +35,24 @@ const useTokenChecker = (currentPath) => {
       }
     }
 
-    // If token is missing or expired
-    setTokenMissing(true);
-    setShowModal(true);
+    if (!isLandingOrAuthPage) {
+      setTokenMissing(true);
+      setShowModal(true);
+    }
   }, [currentPath, navigate]);
 
   const AuthModal = ({ handleLogin, handleSignup }) => {
     if (!showModal) return null;
+
+    const onLogin = () => {
+      setShowModal(false);
+      handleLogin && handleLogin();
+    };
+
+    const onSignup = () => {
+      setShowModal(false);
+      handleSignup && handleSignup();
+    };
 
     return (
       <div className="modal fade show d-block" style={{ background: 'rgba(0, 0, 0, 0.6)' }} id="authModal" role="dialog">
@@ -59,14 +69,14 @@ const useTokenChecker = (currentPath) => {
                 <button 
                   className="btn btn-light" 
                   style={{ width: '60%', borderRadius: '999px', padding: '10px 0' }} 
-                  onClick={handleLogin}
+                  onClick={onLogin}
                 >
                   Log in
                 </button>
                 <button 
                   className="btn btn-outline-light" 
                   style={{ width: '60%', borderRadius: '999px', padding: '10px 0' }} 
-                  onClick={handleSignup}
+                  onClick={onSignup}
                 >
                   Sign up
                 </button>

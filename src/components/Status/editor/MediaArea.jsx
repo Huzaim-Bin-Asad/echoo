@@ -23,7 +23,7 @@ const MediaArea = ({
         style={{
           ...styles.drawingCanvas,
           width: '100%',
-          height: isVideo ? videoRef.current?.offsetHeight : 'auto',
+          height: isVideo ? videoRef.current?.offsetHeight : '86vh',
           position: 'absolute',
           top: 0,
           left: 0,
