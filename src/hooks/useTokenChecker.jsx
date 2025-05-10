@@ -1,58 +1,52 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 const useTokenChecker = (currentPath) => {
   const [tokenMissing, setTokenMissing] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const navigate = useNavigate();
 
   useEffect(() => {
-    const isLandingOrAuthPage =
-      currentPath === '/' ||
-      currentPath === '/login' ||
-      currentPath === '/signup';
+    // Don't check token on auth pages
+    const isAuthPage = currentPath === '/signup' || 
+                      currentPath === '/login' || 
+                      currentPath === '/';
 
-    const token = localStorage.getItem('token');
-    const tokenSavedAt = localStorage.getItem('token_saved_at');
+    if (isAuthPage) {
+      setShowModal(false);
+      return;
+    }
 
-    if (token && tokenSavedAt) {
-      const savedAt = new Date(tokenSavedAt);
-      const currentTime = new Date();
-      const timeDifference = (currentTime - savedAt) / 1000;
+    const intervalId = setInterval(() => {
+      const token = localStorage.getItem('token');
+      const tokenSavedAt = localStorage.getItem('token_saved_at');
 
-      if (timeDifference < 86400) {
-        setTokenMissing(false);
-        setShowModal(false);
-
-        if (isLandingOrAuthPage) {
-          navigate('/echoo');
+      if (token && tokenSavedAt) {
+        const savedAt = new Date(tokenSavedAt);
+        const currentTime = new Date();
+        const timeDifference = (currentTime - savedAt) / 1000; // in seconds
+        
+        if (timeDifference >= 86400) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('token_saved_at');
+          console.log('Token expired and removed');
+          setTokenMissing(true);
+          setShowModal(true);
+        } else {
+          setTokenMissing(false);
+          setShowModal(false);
         }
-
-        return;
       } else {
-        localStorage.removeItem('token');
-        localStorage.removeItem('token_saved_at');
+        setTokenMissing(true);
+        setShowModal(true);
       }
-    }
+    }, 500);
 
-    if (!isLandingOrAuthPage) {
-      setTokenMissing(true);
-      setShowModal(true);
-    }
-  }, [currentPath, navigate]);
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [currentPath]);
 
   const AuthModal = ({ handleLogin, handleSignup }) => {
     if (!showModal) return null;
-
-    const onLogin = () => {
-      setShowModal(false);
-      handleLogin && handleLogin();
-    };
-
-    const onSignup = () => {
-      setShowModal(false);
-      handleSignup && handleSignup();
-    };
 
     return (
       <div className="modal fade show d-block" style={{ background: 'rgba(0, 0, 0, 0.6)' }} id="authModal" role="dialog">
@@ -69,14 +63,14 @@ const useTokenChecker = (currentPath) => {
                 <button 
                   className="btn btn-light" 
                   style={{ width: '60%', borderRadius: '999px', padding: '10px 0' }} 
-                  onClick={onLogin}
+                  onClick={handleLogin}
                 >
                   Log in
                 </button>
                 <button 
                   className="btn btn-outline-light" 
                   style={{ width: '60%', borderRadius: '999px', padding: '10px 0' }} 
-                  onClick={onSignup}
+                  onClick={handleSignup}
                 >
                   Sign up
                 </button>
