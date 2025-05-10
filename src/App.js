@@ -36,6 +36,8 @@ function AppContent() {
         <Route path="/signup" element={<Signup />} />
         <Route path="/login" element={<Login />} />
         <Route path="/" element={<Echoo />} />
+        <Route path="/echoo" element={<Echoo />} />
+
         <Route path="/add" element={<Add />} />
         <Route path="/new-contact" element={<NewContact />} />
         <Route path="/new-group" element={<NewGroup />} />
