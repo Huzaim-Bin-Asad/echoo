@@ -32,10 +32,10 @@ function AppContent() {
       <AuthModal handleLogin={handleLogin} handleSignup={handleSignup} />
       
       <Routes>
-        <Route path="/" element={<Landing />} />
+        <Route path="/landing" element={<Landing />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/echoo" element={<Echoo />} />
+        <Route path="/" element={<Echoo />} />
         <Route path="/add" element={<Add />} />
         <Route path="/new-contact" element={<NewContact />} />
         <Route path="/new-group" element={<NewGroup />} />
