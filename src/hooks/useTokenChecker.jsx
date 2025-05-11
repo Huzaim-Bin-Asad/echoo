@@ -8,7 +8,7 @@ const useTokenChecker = (currentPath) => {
     // Don't check token on auth pages
     const isAuthPage = currentPath === '/signup' || 
                       currentPath === '/login' || 
-                      currentPath === '/';
+                      currentPath === '/landing';
 
     if (isAuthPage) {
       setShowModal(false);

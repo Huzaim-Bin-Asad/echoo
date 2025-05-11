@@ -7,9 +7,10 @@ const MediaArea = ({
   videoRef,
   drawingRef,
   mediaStyle,
-  handleStart,
-  handleMove,
-  handleEnd,
+  paths,
+  currentPath,
+  drawingColor,
+  drawingThickness,
 }) => {
   return (
     <div style={styles.mediaArea}>
@@ -18,23 +19,54 @@ const MediaArea = ({
       ) : (
         <img src={fileUrl} alt="preview" style={mediaStyle} />
       )}
-      <canvas
+      <svg
         ref={drawingRef}
         style={{
-          ...styles.drawingCanvas,
+          ...styles.drawingCanvas, // Reusing canvas styles, rename to drawingSvg in styles.js if needed
           width: '100%',
-          height: isVideo ? videoRef.current?.offsetHeight : '86vh',
+          height: '100vh',
           position: 'absolute',
           top: 0,
           left: 0,
+          touchAction: 'none',
+          zIndex: 1,
+          pointerEvents: 'auto',
+          border: '2px solid blue', // Debug: Visualize SVG position
         }}
-        onMouseDown={handleStart}
-        onMouseMove={handleMove}
-        onMouseUp={handleEnd}
-        onTouchStart={handleStart}
-        onTouchMove={handleMove}
-        onTouchEnd={handleEnd}
-      />
+      >
+        {/* Render saved paths */}
+        {paths.map((p, index) => (
+          <path
+            key={index}
+            d={p.points.reduce((acc, pt, i) => `${acc}${i === 0 ? 'M' : 'L'}${pt.x},${pt.y}`, '')}
+            stroke={p.color}
+            strokeWidth={p.thickness}
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        ))}
+        {/* Render current path */}
+        {currentPath.length > 0 && (
+          <path
+            d={currentPath.reduce((acc, pt, i) => `${acc}${i === 0 ? 'M' : 'L'}${pt.x},${pt.y}`, '')}
+            stroke={drawingColor}
+            strokeWidth={drawingThickness}
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        )}
+        {/* Debug: Draw a green line to confirm SVG rendering */}
+        <path
+          d="M50,50 L100,100"
+          stroke="green"
+          strokeWidth="4"
+          fill="none"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
     </div>
   );
 };
