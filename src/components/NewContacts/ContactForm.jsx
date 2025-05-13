@@ -5,7 +5,7 @@ import ContactNameForm from './ContactNameForm';
 import ContactInfoForm from './ContactInfoForm';
 import SaveButton from './SaveButton';
 
-const API_BASE_URL = "https://echoo-backend.vercel.app/";
+const API_BASE_URL = "https://echoo-backend.vercel.app";
 
 const ContactForm = () => {
   const navigate = useNavigate(); // ← initialize navigate
