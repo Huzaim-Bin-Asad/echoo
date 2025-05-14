@@ -31,8 +31,7 @@ const MediaArea = ({
           touchAction: 'none',
           zIndex: 1,
           pointerEvents: 'auto',
-          border: '2px solid blue', // Debug: Visualize SVG position
-        }}
+         }}
       >
         {/* Render saved paths */}
         {paths.map((p, index) => (
@@ -57,15 +56,7 @@ const MediaArea = ({
             strokeLinejoin="round"
           />
         )}
-        {/* Debug: Draw a green line to confirm SVG rendering */}
-        <path
-          d="M50,50 L100,100"
-          stroke="green"
-          strokeWidth="4"
-          fill="none"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
+
       </svg>
     </div>
   );

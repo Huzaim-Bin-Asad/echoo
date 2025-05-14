@@ -76,6 +76,7 @@ const Login = () => {
       
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
+      localStorage.removeItem("first-time"); // ✅ clear the reload flag
       navigate('/echoo');
     } catch (err) {
       // Handle different error types

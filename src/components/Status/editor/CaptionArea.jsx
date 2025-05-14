@@ -2,7 +2,7 @@ import React from 'react';
 import { ChevronRight } from 'lucide-react';
 import styles from './styles';
 
-const CaptionArea = ({ caption, setCaption, closeEditor, onSave }) => {
+const CaptionArea = ({ caption, setCaption, closeEditor, onSend }) => {
   return (
     <div style={styles.captionArea}>
       <input
@@ -14,16 +14,18 @@ const CaptionArea = ({ caption, setCaption, closeEditor, onSave }) => {
       />
       <button
         onClick={async () => {
-          console.log('Sending:', caption);
-          if (onSave) {
-            try {
-              await onSave(); // Ensure async execution
-              console.log('Image saved successfully');
-            } catch (error) {
-              console.error('Failed to save image:', error);
+          console.log('ChevronRight clicked, caption:', caption);
+          try {
+            if (onSend) {
+              await onSend(caption); // Trigger the save action in MediaEditor
+              console.log('Save action triggered successfully');
+            } else {
+              console.warn('onSend function not provided');
             }
+            closeEditor(); // Close editor after attempting save
+          } catch (error) {
+            console.error('Failed to trigger save action:', error);
           }
-          closeEditor();
         }}
         style={styles.sendBtn}
       >

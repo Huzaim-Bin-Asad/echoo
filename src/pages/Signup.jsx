@@ -60,9 +60,11 @@ const Signup = () => {
       setIsSubmitting(true);
       try {
         const response = await submitSignupForm(formData);
-        localStorage.setItem("token", response.token);
-        localStorage.setItem("user", JSON.stringify(response.user));
-        navigate("/echoo");
+       localStorage.setItem("token", response.token);
+localStorage.setItem("user", JSON.stringify(response.user));
+localStorage.removeItem("first-time"); // ✅ clear the reload flag
+navigate("/echoo");
+
       } catch (error) {
         console.error("Signup error:", error);
         setHasError(true);

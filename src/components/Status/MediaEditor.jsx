@@ -10,6 +10,7 @@ import CaptionArea from './editor/CaptionArea';
 import TextManager from './editor/TextManager';
 import VideoManager from './editor/VideoManager';
 import styles from './editor/styles';
+import { Storage } from 'megajs';
 
 const COLORS = [
   '#ffffff', '#000000', '#ff4c4c', '#4cff4c', '#4c4cff', '#ffff4c',
@@ -52,7 +53,7 @@ const MediaEditor = ({ fileUrl, fileType, onClose }) => {
   const mediaStyle = {
     ...styles.video,
     width: '100%',
-    height: '100vh',
+    height: '100%',
     maxWidth: '100%',
     objectFit: 'contain',
     position: 'absolute',
@@ -85,96 +86,64 @@ const MediaEditor = ({ fileUrl, fileType, onClose }) => {
     const clientY = e.touches?.[0]?.clientY ?? e.clientY;
     const x = clientX - rect.left;
     const y = clientY - rect.top;
-    console.log(`SVG coordinates: x=${x.toFixed(2)}, y=${y.toFixed(2)}, rect.width=${rect.width}, rect.height=${rect.height}`);
     return { x, y };
   }, []);
 
   const handleStart = useCallback((e) => {
-    console.log(`handleStart: drawingMode=${drawingMode}, eventType=${e.type}, touches=${e.touches?.length || 0}`);
-    if (!drawingMode) {
-      console.log('handleStart: Exiting because not in drawing mode');
-      return;
-    }
+    if (!drawingMode) return;
     try {
       e.preventDefault();
       const svg = drawingRef.current;
-      if (!svg) {
-        console.error('handleStart: SVG not found');
-        return;
-      }
+      if (!svg) return;
       const { x, y } = getSvgCoordinates(e, svg);
       currentDrawingPoints.current = [{ x, y }];
       setCurrentPath([...currentDrawingPoints.current]);
-      console.log(`handleStart: Started drawing at (${x.toFixed(2)}, ${y.toFixed(2)})`);
     } catch (error) {
-      console.error('handleStart error:', error.message, error.stack);
+      console.error('handleStart error:', error);
     }
   }, [drawingMode, getSvgCoordinates]);
 
-  const handleMove = useCallback(
-    throttle((e) => {
-      console.log(`handleMove: drawingMode=${drawingMode}, eventType=${e.type}, touches=${e.touches?.length || 0}`);
-      if (!drawingMode || currentDrawingPoints.current.length === 0) {
-        console.log('handleMove: Exiting because not in drawing mode or no points');
-        return;
-      }
-      try {
-        e.preventDefault();
-        const svg = drawingRef.current;
-        if (!svg) {
-          console.error('handleMove: SVG not found');
-          return;
-        }
-        const { x, y } = getSvgCoordinates(e, svg);
-        currentDrawingPoints.current.push({ x, y });
-        setCurrentPath([...currentDrawingPoints.current]);
-        console.log(`handleMove: Added point at (${x.toFixed(2)}, ${y.toFixed(2)})`);
-      } catch (error) {
-        console.error('handleMove error:', error.message, error.stack);
-      }
-    }, 16),
-    [drawingMode, getSvgCoordinates]
-  );
-
   const handleEnd = useCallback((e) => {
-    console.log(`handleEnd: drawingMode=${drawingMode}, eventType=${e.type}, touches=${e.changedTouches?.length || 0}`);
-    if (!drawingMode || currentDrawingPoints.current.length === 0) {
-      console.log('handleEnd: Exiting because not in drawing mode or no points');
-      return;
-    }
+    if (!drawingMode || currentDrawingPoints.current.length === 0) return;
     try {
       e.preventDefault();
-      const newPath = { points: [...currentDrawingPoints.current], color: drawingColor, thickness: drawingThickness };
-      setPaths((prev) => {
-        const newPaths = [...prev, newPath];
-        console.log(`handleEnd: Saved path to paths, paths.length=${newPaths.length}, points=${newPath.points.length}, firstPoint=(${newPath.points[0]?.x.toFixed(2)}, ${newPath.points[0]?.y.toFixed(2)})`);
-        return newPaths;
-      });
+      const newPath = { 
+        points: [...currentDrawingPoints.current], 
+        color: drawingColor, 
+        thickness: drawingThickness 
+      };
+      setPaths((prev) => [...prev, newPath]);
       currentDrawingPoints.current = [];
       setCurrentPath([]);
-      console.log('handleEnd: Cleared currentPath');
     } catch (error) {
-      console.error('handleEnd error:', error.message, error.stack);
+      console.error('handleEnd error:', error);
     }
   }, [drawingMode, drawingColor, drawingThickness]);
 
+  const handleMove = useCallback((e) => {
+    if (!drawingMode || currentDrawingPoints.current.length === 0) return;
+    try {
+      e.preventDefault();
+      const svg = drawingRef.current;
+      if (!svg) return;
+      const { x, y } = getSvgCoordinates(e, svg);
+      currentDrawingPoints.current.push({ x, y });
+      setCurrentPath([...currentDrawingPoints.current]);
+    } catch (error) {
+      console.error('handleMove error:', error);
+    }
+  }, [drawingMode, getSvgCoordinates]);
+
+  const throttledHandleMove = useCallback(throttle(handleMove, 16), [handleMove]);
+
   const undo = useCallback(() => {
-    setPaths((prev) => {
-      const newPaths = prev.slice(0, -1);
-      console.log(`undo: Removed last path, paths.length=${newPaths.length}`);
-      return newPaths;
-    });
+    setPaths((prev) => prev.slice(0, -1));
   }, []);
 
   const saveImage = useCallback(async () => {
-    console.log('saveImage: Starting image save');
     const svg = drawingRef.current;
-    if (!svg) {
-      console.error('saveImage: SVG not found');
-      return;
-    }
+    if (!svg) return;
 
-    // Create a temporary canvas
     const canvas = document.createElement('canvas');
     let naturalWidth, naturalHeight;
 
@@ -189,19 +158,14 @@ const MediaEditor = ({ fileUrl, fileType, onClose }) => {
         img.onerror = resolve;
       });
       naturalWidth = img.naturalWidth || window.innerWidth;
-      naturalHeight = img.naturalHeight || (window.innerHeight - 100);
+      naturalHeight = img.naturalHeight || window.innerHeight;
     }
 
     canvas.width = naturalWidth;
     canvas.height = naturalHeight;
     const ctx = canvas.getContext('2d');
-    if (!ctx) {
-      console.error('saveImage: Canvas context not found');
-      return;
-    }
+    if (!ctx) return;
 
-    // Draw media
-    console.log('saveImage: Drawing media to canvas');
     if (isVideo && videoRef.current) {
       ctx.drawImage(videoRef.current, 0, 0, naturalWidth, naturalHeight);
     } else {
@@ -216,18 +180,12 @@ const MediaEditor = ({ fileUrl, fileType, onClose }) => {
       }
     }
 
-    // Calculate scaling from SVG to media dimensions
     const svgRect = svg.getBoundingClientRect();
     const scaleX = naturalWidth / svgRect.width;
     const scaleY = naturalHeight / svgRect.height;
-    console.log(`saveImage: Scaling - scaleX=${scaleX.toFixed(2)}, scaleY=${scaleY.toFixed(2)}, svgRect.width=${svgRect.width}, svgRect.height=${svgRect.height}`);
 
-    // Draw paths
     const drawLine = (points, color, thickness) => {
-      if (points.length === 0) {
-        console.log('saveImage: Skipping empty points array');
-        return;
-      }
+      if (points.length === 0) return;
       ctx.strokeStyle = color;
       ctx.lineWidth = thickness * Math.min(scaleX, scaleY);
       ctx.lineCap = 'round';
@@ -238,29 +196,19 @@ const MediaEditor = ({ fileUrl, fileType, onClose }) => {
         const y = pt.y * scaleY;
         if (i === 0) ctx.moveTo(x, y);
         else ctx.lineTo(x, y);
-        console.log(`saveImage: Point ${i} at x=${x.toFixed(2)}, y=${y.toFixed(2)}`);
       });
       ctx.stroke();
-      console.log(`saveImage: Drew line with color=${color}, thickness=${thickness}, points=${points.length}`);
     };
 
-    console.log(`saveImage: Rendering paths.length=${paths.length}, currentPath.length=${currentPath.length}`);
-    paths.forEach((p, index) => {
-      console.log(`saveImage: Drawing path ${index} with ${p.points.length} points`);
+    paths.forEach((p) => {
       drawLine(p.points, p.color, p.thickness);
     });
     if (currentPath.length > 0) {
-      console.log(`saveImage: Drawing currentPath with ${currentPath.length} points`);
       drawLine(currentPath, drawingColor, drawingThickness);
     }
 
-    // Draw saved texts
-    console.log(`saveImage: Processing savedTexts.length=${savedTexts.length}`);
-    savedTexts.forEach((text, index) => {
-      if (!text.content) {
-        console.log(`saveImage: Skipping empty text at index ${index}`);
-        return;
-      }
+    savedTexts.forEach((text) => {
+      if (!text.content) return;
       ctx.fillStyle = text.color || '#ffffff';
       const fontSize = (text.fontSize || 20) * Math.min(scaleX, scaleY);
       ctx.font = `${fontSize}px "${text.font || 'Arial'}"`;
@@ -270,16 +218,13 @@ const MediaEditor = ({ fileUrl, fileType, onClose }) => {
       const lineHeight = fontSize * 1.2;
       const xPos = (text.x || svgRect.width / 2) * scaleX;
       const yPos = (text.y || svgRect.height / 2) * scaleY;
-      console.log(`saveImage: Text ${index} - content="${text.content}", xPos=${xPos.toFixed(2)}, yPos=${yPos.toFixed(2)}, fontSize=${fontSize.toFixed(2)}, align=${text.align}, color=${text.color}`);
       lines.forEach((line, lineIndex) => {
         const x = text.align === 'center' ? xPos : text.align === 'end' ? xPos - ctx.measureText(line).width : xPos;
         const y = yPos + lineIndex * lineHeight;
         ctx.fillText(line, x, y);
-        console.log(`saveImage: Drew text: "${line}" at x=${x.toFixed(2)}, y=${y.toFixed(2)}`);
       });
     });
 
-    // Draw caption
     if (caption) {
       ctx.fillStyle = '#ffffff';
       const fontSize = 16 * Math.min(scaleX, scaleY);
@@ -288,31 +233,9 @@ const MediaEditor = ({ fileUrl, fileType, onClose }) => {
       ctx.textBaseline = 'bottom';
       const padding = 10 * Math.min(scaleX, scaleY);
       ctx.fillText(caption, padding, naturalHeight - padding);
-      console.log(`saveImage: Drew caption: "${caption}" at x=${padding.toFixed(2)}, y=${(naturalHeight - padding).toFixed(2)}, fontSize=${fontSize.toFixed(2)}`);
-    } else {
-      console.log('saveImage: No caption to draw');
     }
 
-    // Debug: Draw a test text to confirm text rendering
-    ctx.fillStyle = 'red';
-    ctx.font = `${20 * Math.min(scaleX, scaleY)}px Arial`;
-    ctx.textAlign = 'start';
-    ctx.textBaseline = 'top';
-    ctx.fillText('DEBUG TEXT', 10, 10);
-    console.log('saveImage: Drew debug text "DEBUG TEXT" at x=10, y=10');
-
-    // Export image
-    const dataUrl = canvas.toDataURL('image/png');
-    const blob = await (await fetch(dataUrl)).blob();
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `edited_image_${new Date().toISOString().split('T')[0]}.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    console.log('saveImage: Image saved successfully');
+    return canvas.toDataURL('image/png');
   }, [
     isVideo,
     videoRef,
@@ -325,13 +248,87 @@ const MediaEditor = ({ fileUrl, fileType, onClose }) => {
     caption,
   ]);
 
+const handleSend = useCallback(async (caption) => {
+  try {
+    const user = JSON.parse(localStorage.getItem("user"));
+    const userId = user?.user_id;
+    if (!userId) throw new Error("User not found");
+
+    const mediaFile = await saveImage();
+    if (!mediaFile) throw new Error("No media file to upload");
+
+    // Extract base64 content from data URL
+    const base64 = mediaFile.split(',')[1];
+    const binary = atob(base64);
+    const len = binary.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    const file = new File([bytes], `media_${Date.now()}.png`, { type: 'image/png' });
+
+    // Log file size for debugging
+    console.log('File size:', file.size);
+    if (file.size === 0) throw new Error('File is empty');
+
+    const storage = new Storage({
+      email: process.env.MEGA_EMAIL || 'huzaimbinasad@gmail.com',
+      password: process.env.MEGA_PASSWORD || 'Aenduanaael@35793579'
+    });
+
+    await storage.ready; // Wait for storage to be ready
+
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = new Uint8Array(arrayBuffer); // Convert to Buffer-like array
+
+    // Create a new upload instance
+    const upload = storage.upload({
+      name: file.name,
+      size: file.size
+    });
+
+    // Write the file buffer to the upload stream
+    upload.write(buffer);
+    upload.end();
+
+    // Wait for the upload to complete
+    const uploadedFile = await upload.complete;
+    if (!uploadedFile || !uploadedFile.link()) throw new Error('Failed to upload file to Mega');
+
+    const mediaUrl = uploadedFile.link();
+    console.log('Media URL:', mediaUrl); // Log the media URL for debugging
+
+    // Send the status to the server
+    const response = await fetch('http://localhost:5000/api/status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId,
+        mediaUrl,
+        caption,
+        notAllowId: [],
+        readId: [],
+        timestamp: Date.now(),
+      }),
+    });
+
+    if (!response.ok) throw new Error('Failed to save status');
+    const result = await response.json();
+    return result;
+
+  } catch (error) {
+    console.error('Upload failed:', error);
+    alert('An error occurred while uploading the file. Please try again.'); // Show alert to user
+    throw error; // Re-throw error to propagate it if needed
+  }
+}, [saveImage]);
+
   const exitDrawingMode = useCallback(() => {
     setDrawingMode(false);
     setDrawingColor(COLORS[0]);
     setDrawingThickness(THICKNESS[1]);
     setCurrentPath([]);
     currentDrawingPoints.current = [];
-    console.log('exitDrawingMode: Exited drawing mode');
   }, []);
 
   const exitCaptionMode = useCallback(() => {
@@ -381,27 +378,17 @@ const MediaEditor = ({ fileUrl, fileType, onClose }) => {
         setTextAlign('center');
         setEditingTextIndex(null);
         setTextContent('');
-        console.log('toggleCaptionMode: Entered caption mode, initialized textarea');
-      } else {
-        console.log('toggleCaptionMode: Exited caption mode');
       }
       return newMode;
     });
   }, [drawingColor]);
 
   const toggleCaptionColorMode = useCallback(() => {
-    setShowCaptionBg((prev) => {
-      console.log(`toggleCaptionColorMode: showCaptionBg=${!prev}`);
-      return !prev;
-    });
+    setShowCaptionBg((prev) => !prev);
   }, []);
 
   const cycleTextAlign = useCallback(() => {
-    setTextAlign((prev) => {
-      const next = prev === 'center' ? 'end' : prev === 'end' ? 'start' : 'center';
-      console.log(`cycleTextAlign: New alignment=${next}`);
-      return next;
-    });
+    setTextAlign((prev) => prev === 'center' ? 'end' : prev === 'end' ? 'start' : 'center');
   }, []);
 
   const closeEditor = useCallback(() => {
@@ -421,39 +408,24 @@ const MediaEditor = ({ fileUrl, fileType, onClose }) => {
       setCurrentTime(0);
       if (videoRef.current) videoRef.current.currentTime = 0;
     }
-    console.log('closeEditor: Closed editor and reset state');
     onClose();
   }, [isVideo, onClose]);
 
   useEffect(() => {
     const svg = drawingRef.current;
-    if (!svg) {
-      console.error('useEffect: SVG not found');
-      return;
-    }
-
-    console.log(`useEffect: Adding event listeners, drawingMode=${drawingMode}, captionMode=${captionMode}`);
+    if (!svg) return;
 
     const onMouseDown = handleStart;
-    const onMouseMove = handleMove;
+    const onMouseMove = throttledHandleMove;
     const onMouseUp = handleEnd;
     const onTouchStart = (e) => {
-      console.log(`onTouchStart: touches=${e.touches.length}, drawingMode=${drawingMode}, captionMode=${captionMode}`);
-      if (drawingMode) {
-        handleStart(e);
-      }
+      if (drawingMode) handleStart(e);
     };
     const onTouchMove = (e) => {
-      console.log(`onTouchMove: touches=${e.touches.length}, drawingMode=${drawingMode}, captionMode=${captionMode}`);
-      if (drawingMode) {
-        handleMove(e);
-      }
+      if (drawingMode) throttledHandleMove(e);
     };
     const onTouchEnd = (e) => {
-      console.log(`onTouchEnd: changedTouches=${e.changedTouches.length}, drawingMode=${drawingMode}, captionMode=${captionMode}`);
-      if (drawingMode) {
-        handleEnd(e);
-      }
+      if (drawingMode) handleEnd(e);
     };
 
     svg.addEventListener('mousedown', onMouseDown);
@@ -464,7 +436,6 @@ const MediaEditor = ({ fileUrl, fileType, onClose }) => {
     svg.addEventListener('touchend', onTouchEnd, { passive: false });
 
     return () => {
-      console.log('useEffect: Removing event listeners');
       svg.removeEventListener('mousedown', onMouseDown);
       svg.removeEventListener('mousemove', onMouseMove);
       svg.removeEventListener('mouseup', onMouseUp);
@@ -472,11 +443,10 @@ const MediaEditor = ({ fileUrl, fileType, onClose }) => {
       svg.removeEventListener('touchmove', onTouchMove);
       svg.removeEventListener('touchend', onTouchEnd);
     };
-  }, [drawingMode, captionMode, handleStart, handleMove, handleEnd]);
+  }, [drawingMode, handleStart, throttledHandleMove, handleEnd]);
 
   useEffect(() => {
     if (caption || savedTexts.length > 0) {
-      console.log(`useEffect: Scheduling auto-save, caption="${caption}", savedTexts.length=${savedTexts.length}, savedTexts=${JSON.stringify(savedTexts)}`);
       const timeout = setTimeout(() => {
         saveImage().catch((error) => console.error('Auto-save failed:', error));
       }, 1000);
@@ -487,7 +457,6 @@ const MediaEditor = ({ fileUrl, fileType, onClose }) => {
   useEffect(() => {
     if (captionMode && textAreaRef.current) {
       textAreaRef.current.focus();
-      console.log('useEffect: Focused textarea for caption mode');
     }
   }, [captionMode]);
 
@@ -507,18 +476,10 @@ const MediaEditor = ({ fileUrl, fileType, onClose }) => {
         closeEditor={closeEditor}
         setDrawingMode={(value) => {
           setDrawingMode(value);
-          if (value) {
-            setCaptionMode(false);
-            console.log('setDrawingMode: Enabled drawing mode, disabled caption mode');
-          } else {
-            console.log('setDrawingMode: Disabled drawing mode');
-          }
+          if (value) setCaptionMode(false);
         }}
         drawingColor={drawingColor}
-        setDrawingColor={(color) => {
-          setDrawingColor(color);
-          console.log(`setDrawingColor: Changed to ${color}`);
-        }}
+        setDrawingColor={setDrawingColor}
         undo={undo}
         COLORS={COLORS}
         captionMode={captionMode}
@@ -559,7 +520,6 @@ const MediaEditor = ({ fileUrl, fileType, onClose }) => {
         setDraggingTextIndex={setDraggingTextIndex}
         textAreaRef={textAreaRef}
       />
-      {/* Render savedTexts on-screen */}
       {savedTexts.map((text, index) => (
         <div
           key={index}
@@ -573,14 +533,13 @@ const MediaEditor = ({ fileUrl, fileType, onClose }) => {
             textAlign: text.align || 'center',
             transform: text.align === 'center' ? 'translateX(-50%)' : text.align === 'end' ? 'translateX(-100%)' : 'none',
             zIndex: 10,
-            pointerEvents: 'none', // Prevent interference with drawing
-            whiteSpace: 'pre-wrap', // Support newlines
+            pointerEvents: 'none',
+            whiteSpace: 'pre-wrap',
           }}
         >
           {text.content}
         </div>
       ))}
-      {/* Render caption on-screen (optional) */}
       {caption && !captionMode && !drawingMode && (
         <div
           style={{
@@ -673,10 +632,7 @@ const MediaEditor = ({ fileUrl, fileType, onClose }) => {
           <textarea
             ref={textAreaRef}
             value={textContent}
-            onChange={(e) => {
-              setTextContent(e.target.value);
-              console.log(`textarea: Updated textContent to "${e.target.value}"`);
-            }}
+            onChange={(e) => setTextContent(e.target.value)}
             placeholder="Add subtitle..."
             style={{
               width: '100%',
@@ -699,30 +655,21 @@ const MediaEditor = ({ fileUrl, fileType, onClose }) => {
       {drawingMode && (
         <DrawingTools
           drawingThickness={drawingThickness}
-          setDrawingThickness={(thickness) => {
-            setDrawingThickness(thickness);
-            console.log(`setDrawingThickness: Changed to ${thickness}`);
-          }}
+          setDrawingThickness={setDrawingThickness}
           THICKNESS={THICKNESS}
         />
       )}
       {captionMode && (
         <FontSelector
-          onFontSelect={(font) => {
-            setSelectedFont(font);
-            console.log(`FontSelector: Selected font ${font}`);
-          }}
+          onFontSelect={setSelectedFont}
         />
       )}
       {!drawingMode && !captionMode && (
         <CaptionArea
           caption={caption}
-          setCaption={(value) => {
-            setCaption(value);
-            console.log(`CaptionArea: Updated caption to "${value}"`);
-          }}
+          setCaption={setCaption}
           closeEditor={closeEditor}
-          onSave={saveImage}
+          onSend={handleSend}
         />
       )}
       {!drawingMode && !captionMode && (

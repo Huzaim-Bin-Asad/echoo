@@ -4,7 +4,7 @@ const styles = {
       color: '#fff',
       position: 'relative',
       width: '100%',
-    height: '100vh',
+    height: '100%',
       inset: 0,
       zIndex: 9999,
       display: 'flex',
