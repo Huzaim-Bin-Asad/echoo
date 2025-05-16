@@ -248,6 +248,7 @@ const MediaEditor = ({ fileUrl, fileType, onClose }) => {
     caption,
   ]);
 
+  
 const handleSend = useCallback(async (caption) => {
   try {
     const user = JSON.parse(localStorage.getItem("user"));
@@ -293,10 +294,14 @@ const handleSend = useCallback(async (caption) => {
 
     // Wait for the upload to complete
     const uploadedFile = await upload.complete;
-    if (!uploadedFile || !uploadedFile.link()) throw new Error('Failed to upload file to Mega');
+    if (!uploadedFile || typeof uploadedFile.link !== 'function') {
+      throw new Error('Failed to upload file to Mega or link function is missing');
+    }
 
-    const mediaUrl = uploadedFile.link();
+    const mediaUrl = await uploadedFile.link(); // Ensure this is awaited
     console.log('Media URL:', mediaUrl); // Log the media URL for debugging
+
+    if (!mediaUrl) throw new Error('Media URL is empty');
 
     // Send the status to the server
     const response = await fetch('http://localhost:5000/api/status', {

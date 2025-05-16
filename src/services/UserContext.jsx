@@ -25,7 +25,7 @@ export const UserProvider = ({ children }) => {
           requestCountRef.current += 1;
 
           // Print full response data every 10 requests
-          if (requestCountRef.current % 10 === 0) {
+          if (requestCountRef.current % 20 === 0) {
             console.log(`📊 [${requestCountRef.current}th Response] Received user data:`, newUserData);
             
             if (JSON.stringify(userRef.current) !== JSON.stringify(newUserData)) {

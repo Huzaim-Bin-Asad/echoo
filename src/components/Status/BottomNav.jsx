@@ -75,7 +75,7 @@ const BottomNav = () => {
         onClick={navigateTo("/call")}
       >
         <Phone size={26} />
-        <small className="text-muted" style={{ marginTop: '10px' }}>Call</small>
+        <small className="text-muted" style={{ marginTop: '0px' }}>Call</small>
       </button>
 
       {/* Profile button */}
