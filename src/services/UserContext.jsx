@@ -26,12 +26,9 @@ export const UserProvider = ({ children }) => {
 
           // Print full response data every 10 requests
           if (requestCountRef.current % 20 === 0) {
-            console.log(`📊 [${requestCountRef.current}th Response] Received user data:`, newUserData);
             
             if (JSON.stringify(userRef.current) !== JSON.stringify(newUserData)) {
-              console.log("🔄 Difference detected - updating context");
             } else {
-              console.log("✅ Data identical to previous");
             }
           }
 

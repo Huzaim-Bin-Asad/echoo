@@ -7,7 +7,6 @@ const thumbnailCache = {};
 
 export const startCurrentStatusFetcher = (setStatusPreview) => {
   if (intervalId !== null) {
-    console.log('[Fetcher] Already running');
     return;
   }
 
@@ -22,7 +21,6 @@ export const startCurrentStatusFetcher = (setStatusPreview) => {
       const isExpired = Date.now() - parsed.timestamp > EXPIRY_MS;
 
       if (isExpired) {
-        console.log('[Fetcher] Cached status expired — clearing');
         localStorage.removeItem(CACHE_KEY);
       } else {
         setStatusPreview({
@@ -34,7 +32,6 @@ export const startCurrentStatusFetcher = (setStatusPreview) => {
         lastStatusTimestamp = parsed.timestamp;
         lastBlobUrl = parsed.mediaUrl;
         thumbnailCache[lastBlobUrl] = parsed.thumbnail;
-        console.log('[Fetcher] Loaded status from cache');
       }
     } catch (e) {
       console.warn('[Fetcher] Error parsing cached status — clearing');
@@ -124,14 +121,12 @@ export const startCurrentStatusFetcher = (setStatusPreview) => {
 
   fetchAndCacheStatus();
   intervalId = setInterval(fetchAndCacheStatus, 1000);
-  console.log('[Fetcher] Started interval');
 };
 
 export const stopCurrentStatusFetcher = () => {
   if (intervalId !== null) {
     clearInterval(intervalId);
     intervalId = null;
-    console.log('[Fetcher] Stopped interval');
   }
 };
 
