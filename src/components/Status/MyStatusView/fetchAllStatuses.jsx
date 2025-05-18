@@ -2,6 +2,11 @@ const CACHE_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 let cachedStatuses = null;
 let cacheTimestamp = null;
+let pollingIntervalId = null;
+let pollingCallback = null;
+
+// Utility: returns fixed time string for logs (ISO 8601 format)
+const getFixedTime = () => new Date().toISOString();
 
 // Initialize cache from localStorage
 try {
@@ -12,34 +17,33 @@ try {
     cachedStatuses = JSON.parse(savedCache);
     cacheTimestamp = Number(savedTimestamp);
     console.log(
-      `[Cache Init] Loaded cache with ${cachedStatuses.length} statuses, timestamp: ${new Date(
+      `[${getFixedTime()}][Cache Init] Loaded cache with ${cachedStatuses.length} statuses, timestamp: ${new Date(
         cacheTimestamp
       ).toISOString()}`
     );
   } else {
-    console.log('[Cache Init] No existing cache found in localStorage.');
+    console.log(`[${getFixedTime()}][Cache Init] No existing cache found in localStorage.`);
   }
 } catch (e) {
-  console.error('[Cache Init] Failed to load cache from localStorage:', e);
+  console.error(`[${getFixedTime()}][Cache Init] Failed to load cache from localStorage:`, e);
 }
 
 const saveCacheToLocalStorage = () => {
   try {
     if (!cacheTimestamp) {
-      console.warn('[Cache Save] No cache timestamp set, skipping save.');
+      console.warn(`[${getFixedTime()}][Cache Save] No cache timestamp set, skipping save.`);
       return;
     }
-    // Remove any transient properties like blobUrl before saving
     const cacheToSave = cachedStatuses?.map(({ blobUrl, ...rest }) => rest) || [];
     localStorage.setItem('cachedStatuses', JSON.stringify(cacheToSave));
     localStorage.setItem('cacheTimestamp', cacheTimestamp.toString());
     console.log(
-      `[Cache Save] Cache saved with ${cacheToSave.length} statuses at ${new Date(
+      `[${getFixedTime()}][Cache Save] Cache saved with ${cacheToSave.length} statuses at ${new Date(
         cacheTimestamp
       ).toISOString()}`
     );
   } catch (e) {
-    console.error('[Cache Save] Failed to save cache to localStorage:', e);
+    console.error(`[${getFixedTime()}][Cache Save] Failed to save cache to localStorage:`, e);
   }
 };
 
@@ -49,37 +53,84 @@ const isCacheValid = () => {
   return age < CACHE_DURATION_MS;
 };
 
-// --- Event Emitter for cache updates ---
-const listeners = new Set();
+const generateThumbnail = async (mediaUrl) => {
+  if (!mediaUrl) return null;
 
-export const subscribeCacheUpdates = (callback) => {
-  listeners.add(callback);
-  console.log('[Cache Subscribe] New subscriber added.');
-  return () => {
-    listeners.delete(callback);
-    console.log('[Cache Subscribe] Subscriber removed.');
-  };
-};
+  try {
+    const res = await fetch('http://localhost:5000/api/getMediaByUrl', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ media_url: mediaUrl }),
+    });
 
-const emitCacheUpdate = () => {
-  console.log('[Cache Emit] Emitting cache update to subscribers.');
-  for (const cb of listeners) {
-    try {
-      cb(cachedStatuses);
-    } catch (e) {
-      console.error('[Cache Emit] Error in subscriber callback:', e);
+    if (!res.ok) {
+      console.error(`[${getFixedTime()}][Thumbnail] Failed to fetch media for thumbnail. Status: ${res.status}`);
+      return null;
     }
+
+    const blob = await res.blob();
+    const type = blob.type;
+
+    return await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const src = reader.result;
+
+        if (type.startsWith('image/')) {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = 64;
+            canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, 64, 64);
+            resolve(canvas.toDataURL('image/jpeg', 0.7));
+          };
+          img.onerror = (err) => {
+            console.error(`[${getFixedTime()}][Thumbnail] Image load error:`, err);
+            reject(err);
+          };
+          img.src = src;
+        } else if (type.startsWith('video/')) {
+          const video = document.createElement('video');
+          video.preload = 'metadata';
+          video.muted = true;
+          video.src = src;
+          video.onloadeddata = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = 64;
+            canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, 64, 64);
+            resolve(canvas.toDataURL('image/jpeg', 0.7));
+          };
+          video.onerror = (err) => {
+            console.error(`[${getFixedTime()}][Thumbnail] Video load error:`, err);
+            reject(err);
+          };
+        } else {
+          resolve(null);
+        }
+      };
+      reader.onerror = (err) => {
+        console.error(`[${getFixedTime()}][Thumbnail] FileReader error:`, err);
+        reject(err);
+      };
+      reader.readAsDataURL(blob);
+    });
+  } catch (e) {
+    console.error(`[${getFixedTime()}][Thumbnail] Failed to generate thumbnail:`, e);
+    return null;
   }
 };
 
-// --- New helper to update media_url of a specific status ---
 export const updateStatusMediaUrl = (statusId, newMediaUrl) => {
   if (!cachedStatuses) return;
 
   cachedStatuses = cachedStatuses.map((status) => {
     if (status.status_id === statusId) {
       if (status.media_url !== newMediaUrl) {
-        console.log(`[updateStatusMediaUrl] Updating media_url for status_id ${statusId}`);
+        console.log(`[${getFixedTime()}][updateStatusMediaUrl] Updating media_url for status_id ${statusId}`);
         return { ...status, media_url: newMediaUrl };
       }
     }
@@ -88,44 +139,44 @@ export const updateStatusMediaUrl = (statusId, newMediaUrl) => {
 
   cacheTimestamp = Date.now();
   saveCacheToLocalStorage();
-  emitCacheUpdate();
 };
 
-// Fetch statuses with cache fallback
 export const fetchAllStatuses = async () => {
   try {
     const rawUser = localStorage.getItem('user');
     if (!rawUser) {
-      console.warn('[fetchAllStatuses] No user found in localStorage. Returning cached or empty array.');
+      console.warn(`[${getFixedTime()}][fetchAllStatuses] No user found in localStorage. Returning cached or empty array.`);
       return cachedStatuses || [];
     }
 
     let user;
     try {
       user = JSON.parse(rawUser);
-      console.log(`[fetchAllStatuses] Loaded user_id: ${user.user_id}`);
+      console.log(`[${getFixedTime()}][fetchAllStatuses] Loaded user_id: ${user.user_id}`);
     } catch {
-      console.error('[fetchAllStatuses] Failed to parse user from localStorage.');
+      console.error(`[${getFixedTime()}][fetchAllStatuses] Failed to parse user from localStorage.`);
       return cachedStatuses || [];
     }
 
+    // If cache valid, return immediately
     if (cachedStatuses && isCacheValid()) {
-      console.log('[fetchAllStatuses] Returning valid cached data.');
+      console.log(`[${getFixedTime()}][fetchAllStatuses] Returning valid cached data immediately.`);
       return cachedStatuses;
     }
 
-    // Fetch fresh data if cache is invalid or empty
+    // Cache not valid or empty, fetch fresh
     const freshData = await refreshStatusesFromBackend(user.user_id);
     return freshData;
   } catch (e) {
-    console.error('[fetchAllStatuses] Unexpected error:', e);
+    console.error(`[${getFixedTime()}][fetchAllStatuses] Unexpected error:`, e);
     return cachedStatuses || [];
   }
 };
 
-// Fetch fresh statuses from backend and update cache
 const refreshStatusesFromBackend = async (user_id) => {
   try {
+    console.log(`[${getFixedTime()}][refreshStatusesFromBackend] Fetching statuses for user_id:`, user_id);
+
     const res = await fetch('http://localhost:5000/api/getAllStatuses', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -133,23 +184,31 @@ const refreshStatusesFromBackend = async (user_id) => {
     });
 
     if (!res.ok) {
-      console.error(`[refreshStatusesFromBackend] Failed to fetch statuses. Status: ${res.status}`);
+      console.error(`[${getFixedTime()}][refreshStatusesFromBackend] Failed to fetch statuses. Status: ${res.status}`);
       return cachedStatuses || [];
     }
 
     const data = await res.json();
-    console.log(`[refreshStatusesFromBackend] Received ${data.statuses.length} statuses from server.`);
+    console.log(`[${getFixedTime()}][refreshStatusesFromBackend] Received ${data.statuses.length} statuses from server.`);
 
-    // Store raw metadata only (no blobs), including media_url from backend
-    cachedStatuses = data.statuses;
+    const statusesWithThumbnails = await Promise.all(
+      data.statuses.map(async (status) => {
+        const thumbnail = await generateThumbnail(status.media_url);
+        return { ...status, thumbnail };
+      })
+    );
+
+    cachedStatuses = statusesWithThumbnails;
     cacheTimestamp = Date.now();
     saveCacheToLocalStorage();
-    emitCacheUpdate();
-    console.log('[refreshStatusesFromBackend] Cache updated with latest data.');
+    console.log(`[${getFixedTime()}][refreshStatusesFromBackend] Cache updated with latest data and thumbnails.`);
+
+    // Notify any polling subscriber about new data
+    if (pollingCallback) pollingCallback(cachedStatuses);
 
     return cachedStatuses;
   } catch (e) {
-    console.error('[refreshStatusesFromBackend] Unexpected error:', e);
+    console.error(`[${getFixedTime()}][refreshStatusesFromBackend] Unexpected error:`, e);
     return cachedStatuses || [];
   }
 };
@@ -161,34 +220,63 @@ export const clearStatusCache = () => {
   cacheTimestamp = null;
   localStorage.removeItem('cachedStatuses');
   localStorage.removeItem('cacheTimestamp');
-  console.log('[Cache Clear] Cache cleared.');
-  emitCacheUpdate();
+  console.log(`[${getFixedTime()}][Cache Clear] Cache cleared.`);
 };
 
-// --- Polling logic ---
-let pollingIntervalId = null;
-
-export const startPollingStatuses = () => {
+export const startPollingStatuses = (onUpdate) => {
   if (pollingIntervalId !== null) {
-    console.log('[Polling] Polling already started.');
-    return;
+    console.log(`[${getFixedTime()}][Polling] Polling already started.`);
+    return () => {}; // Return noop unsubscribe if already started
   }
 
-  console.log('[Polling] Starting polling immediately.');
-  fetchAllStatuses();
+  pollingCallback = onUpdate;
 
-  pollingIntervalId = setInterval(() => {
-    console.log('[Polling] Polling triggered.');
-    fetchAllStatuses();
-  }, 10 * 1000);
+  console.log(`[${getFixedTime()}][Polling] Starting polling immediately.`);
+
+  // Call fetchAllStatuses once so caller gets cached data immediately if valid
+  fetchAllStatuses().then((data) => {
+    if (onUpdate) onUpdate(data);
+  });
+
+  pollingIntervalId = setInterval(async () => {
+    console.log(`[${getFixedTime()}][Polling] Polling triggered.`);
+
+    const rawUser = localStorage.getItem('user');
+    if (!rawUser) {
+      console.warn(`[${getFixedTime()}][Polling] No user found in localStorage during polling.`);
+      return;
+    }
+
+    let user;
+    try {
+      user = JSON.parse(rawUser);
+    } catch {
+      console.error(`[${getFixedTime()}][Polling] Failed to parse user during polling.`);
+      return;
+    }
+
+    // Always fetch fresh data from backend during polling
+    const freshData = await refreshStatusesFromBackend(user.user_id);
+    if (onUpdate) onUpdate(freshData);
+
+  }, 5 * 1000); // Poll every 5 seconds
+
+  // Return unsubscribe function to stop polling
+  return () => {
+    if (pollingIntervalId !== null) {
+      clearInterval(pollingIntervalId);
+      pollingIntervalId = null;
+      console.log(`[${getFixedTime()}][Polling] Polling stopped.`);
+    }
+  };
 };
 
 export const stopPollingStatuses = () => {
   if (pollingIntervalId !== null) {
     clearInterval(pollingIntervalId);
     pollingIntervalId = null;
-    console.log('[Polling] Polling stopped.');
+    console.log(`[${getFixedTime()}][Polling] Polling stopped.`);
   } else {
-    console.log('[Polling] Polling was not running.');
+    console.log(`[${getFixedTime()}][Polling] Polling was not running.`);
   }
 };

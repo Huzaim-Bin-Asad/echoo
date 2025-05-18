@@ -7,10 +7,9 @@ const isMobileDevice = () =>
   /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
 export default function MyStatusView({
-  statuses,
+  statuses = [],
   onBack,
-  onShowMyStatusView,
-  onFileSelected, // <-- Make sure this comes from Status
+  onFileSelected,
   permissionStatus,
   requestMultiplePermissions,
 }) {
@@ -44,7 +43,7 @@ export default function MyStatusView({
     const file = e.target.files[0];
     if (file && onFileSelected) {
       const url = URL.createObjectURL(file);
-      onFileSelected(url, file.type); // ⬅️ Pass to Status for MediaEditor
+      onFileSelected(url, file.type);
     }
   };
 
@@ -57,8 +56,11 @@ export default function MyStatusView({
       }}
     >
       <MyStatusHeader onBack={onBack} />
+
+      {/* List of statuses with thumbnails */}
       <MyStatusList statuses={statuses} />
 
+      {/* Add new status button */}
       <button
         onClick={handleAddNew}
         style={{
@@ -82,6 +84,7 @@ export default function MyStatusView({
         <ImagePlus color="black" size={24} />
       </button>
 
+      {/* Hidden file input for media upload */}
       <input
         type="file"
         accept="image/*,video/*"
