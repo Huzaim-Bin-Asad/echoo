@@ -5,7 +5,7 @@ import useDevicePermissions from '../../hooks/useDevicePermissions';
 import {
   startCurrentStatusFetcher,
   stopCurrentStatusFetcher
-} from './currentStatusFetcher';
+} from './MyStatusView/currentStatusFetcher';
 
 const isMobileDevice = () =>
   /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);

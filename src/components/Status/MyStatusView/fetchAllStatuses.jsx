@@ -1,14 +1,12 @@
-const CACHE_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
+const CACHE_DURATION_MS = 24 * 60 * 60 * 1000; 
 
 let cachedStatuses = null;
 let cacheTimestamp = null;
 let pollingIntervalId = null;
 let pollingCallback = null;
 
-// Utility: returns fixed time string for logs (ISO 8601 format)
 const getFixedTime = () => new Date().toISOString();
 
-// Initialize cache from localStorage
 try {
   const savedCache = localStorage.getItem('cachedStatuses');
   const savedTimestamp = localStorage.getItem('cacheTimestamp');
@@ -22,7 +20,6 @@ try {
       ).toISOString()}`
     );
   } else {
-    console.log(`[${getFixedTime()}][Cache Init] No existing cache found in localStorage.`);
   }
 } catch (e) {
   console.error(`[${getFixedTime()}][Cache Init] Failed to load cache from localStorage:`, e);
@@ -37,11 +34,7 @@ const saveCacheToLocalStorage = () => {
     const cacheToSave = cachedStatuses?.map(({ blobUrl, ...rest }) => rest) || [];
     localStorage.setItem('cachedStatuses', JSON.stringify(cacheToSave));
     localStorage.setItem('cacheTimestamp', cacheTimestamp.toString());
-    console.log(
-      `[${getFixedTime()}][Cache Save] Cache saved with ${cacheToSave.length} statuses at ${new Date(
-        cacheTimestamp
-      ).toISOString()}`
-    );
+
   } catch (e) {
     console.error(`[${getFixedTime()}][Cache Save] Failed to save cache to localStorage:`, e);
   }
@@ -130,7 +123,6 @@ export const updateStatusMediaUrl = (statusId, newMediaUrl) => {
   cachedStatuses = cachedStatuses.map((status) => {
     if (status.status_id === statusId) {
       if (status.media_url !== newMediaUrl) {
-        console.log(`[${getFixedTime()}][updateStatusMediaUrl] Updating media_url for status_id ${statusId}`);
         return { ...status, media_url: newMediaUrl };
       }
     }
@@ -152,19 +144,15 @@ export const fetchAllStatuses = async () => {
     let user;
     try {
       user = JSON.parse(rawUser);
-      console.log(`[${getFixedTime()}][fetchAllStatuses] Loaded user_id: ${user.user_id}`);
     } catch {
       console.error(`[${getFixedTime()}][fetchAllStatuses] Failed to parse user from localStorage.`);
       return cachedStatuses || [];
     }
 
-    // If cache valid, return immediately
     if (cachedStatuses && isCacheValid()) {
-      console.log(`[${getFixedTime()}][fetchAllStatuses] Returning valid cached data immediately.`);
       return cachedStatuses;
     }
 
-    // Cache not valid or empty, fetch fresh
     const freshData = await refreshStatusesFromBackend(user.user_id);
     return freshData;
   } catch (e) {
@@ -175,7 +163,6 @@ export const fetchAllStatuses = async () => {
 
 const refreshStatusesFromBackend = async (user_id) => {
   try {
-    console.log(`[${getFixedTime()}][refreshStatusesFromBackend] Fetching statuses for user_id:`, user_id);
 
     const res = await fetch('http://localhost:5000/api/getAllStatuses', {
       method: 'POST',
@@ -189,7 +176,6 @@ const refreshStatusesFromBackend = async (user_id) => {
     }
 
     const data = await res.json();
-    console.log(`[${getFixedTime()}][refreshStatusesFromBackend] Received ${data.statuses.length} statuses from server.`);
 
     const statusesWithThumbnails = await Promise.all(
       data.statuses.map(async (status) => {
@@ -201,9 +187,7 @@ const refreshStatusesFromBackend = async (user_id) => {
     cachedStatuses = statusesWithThumbnails;
     cacheTimestamp = Date.now();
     saveCacheToLocalStorage();
-    console.log(`[${getFixedTime()}][refreshStatusesFromBackend] Cache updated with latest data and thumbnails.`);
 
-    // Notify any polling subscriber about new data
     if (pollingCallback) pollingCallback(cachedStatuses);
 
     return cachedStatuses;
@@ -220,26 +204,21 @@ export const clearStatusCache = () => {
   cacheTimestamp = null;
   localStorage.removeItem('cachedStatuses');
   localStorage.removeItem('cacheTimestamp');
-  console.log(`[${getFixedTime()}][Cache Clear] Cache cleared.`);
 };
 
 export const startPollingStatuses = (onUpdate) => {
   if (pollingIntervalId !== null) {
-    console.log(`[${getFixedTime()}][Polling] Polling already started.`);
-    return () => {}; // Return noop unsubscribe if already started
+    return () => {}; 
   }
 
   pollingCallback = onUpdate;
 
-  console.log(`[${getFixedTime()}][Polling] Starting polling immediately.`);
 
-  // Call fetchAllStatuses once so caller gets cached data immediately if valid
   fetchAllStatuses().then((data) => {
     if (onUpdate) onUpdate(data);
   });
 
   pollingIntervalId = setInterval(async () => {
-    console.log(`[${getFixedTime()}][Polling] Polling triggered.`);
 
     const rawUser = localStorage.getItem('user');
     if (!rawUser) {
@@ -255,18 +234,15 @@ export const startPollingStatuses = (onUpdate) => {
       return;
     }
 
-    // Always fetch fresh data from backend during polling
     const freshData = await refreshStatusesFromBackend(user.user_id);
     if (onUpdate) onUpdate(freshData);
 
   }, 5 * 1000); // Poll every 5 seconds
 
-  // Return unsubscribe function to stop polling
   return () => {
     if (pollingIntervalId !== null) {
       clearInterval(pollingIntervalId);
       pollingIntervalId = null;
-      console.log(`[${getFixedTime()}][Polling] Polling stopped.`);
     }
   };
 };
@@ -275,8 +251,6 @@ export const stopPollingStatuses = () => {
   if (pollingIntervalId !== null) {
     clearInterval(pollingIntervalId);
     pollingIntervalId = null;
-    console.log(`[${getFixedTime()}][Polling] Polling stopped.`);
   } else {
-    console.log(`[${getFixedTime()}][Polling] Polling was not running.`);
   }
 };

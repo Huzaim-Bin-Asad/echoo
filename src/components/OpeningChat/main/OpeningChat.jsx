@@ -1,8 +1,7 @@
 import React from 'react';
 import Header from './Header';  // Assuming you have a Header component
-import UserInfoPrinter from './UserInfoPrinter';  // Make sure the case matches the actual file name
-import BottomNav from './BottomNav';  // Assuming you have a BottomNav component
-
+import UserInfoPrinter from './UserInfoPrinter';  
+import BottomNav from './BottomNav';  
 const OpeningChat = () => {
   return (
     <div className="container-fluid p-0 d-flex flex-column" style={{ height: '90vh', maxWidth: '768px', margin: '0 auto' }}>
