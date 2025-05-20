@@ -13,6 +13,7 @@ import StatusPage from './pages/StatusPage';
 import Settings from './pages/Settings';
 import Profile from './pages/Profile';
 import useTokenChecker from './hooks/useTokenChecker';
+import ContactStatuses from "./components/Status/contactStatusFetcher/ContactStatuses.jsx"; 
 
 function AppContent() {
   const location = useLocation();
@@ -31,13 +32,14 @@ function AppContent() {
     <div>
       <AuthModal handleLogin={handleLogin} handleSignup={handleSignup} />
       
+      <ContactStatuses />
+
       <Routes>
         <Route path="/landing" element={<Landing />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/login" element={<Login />} />
         <Route path="/" element={<Echoo />} />
         <Route path="/echoo" element={<Echoo />} />
-
         <Route path="/add" element={<Add />} />
         <Route path="/new-contact" element={<NewContact />} />
         <Route path="/new-group" element={<NewGroup />} />

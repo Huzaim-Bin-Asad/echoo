@@ -12,33 +12,30 @@ import MyStatusView from "./MyStatusView/MyStatusView";
 import {
   startPollingStatuses,
   stopPollingStatuses,
-  getCachedStatuses,
 } from "./MyStatusView/fetchAllStatuses";
+
+const CACHE_KEY = "contactsStatusCache";
 
 const Status = () => {
   const [showPopup, setShowPopup] = useState(false);
-  const [showPrivacyPage] = useState(false); // Currently not toggled in your code
+  const [showPrivacyPage] = useState(false);
   const [showArchiveSettings, setShowArchiveSettings] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState(null);
   const [showMyStatusView, setShowMyStatusView] = useState(false);
   const [currentStatus, setCurrentStatus] = useState(null);
-  const [allStatuses, setAllStatuses] = useState(
-    () => getCachedStatuses() || []
-  );
-  const [loadingStatuses, setLoadingStatuses] = useState(false);
+  const [statuses, setStatuses] = useState([]);
+  const [loadingStatuses, setLoadingStatuses] = useState(true);
 
   const togglePopup = () => setShowPopup((prev) => !prev);
   const handleArchiveSettingsClick = () => setShowArchiveSettings(true);
   const handleBackClick = () => setShowArchiveSettings(false);
 
-  // When a new media file is selected from AddStatus or MyStatusView
   const handleFileSelected = (fileUrl, fileType) => {
     setShowMyStatusView(false);
     setCurrentStatus(null);
     setSelectedMedia({ fileUrl, fileType });
   };
 
-  // Cleanup URL object when MediaEditor is closed
   const handleCloseMediaEditor = () => {
     if (selectedMedia) {
       URL.revokeObjectURL(selectedMedia.fileUrl);
@@ -46,20 +43,43 @@ const Status = () => {
     setSelectedMedia(null);
   };
 
-  // Poll statuses on mount, cache them, and update state
+  // Utility to load cached statuses from localStorage (with try/catch)
+  const loadCachedStatuses = () => {
+    try {
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && Array.isArray(parsed.statuses)) {
+          return parsed.statuses;
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to parse cached statuses:", e);
+    }
+    return [];
+  };
+
   useEffect(() => {
     setLoadingStatuses(true);
 
+    // On mount, load cached statuses from localStorage and set
+    const initialStatuses = loadCachedStatuses();
+    setStatuses(initialStatuses);
+
     const unsubscribe = startPollingStatuses((updatedStatuses) => {
-      console.log('[Status] Fetched statuses:', updatedStatuses);
+      console.log("[Status] Fetched statuses:", updatedStatuses);
 
       try {
-        localStorage.setItem("cachedStatuses", JSON.stringify(updatedStatuses));
+        // Save the full object with .statuses array, for consistency
+        localStorage.setItem(
+          CACHE_KEY,
+          JSON.stringify({ timestamp: Date.now(), statuses: updatedStatuses })
+        );
       } catch (e) {
         console.warn("Failed to cache statuses locally:", e);
       }
 
-      setAllStatuses(updatedStatuses);
+      setStatuses(updatedStatuses);
       setLoadingStatuses(false);
     });
 
@@ -68,16 +88,19 @@ const Status = () => {
     };
   }, []);
 
-  // Render Privacy page if active (currently not toggled)
+  // Log statuses every time they update
+  useEffect(() => {
+    console.log("[Status] Passing statuses to RecentUpdates:", statuses);
+  }, [statuses]);
+
   if (showPrivacyPage) {
     return <StatusPrivacy handleBackClick={handleBackClick} />;
   }
 
-  // Render MyStatusView when toggled on
   if (showMyStatusView) {
     return (
       <MyStatusView
-        statuses={allStatuses}
+        statuses={statuses}
         loading={loadingStatuses}
         onBack={() => setShowMyStatusView(false)}
         onFileSelected={handleFileSelected}
@@ -91,13 +114,11 @@ const Status = () => {
         }}
         startPollingStatuses={startPollingStatuses}
         stopPollingStatuses={stopPollingStatuses}
-        getCachedStatuses={getCachedStatuses}
         currentStatus={currentStatus}
       />
     );
   }
 
-  // Main view: show MediaEditor if media selected, else normal status UI
   return (
     <div className="bg-light vh-100 d-flex flex-column position-relative">
       {selectedMedia ? (
@@ -124,7 +145,7 @@ const Status = () => {
                 togglePopup={togglePopup}
                 onPrivacyClick={() => {
                   setShowPopup(false);
-                  // You can set privacy page toggle here if needed
+                  // Add privacy page toggle here if needed
                 }}
                 onArchiveSettingsClick={handleArchiveSettingsClick}
               />
@@ -143,14 +164,15 @@ const Status = () => {
               onFileSelected={handleFileSelected}
               onShowMyStatusView={(show) => {
                 setShowMyStatusView(show);
-                // Sync currentStatus from localStorage for preview in MyStatusView
                 const preview = JSON.parse(
                   localStorage.getItem("currentStatusPreview") || "null"
                 );
                 setCurrentStatus(preview);
               }}
             />
-            <RecentUpdates statuses={allStatuses} loading={loadingStatuses} />
+
+            {/* Pass cached statuses and loading state */}
+<RecentUpdates />
           </div>
 
           <BottomNav />
