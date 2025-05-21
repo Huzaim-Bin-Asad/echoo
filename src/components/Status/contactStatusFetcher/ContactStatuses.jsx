@@ -15,7 +15,6 @@ const ContactStatuses = ({ onStatusesUpdate }) => {
     const saveCache = (key, data) => {
       try {
         localStorage.setItem(key, JSON.stringify(data));
-        console.log(`[Cache] Saved ${data.statuses.length} statuses to cache.`);
       } catch (e) {
         console.error("[Cache] Failed to save cache:", e);
       }
@@ -33,7 +32,7 @@ const ContactStatuses = ({ onStatusesUpdate }) => {
             Array.isArray(parsed.statuses) &&
             parsed.statuses.every((s) => s.status_id)
           ) {
-            console.log(`[Cache] Loaded valid cache (${parsed.statuses.length} statuses).`);
+          
             setStatuses(parsed.statuses);
             onStatusesUpdate?.(parsed.statuses);
             setLoading(false);
@@ -80,16 +79,12 @@ const ContactStatuses = ({ onStatusesUpdate }) => {
                 cachedMediaUrls.push(s.media_url);
               }
             });
-            console.log(`[Cache] Loaded ${cachedMediaUrls.length} cachedMediaUrls from cache.`);
           } catch (e) {
             console.warn("[Cache] Failed to parse cachedMediaUrls:", e);
           }
         }
 
-        console.log("[Fetch] Sending request to backend with payload:", {
-          user_id: user.user_id,
-          cachedMediaUrls,
-        });
+
 
         const response = await fetch("http://localhost:5000/api/get-contacts-statuses", {
           method: "POST",
@@ -114,7 +109,6 @@ const ContactStatuses = ({ onStatusesUpdate }) => {
           return;
         }
 
-        console.log(`[Fetch] Received ${data.statuses.length} statuses from backend.`);
 
         const enrichedStatuses = await Promise.all(
           data.statuses.map(async (status) => {
@@ -123,7 +117,6 @@ const ContactStatuses = ({ onStatusesUpdate }) => {
             if (!media_url) return { ...status, thumbnail: null };
 
             if (cachedThumbs[media_url]) {
-              console.log(`[Thumbnail] Using cached thumbnail for: ${media_url}`);
               return { ...status, thumbnail: cachedThumbs[media_url] };
             }
 
@@ -158,8 +151,9 @@ const ContactStatuses = ({ onStatusesUpdate }) => {
         const cacheToStore = {
           timestamp: Date.now(),
           statuses: enrichedStatuses.map(
-            ({ status_id, contactName, caption, timestamp, media_url, thumbnail }) => ({
+            ({ status_id, user_id, contactName, caption, timestamp, media_url, thumbnail }) => ({
               status_id,
+              user_id,
               contactName,
               caption,
               timestamp,

@@ -1,4 +1,4 @@
- let intervalId = null;
+let intervalId = null;
 const CACHE_KEY = 'myStatusCache';
 const EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -61,7 +61,24 @@ export const startCurrentStatusFetcher = (setStatusPreview) => {
         body: JSON.stringify({ user_id: userId }),
       });
 
-      if (!response.ok) return;
+      if (response.status === 404) {
+        // Status does not exist, clear current preview and cache silently
+        setStatusPreview(null);
+        localStorage.removeItem(CACHE_KEY);
+
+        // Revoke old blob URL if any
+        if (lastBlobUrl) {
+          URL.revokeObjectURL(lastBlobUrl);
+          lastBlobUrl = null;
+        }
+        lastStatusTimestamp = null;
+        return;
+      }
+
+      if (!response.ok) {
+        console.error(`[Fetcher] Unexpected response status: ${response.status}`);
+        return;
+      }
 
       const mediaBlob = await response.blob();
       const timestampHeader = response.headers.get('x-status-timestamp');

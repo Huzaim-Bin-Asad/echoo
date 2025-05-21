@@ -11,16 +11,12 @@ try {
   const savedCache = localStorage.getItem('cachedStatuses');
   const savedTimestamp = localStorage.getItem('cacheTimestamp');
 
-  if (savedCache && savedTimestamp) {
-    cachedStatuses = JSON.parse(savedCache);
-    cacheTimestamp = Number(savedTimestamp);
-    console.log(
-      `[${getFixedTime()}][Cache Init] Loaded cache with ${cachedStatuses.length} statuses, timestamp: ${new Date(
-        cacheTimestamp
-      ).toISOString()}`
-    );
-  } else {
-  }
+if (savedCache && savedTimestamp) {
+  cachedStatuses = JSON.parse(savedCache);
+  cacheTimestamp = Number(savedTimestamp);
+} else {
+  // (empty else block)
+}
 } catch (e) {
   console.error(`[${getFixedTime()}][Cache Init] Failed to load cache from localStorage:`, e);
 }

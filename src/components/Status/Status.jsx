@@ -8,6 +8,7 @@ import StatusPrivacy from "./StatusPrivacy";
 import StatusArchiveSettings from "./StatusArchiveSettings";
 import MediaEditor from "./MediaEditor";
 import MyStatusView from "./MyStatusView/MyStatusView";
+import StatusView from "./MainStatusView/MainStatusView";
 
 import {
   startPollingStatuses,
@@ -22,9 +23,14 @@ const Status = () => {
   const [showArchiveSettings, setShowArchiveSettings] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState(null);
   const [showMyStatusView, setShowMyStatusView] = useState(false);
+  const [showStatusView, setShowStatusView] = useState(false);
   const [currentStatus, setCurrentStatus] = useState(null);
   const [statuses, setStatuses] = useState([]);
   const [loadingStatuses, setLoadingStatuses] = useState(true);
+
+  // New states to store userId and mediaUrls for StatusView
+  const [userId, setUserId] = useState(null);
+  const [mediaUrls, setMediaUrls] = useState([]);
 
   const togglePopup = () => setShowPopup((prev) => !prev);
   const handleArchiveSettingsClick = () => setShowArchiveSettings(true);
@@ -43,7 +49,6 @@ const Status = () => {
     setSelectedMedia(null);
   };
 
-  // Utility to load cached statuses from localStorage (with try/catch)
   const loadCachedStatuses = () => {
     try {
       const cached = localStorage.getItem(CACHE_KEY);
@@ -62,15 +67,12 @@ const Status = () => {
   useEffect(() => {
     setLoadingStatuses(true);
 
-    // On mount, load cached statuses from localStorage and set
     const initialStatuses = loadCachedStatuses();
     setStatuses(initialStatuses);
 
     const unsubscribe = startPollingStatuses((updatedStatuses) => {
-      console.log("[Status] Fetched statuses:", updatedStatuses);
 
       try {
-        // Save the full object with .statuses array, for consistency
         localStorage.setItem(
           CACHE_KEY,
           JSON.stringify({ timestamp: Date.now(), statuses: updatedStatuses })
@@ -88,21 +90,42 @@ const Status = () => {
     };
   }, []);
 
-  // Log statuses every time they update
   useEffect(() => {
-    console.log("[Status] Passing statuses to RecentUpdates:", statuses);
   }, [statuses]);
 
   if (showPrivacyPage) {
     return <StatusPrivacy handleBackClick={handleBackClick} />;
   }
 
+  // Show StatusView when a status is clicked
+  if (showStatusView) {
+    return (
+      <StatusView
+        statuses={statuses}
+        loading={loadingStatuses}
+        onBack={() => {
+          setShowStatusView(false);
+          setCurrentStatus(null);
+          setUserId(null);
+          setMediaUrls([]);
+        }}
+        currentStatus={currentStatus}
+        userId={userId}
+        mediaUrls={mediaUrls}
+      />
+    );
+  }
+
+  // Show MyStatusView for AddStatus flow
   if (showMyStatusView) {
     return (
       <MyStatusView
         statuses={statuses}
         loading={loadingStatuses}
-        onBack={() => setShowMyStatusView(false)}
+        onBack={() => {
+          setShowMyStatusView(false);
+          setCurrentStatus(null);
+        }}
         onFileSelected={handleFileSelected}
         requestMultiplePermissions={async () => ({
           camera: "granted",
@@ -145,7 +168,6 @@ const Status = () => {
                 togglePopup={togglePopup}
                 onPrivacyClick={() => {
                   setShowPopup(false);
-                  // Add privacy page toggle here if needed
                 }}
                 onArchiveSettingsClick={handleArchiveSettingsClick}
               />
@@ -171,8 +193,14 @@ const Status = () => {
               }}
             />
 
-            {/* Pass cached statuses and loading state */}
-<RecentUpdates />
+            <RecentUpdates
+              onStatusClick={(statusData) => {
+                setCurrentStatus(statusData);
+                setUserId(statusData.userId);
+                setMediaUrls(statusData.mediaUrls);
+                setShowStatusView(true);
+              }}
+            />
           </div>
 
           <BottomNav />
