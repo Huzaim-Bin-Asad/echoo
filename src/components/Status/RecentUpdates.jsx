@@ -3,18 +3,13 @@ import { User } from "lucide-react";
 
 const CACHE_KEY = "contactedStatusesCache";
 
-const RecentUpdates = () => {
-  const [statuses, setStatuses] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  // Helper to get time ago string from timestamp with exact time
 const timeAgo = (date) => {
   const now = new Date();
   const past = new Date(date);
   const seconds = Math.floor((now - past) / 1000);
 
   const timeString = past.toLocaleTimeString([], {
-    hour: "numeric",      // changed from '2-digit' to 'numeric'
+    hour: "numeric",
     minute: "2-digit",
     hour12: true,
   });
@@ -28,6 +23,35 @@ const timeAgo = (date) => {
   return `${days} day${days > 1 ? "s" : ""} ago, ${timeString}`;
 };
 
+// Group statuses by contactName and get all statuses for each contact
+const getStatusesGroupedByContact = (allStatuses) => {
+  const grouped = {};
+  allStatuses.forEach((status) => {
+    const key = status.contactName || status.user_id || status.status_id || "unknown";
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(status);
+  });
+  return grouped;
+};
+
+// Get latest status per contact (most recent timestamp)
+const getLatestStatusPerContact = (allStatuses) => {
+  const grouped = getStatusesGroupedByContact(allStatuses);
+  return Object.entries(grouped).map(([contactName, statuses]) => {
+    const latestStatus = statuses.reduce((latest, current) =>
+      new Date(current.timestamp) > new Date(latest.timestamp) ? current : latest
+    );
+    return {
+      contactName,
+      statuses, // all statuses for ring count
+      latestStatus,
+    };
+  });
+};
+
+const RecentUpdates = () => {
+  const [statuses, setStatuses] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadCachedStatuses = () => {
@@ -46,9 +70,26 @@ const timeAgo = (date) => {
     };
 
     const cachedStatuses = loadCachedStatuses();
-    setStatuses(cachedStatuses);
+    const groupedLatestStatuses = getLatestStatusPerContact(cachedStatuses);
+    setStatuses(groupedLatestStatuses);
     setLoading(false);
   }, []);
+
+  const getGradientForCount = (count) => {
+    const gap = 4; // degrees gap between arcs
+    if (count <= 1) {
+      return "conic-gradient(#8e5db1 0deg 360deg, #9b6ea9 360deg 360deg)";
+    }
+    const degreesPerArc = 360 / count;
+    const arcs = [];
+    for (let i = 0; i < count; i++) {
+      const start = i * degreesPerArc;
+      const end = start + degreesPerArc - gap;
+      arcs.push(`#8e5db1 ${start}deg ${end}deg`);
+      arcs.push(`transparent ${end}deg ${start + degreesPerArc}deg`);
+    }
+    return `conic-gradient(${arcs.join(", ")})`;
+  };
 
   return (
     <div
@@ -71,62 +112,59 @@ const timeAgo = (date) => {
       ) : statuses.length === 0 ? (
         <p className="text-muted">No recent updates</p>
       ) : (
-        statuses.map((status) => (
-          <div
-            key={status.status_id || status.id}
-            className="d-flex align-items-center mb-3"
-          >
+        statuses.map(({ contactName, statuses: allStatuses, latestStatus }) => {
+          const statusCount = allStatuses.length;
+          return (
             <div
-              className="position-relative"
-              style={{ width: 52, height: 52 }}
+              key={latestStatus.status_id || latestStatus.id}
+              className="d-flex align-items-center mb-3"
             >
-              <div
-                className="position-absolute top-0 start-0 rounded-circle"
-                style={{
-                  width: 52,
-                  height: 52,
-                  background:
-                    "conic-gradient(#28a745 0deg 80deg, transparent 80deg 280deg, #28a745 280deg 360deg)",
-                  clipPath: "circle(50% at center)",
-                }}
-              ></div>
+              <div className="position-relative" style={{ width: 52, height: 52, }}>
+                <div
+                  className="position-absolute top-0 start-0 rounded-circle"
+                  style={{
+                    width: 52,
+                    height: 52,
+                    background: getGradientForCount(statusCount),
+                    clipPath: "circle(50% at center)",
+                  }}
+                ></div>
 
-              <div
-                className="position-absolute top-50 start-50 translate-middle bg-white rounded-circle d-flex justify-content-center align-items-center"
-                style={{
-                  width: 44,
-                  height: 44,
-                  overflow: "hidden",
-                  borderRadius: "50%",
-                }}
-              >
-                {status.thumbnail ? (
-                  <img
-                    src={status.thumbnail}
-                    alt={`${status.contactName} status thumbnail`}
-                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                  />
-                ) : (
-                  <User size={24} color="#6c757d" />
+                <div
+                  className="position-absolute top-50 start-50 translate-middle bg-white rounded-circle d-flex justify-content-center align-items-center"
+                  style={{
+                    width: 46,
+                    height: 46,
+                    overflow: "hidden",
+                    borderRadius: "50%",
+                  }}
+                >
+                  {latestStatus.thumbnail ? (
+                    <img
+                      src={latestStatus.thumbnail}
+                      alt={`${contactName} status thumbnail`}
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                  ) : (
+                    <User size={24} color="#6c757d" />
+                  )}
+                </div>
+              </div>
+
+              <div className="ms-3 flex-grow-1">
+                <strong style={{ fontSize: "0.95rem" }}>{contactName}</strong>
+                <p className="mb-0 text-muted" style={{ fontSize: "0.8rem" }}>
+                  {timeAgo(latestStatus.timestamp)}
+                </p>
+                {latestStatus.caption && (
+                  <p className="mb-0 text-muted" style={{ fontSize: "0.75rem" }}>
+                    {latestStatus.caption}
+                  </p>
                 )}
               </div>
             </div>
-
-            <div className="ms-3 flex-grow-1">
-              <strong style={{ fontSize: "0.95rem" }}>
-                {status.contactName}
-              </strong>
-              <p className="mb-0 text-muted" style={{ fontSize: "0.8rem" }}>
-                {timeAgo(status.timestamp)}
-              </p>
-              {status.caption && (
-                <p className="mb-0 text-muted" style={{ fontSize: "0.75rem" }}>
-                  {status.caption}
-                </p>
-              )}
-            </div>
-          </div>
-        ))
+          );
+        })
       )}
     </div>
   );
