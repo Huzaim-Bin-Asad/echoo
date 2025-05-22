@@ -2,7 +2,7 @@ let intervalId = null;
 const CACHE_KEY = 'myStatusCache';
 const EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
 
-// In-memory cache for thumbnails keyed by media URL
+// In-memory cache for thumbnails keyed by blob URL
 const thumbnailCache = {};
 
 export const startCurrentStatusFetcher = (setStatusPreview) => {
@@ -12,6 +12,7 @@ export const startCurrentStatusFetcher = (setStatusPreview) => {
 
   let lastBlobUrl = null;
   let lastStatusTimestamp = null;
+  let lastOriginalMediaUrl = null;
 
   // Load cached status from localStorage if not expired
   const cached = localStorage.getItem(CACHE_KEY);
@@ -31,10 +32,10 @@ export const startCurrentStatusFetcher = (setStatusPreview) => {
         });
         lastStatusTimestamp = parsed.timestamp;
         lastBlobUrl = parsed.mediaUrl;
+        lastOriginalMediaUrl = parsed.originalMediaUrl;
         thumbnailCache[lastBlobUrl] = parsed.thumbnail;
       }
-    } catch (e) {
-      console.warn('[Fetcher] Error parsing cached status — clearing');
+    } catch {
       localStorage.removeItem(CACHE_KEY);
     }
   }
@@ -47,7 +48,6 @@ export const startCurrentStatusFetcher = (setStatusPreview) => {
     try {
       user = JSON.parse(raw);
     } catch {
-      console.error('[Fetcher] Invalid user JSON');
       return;
     }
 
@@ -58,47 +58,58 @@ export const startCurrentStatusFetcher = (setStatusPreview) => {
       const response = await fetch('http://localhost:5000/api/getCurrentStatus', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: userId }),
+        body: JSON.stringify({
+          user_id: userId,
+          originalMediaUrl: lastOriginalMediaUrl || null,
+          isCached: !!lastOriginalMediaUrl,
+        }),
       });
 
+      if (response.status === 204) {
+        // Backend says cached media is current — do nothing, keep current preview
+        return;
+      }
+
       if (response.status === 404) {
-        // Status does not exist, clear current preview and cache silently
         setStatusPreview(null);
         localStorage.removeItem(CACHE_KEY);
 
-        // Revoke old blob URL if any
         if (lastBlobUrl) {
           URL.revokeObjectURL(lastBlobUrl);
           lastBlobUrl = null;
         }
         lastStatusTimestamp = null;
+        lastOriginalMediaUrl = null;
         return;
       }
 
       if (!response.ok) {
-        console.error(`[Fetcher] Unexpected response status: ${response.status}`);
         return;
       }
 
-      const mediaBlob = await response.blob();
       const timestampHeader = response.headers.get('x-status-timestamp');
+      const originalMediaUrl = response.headers.get('x-status-mediaurl');
       const serverTimestamp = Number(timestampHeader);
 
-      if (!serverTimestamp) {
-        console.warn('[Fetcher] Missing or invalid timestamp header, ignoring update');
+      if (!serverTimestamp || !originalMediaUrl) {
         return;
       }
 
-      // Skip update if status unchanged
-      if (serverTimestamp === lastStatusTimestamp) return;
+      // Skip update if same timestamp and media URL
+      if (
+        serverTimestamp === lastStatusTimestamp &&
+        originalMediaUrl === lastOriginalMediaUrl
+      ) return;
 
       lastStatusTimestamp = serverTimestamp;
+      lastOriginalMediaUrl = originalMediaUrl;
 
-      // Revoke old URL to free memory
+      const mediaBlob = await response.blob();
+
+      // Revoke old blob URL
       if (lastBlobUrl) URL.revokeObjectURL(lastBlobUrl);
       lastBlobUrl = URL.createObjectURL(mediaBlob);
 
-      // Use cached thumbnail if available
       if (thumbnailCache[lastBlobUrl]) {
         setStatusPreview({
           mediaUrl: lastBlobUrl,
@@ -114,25 +125,25 @@ export const startCurrentStatusFetcher = (setStatusPreview) => {
 
         thumbnailCache[lastBlobUrl] = thumbnail;
 
-        setStatusPreview({
+        const preview = {
           mediaUrl: lastBlobUrl,
           thumbnail,
           type: mediaBlob.type,
           timestamp: serverTimestamp,
-        });
+        };
+
+        setStatusPreview(preview);
 
         localStorage.setItem(
           CACHE_KEY,
           JSON.stringify({
-            mediaUrl: lastBlobUrl,
-            thumbnail,
-            type: mediaBlob.type,
-            timestamp: serverTimestamp,
+            ...preview,
+            originalMediaUrl, // save MEGA URL in cache ✅
           })
         );
       });
-    } catch (err) {
-      console.error('[Fetcher] Error:', err);
+    } catch {
+      // silently ignore errors
     }
   }
 
@@ -182,7 +193,6 @@ const generateThumbnail = (src, type, callback) => {
   };
 
   img.onerror = () => {
-    console.warn('[Fetcher] Failed to load image for thumbnail');
     callback(null);
   };
 };

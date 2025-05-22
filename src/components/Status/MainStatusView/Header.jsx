@@ -2,63 +2,81 @@ import React, { useEffect, useState } from "react";
 import { ChevronLeft, MoreVertical } from "lucide-react";
 import "bootstrap/dist/css/bootstrap.min.css";
 
-const Header = ({ onBack, title = "Uzair", subtitle = "Yesterday, 5:25 PM", profileImageUrl }) => {
+const Header = ({
+  onBack,
+  title,
+  subtitle,
+  profileImageUrl,
+  progressIndex = 0,
+  total = 1,
+}) => {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    if (!onBack) return; // no timer if no back handler
-
-    const duration = 5000; // 10 seconds
-    const interval = 100; // update every 100ms
+    // reset & animate for each new status
+    const duration = 5000;
+    const interval = 100;
     const startTime = Date.now();
+    setProgress(0);
 
     const timer = setInterval(() => {
       const elapsed = Date.now() - startTime;
-      const percentage = Math.min((elapsed / duration) * 100, 100);
-      setProgress(percentage);
-      if (percentage >= 100) {
+      const pct = Math.min((elapsed / duration) * 100, 100);
+      setProgress(pct);
+      if (pct === 100) {
         clearInterval(timer);
-        onBack(); // Automatically call onBack when progress completes
       }
     }, interval);
 
     return () => clearInterval(timer);
-  }, [onBack]);
+  }, [progressIndex]);
 
   return (
     <div className="p-2">
-      {/* Progress bar */}
-      <div className="w-100 mb-2" style={{ height: "4px", backgroundColor: "#f8d7da" }}>
-        <div
-          style={{
-            width: `${progress}%`,
-            height: "100%",
-            backgroundImage: "linear-gradient(to right, #f8d7da, #c8a2c8)",
-            transition: "width 0.1s linear",
-          }}
-        />
+      {/* Multi-step progress bar */}
+      <div className="w-100 mb-2 d-flex gap-1">
+        {[...Array(total)].map((_, idx) => {
+          // determine this segment's fill
+          let width;
+          if (idx < progressIndex) width = "100%";
+          else if (idx === progressIndex) width = `${progress}%`;
+          else width = "0%";
+
+          return (
+            <div
+              key={idx}
+              style={{
+                flexGrow: 1,
+                backgroundColor: "#f8d7da",
+                height: 4,
+                position: "relative",
+                overflow: "hidden",
+              }}
+            >
+              <div
+                style={{
+                  width,
+                  height: "100%",
+                  backgroundImage: "linear-gradient(to right, #f8d7da, #c8a2c8)",
+                  transition: "width 0.1s linear",
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                }}
+              />
+            </div>
+          );
+        })}
       </div>
 
       {/* Header content */}
-      <div
-        className="d-flex align-items-center justify-content-between"
-      >
+      <div className="d-flex align-items-center justify-content-between">
         <div
           className="d-flex align-items-center gap-2"
           style={{ cursor: onBack ? "pointer" : "default" }}
-          onClick={() => {
-            if (onBack) onBack();
-          }}
-          role={onBack ? "button" : undefined}
-          tabIndex={onBack ? 0 : undefined}
-          onKeyDown={(e) => {
-            if (onBack && (e.key === "Enter" || e.key === " ")) {
-              onBack();
-            }
-          }}
+          onClick={onBack}
         >
           <ChevronLeft color="white" />
-
           <img
             src={profileImageUrl || "https://via.placeholder.com/32"}
             alt="Profile"
@@ -67,7 +85,9 @@ const Header = ({ onBack, title = "Uzair", subtitle = "Yesterday, 5:25 PM", prof
           />
           <div>
             <strong>{title}</strong>
-            <div style={{ fontSize: "0.75rem", color: "#ccc" }}>{subtitle}</div>
+            <div style={{ fontSize: "0.75rem", color: "#ccc" }}>
+              {subtitle}
+            </div>
           </div>
         </div>
         <MoreVertical color="white" />
