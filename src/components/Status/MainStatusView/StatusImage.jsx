@@ -9,7 +9,7 @@ const StatusImage = ({ media_url, onLoad }) => {
   useEffect(() => {
     let isCancelled = false;
     let objectUrl = null;
-    let shouldRevoke = false; // track if we should revoke blob URL on cleanup
+    let shouldRevoke = false;
 
     setLoaded(false);
     setImageSrc(null);
@@ -17,13 +17,11 @@ const StatusImage = ({ media_url, onLoad }) => {
     const loadImage = async () => {
       if (!media_url) return;
 
-      // If it's base64 (thumbnail), use directly
       if (media_url.startsWith("data:image")) {
         setImageSrc(media_url);
         return;
       }
 
-      // Use cached blob URL if available
       if (blobUrlCache.has(media_url)) {
         setImageSrc(blobUrlCache.get(media_url));
         return;
@@ -36,9 +34,8 @@ const StatusImage = ({ media_url, onLoad }) => {
         const blob = await response.blob();
         objectUrl = URL.createObjectURL(blob);
 
-        // Cache the blob URL for future use
         blobUrlCache.set(media_url, objectUrl);
-        shouldRevoke = false; // because cached, don't revoke on cleanup
+        shouldRevoke = false;
 
         if (!isCancelled) {
           setImageSrc(objectUrl);
@@ -52,8 +49,6 @@ const StatusImage = ({ media_url, onLoad }) => {
 
     return () => {
       isCancelled = true;
-
-      // Revoke the blob URL only if it was created here AND NOT cached
       if (objectUrl && shouldRevoke) {
         URL.revokeObjectURL(objectUrl);
       }
@@ -68,7 +63,12 @@ const StatusImage = ({ media_url, onLoad }) => {
   return (
     <div
       className="d-flex justify-content-center align-items-center"
-      style={{ flexGrow: 1 }}
+      style={{
+        flexGrow: 1,
+        height: "100%",           // Full container height to center vertically
+        width: "100%",            // Full width to allow responsive scaling
+        overflow: "hidden",       // Hide overflow if image is larger than container
+      }}
     >
       {!loaded && <div className="text-muted">Loading image...</div>}
 
@@ -78,11 +78,12 @@ const StatusImage = ({ media_url, onLoad }) => {
           alt="Status"
           onLoad={handleLoad}
           style={{
-            maxWidth: "90vw",
-            maxHeight: "80vh",
+            maxWidth: "100%",
+            maxHeight: "100%",
             objectFit: "contain",
             display: loaded ? "block" : "none",
             borderRadius: "8px",
+            margin: "auto",       // horizontally center if smaller than container
           }}
         />
       )}

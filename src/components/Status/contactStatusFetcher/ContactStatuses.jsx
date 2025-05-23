@@ -21,7 +21,7 @@ const ContactStatuses = ({ onStatusesUpdate }) => {
       }
     };
 
-    const loadCacheAndUpdateUI = () => {
+    const loadCacheAndUpdateUI = async () => {
       const cached = localStorage.getItem(CACHE_KEY);
       if (cached) {
         try {
@@ -33,7 +33,10 @@ const ContactStatuses = ({ onStatusesUpdate }) => {
             Array.isArray(parsed.statuses) &&
             parsed.statuses.every((s) => s.status_id)
           ) {
-            // On reload blob URLs are invalid, clear media_url here so fetch recreates blobs
+            // The cached media_url here is blob URL
+            // But blob URLs become invalid after page reload,
+            // so we must revoke them and re-fetch blobs for safety
+            // To keep blobs fresh, clear media_url to null so fetch recreates blob URLs
             const statusesWithMediaUrlCleared = parsed.statuses.map((status) => ({
               ...status,
               media_url: null,
@@ -144,7 +147,17 @@ const ContactStatuses = ({ onStatusesUpdate }) => {
               return { ...status, media_url: null, thumbnail: null };
             }
 
-            const contentType = blobUrl ? (await fetch(media_url).then(res => res.headers.get("Content-Type")).catch(() => "unknown")) : "unknown";
+            // Fetch content type once from the original URL, if needed
+            let contentType = "unknown";
+            try {
+              const headRes = await fetch(media_url, { method: "HEAD" });
+              if (headRes.ok) {
+                contentType = headRes.headers.get("Content-Type") || "unknown";
+              }
+            } catch {
+              // ignore error
+            }
+
             const thumbnail = await generateThumbnail(blobUrl, contentType);
 
             return { ...status, media_url: blobUrl, thumbnail };
@@ -153,7 +166,7 @@ const ContactStatuses = ({ onStatusesUpdate }) => {
 
         const cacheToStore = {
           timestamp: Date.now(),
-          // Save all info except media_url is saved as original url (not blobUrl) to avoid stale blob URLs
+          // IMPORTANT: Save the blobUrl as media_url here (not the original URL)
           statuses: enrichedStatuses.map(
             ({ status_id, user_id, contactName, caption, timestamp, media_url, thumbnail }) => ({
               status_id,
@@ -161,8 +174,7 @@ const ContactStatuses = ({ onStatusesUpdate }) => {
               contactName,
               caption,
               timestamp,
-              // Save original media_url (not blobUrl) in cache for reload & refetch
-              media_url: data.statuses.find(s => s.status_id === status_id)?.media_url || null,
+              media_url, // blobUrl saved here
               thumbnail,
             })
           ),
@@ -178,10 +190,12 @@ const ContactStatuses = ({ onStatusesUpdate }) => {
       }
     };
 
-    const hasValidCache = loadCacheAndUpdateUI();
-    if (!hasValidCache) fetchStatuses();
+    (async () => {
+      const hasValidCache = await loadCacheAndUpdateUI();
+      if (!hasValidCache) fetchStatuses();
 
-    intervalId = setInterval(fetchStatuses, 5000);
+      intervalId = setInterval(fetchStatuses, 5000);
+    })();
 
     return () => {
       clearInterval(intervalId);
