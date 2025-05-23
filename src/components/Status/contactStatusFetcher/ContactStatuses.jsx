@@ -1,13 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 const CACHE_KEY = "contactedStatusesCache";
 const EXPIRY_MS = 10000; // 10 seconds
 
 const ContactStatuses = ({ onStatusesUpdate }) => {
-  // eslint-disable-next-line
   const [statuses, setStatuses] = useState([]);
-  // eslint-disable-next-line
   const [loading, setLoading] = useState(true);
+
+  // In-memory cache of blob URLs keyed by original media_url
+  const blobUrlCache = useRef({});
 
   useEffect(() => {
     let intervalId;
@@ -32,9 +33,14 @@ const ContactStatuses = ({ onStatusesUpdate }) => {
             Array.isArray(parsed.statuses) &&
             parsed.statuses.every((s) => s.status_id)
           ) {
-          
-            setStatuses(parsed.statuses);
-            onStatusesUpdate?.(parsed.statuses);
+            // On reload blob URLs are invalid, clear media_url here so fetch recreates blobs
+            const statusesWithMediaUrlCleared = parsed.statuses.map((status) => ({
+              ...status,
+              media_url: null,
+            }));
+
+            setStatuses(statusesWithMediaUrlCleared);
+            onStatusesUpdate?.(statusesWithMediaUrlCleared);
             setLoading(false);
             return true;
           } else {
@@ -47,6 +53,41 @@ const ContactStatuses = ({ onStatusesUpdate }) => {
         }
       }
       return false;
+    };
+
+    const revokeBlobUrls = () => {
+      Object.values(blobUrlCache.current).forEach((url) => {
+        URL.revokeObjectURL(url);
+      });
+      blobUrlCache.current = {};
+    };
+
+    const fetchBlobAndCache = async (media_url, token) => {
+      // Check in-memory cache first
+      if (blobUrlCache.current[media_url]) {
+        return blobUrlCache.current[media_url];
+      }
+      try {
+        const blobRes = await fetch(media_url, {
+          headers: {
+            Authorization: token ? `Bearer ${token}` : undefined,
+          },
+        });
+
+        if (!blobRes.ok) {
+          throw new Error(`HTTP ${blobRes.status}: ${blobRes.statusText}`);
+        }
+
+        const blob = await blobRes.blob();
+        if (blob.size === 0) throw new Error("Blob size is 0");
+
+        const blobUrl = URL.createObjectURL(blob);
+        blobUrlCache.current[media_url] = blobUrl;
+        return blobUrl;
+      } catch (err) {
+        console.warn(`[Blob] Failed to fetch blob for ${media_url}:`, err.message);
+        return null;
+      }
     };
 
     const fetchStatuses = async () => {
@@ -65,34 +106,13 @@ const ContactStatuses = ({ onStatusesUpdate }) => {
           return;
         }
 
-        // Load cached media urls + thumbnails
-        const cached = localStorage.getItem(CACHE_KEY);
-        const cachedThumbs = {};
-        const cachedMediaUrls = [];
-
-        if (cached) {
-          try {
-            const parsed = JSON.parse(cached);
-            parsed.statuses.forEach((s) => {
-              if (s.thumbnail && s.media_url) {
-                cachedThumbs[s.media_url] = s.thumbnail;
-                cachedMediaUrls.push(s.media_url);
-              }
-            });
-          } catch (e) {
-            console.warn("[Cache] Failed to parse cachedMediaUrls:", e);
-          }
-        }
-
-
-
         const response = await fetch("http://localhost:5000/api/get-contacts-statuses", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: user.token ? `Bearer ${user.token}` : undefined,
           },
-          body: JSON.stringify({ user_id: user.user_id, cachedMediaUrls }),
+          body: JSON.stringify({ user_id: user.user_id }),
         });
 
         if (!response.ok) {
@@ -109,47 +129,31 @@ const ContactStatuses = ({ onStatusesUpdate }) => {
           return;
         }
 
-
+        // For each status, reuse cached blobUrl or fetch + create it
         const enrichedStatuses = await Promise.all(
           data.statuses.map(async (status) => {
             const { media_url } = status;
+            if (!media_url) return { ...status, media_url: null, thumbnail: null };
 
-            if (!media_url) return { ...status, thumbnail: null };
-
-            if (cachedThumbs[media_url]) {
-              return { ...status, thumbnail: cachedThumbs[media_url] };
+            let blobUrl = blobUrlCache.current[media_url];
+            if (!blobUrl) {
+              blobUrl = await fetchBlobAndCache(media_url, user.token);
             }
 
-            try {
-              const blobRes = await fetch(media_url, {
-                headers: {
-                  Authorization: user.token ? `Bearer ${user.token}` : undefined,
-                },
-              });
-
-              if (!blobRes.ok) {
-                throw new Error(`HTTP ${blobRes.status}: ${blobRes.statusText}`);
-              }
-
-              const blob = await blobRes.blob();
-              if (blob.size === 0) throw new Error("Blob size is 0");
-
-              const blobUrl = URL.createObjectURL(blob);
-              const contentType = blob.type || blobRes.headers.get("Content-Type") || "unknown";
-              const thumbnail = await generateThumbnail(blobUrl, contentType);
-              URL.revokeObjectURL(blobUrl);
-
-              console.log(`[Thumbnail] Generated thumbnail for: ${media_url}`);
-              return { ...status, thumbnail };
-            } catch (err) {
-              console.warn(`[Thumbnail] Failed to generate for ${media_url}:`, err.message);
-              return { ...status, thumbnail: null };
+            if (!blobUrl) {
+              return { ...status, media_url: null, thumbnail: null };
             }
+
+            const contentType = blobUrl ? (await fetch(media_url).then(res => res.headers.get("Content-Type")).catch(() => "unknown")) : "unknown";
+            const thumbnail = await generateThumbnail(blobUrl, contentType);
+
+            return { ...status, media_url: blobUrl, thumbnail };
           })
         );
 
         const cacheToStore = {
           timestamp: Date.now(),
+          // Save all info except media_url is saved as original url (not blobUrl) to avoid stale blob URLs
           statuses: enrichedStatuses.map(
             ({ status_id, user_id, contactName, caption, timestamp, media_url, thumbnail }) => ({
               status_id,
@@ -157,7 +161,8 @@ const ContactStatuses = ({ onStatusesUpdate }) => {
               contactName,
               caption,
               timestamp,
-              media_url,
+              // Save original media_url (not blobUrl) in cache for reload & refetch
+              media_url: data.statuses.find(s => s.status_id === status_id)?.media_url || null,
               thumbnail,
             })
           ),
@@ -177,7 +182,11 @@ const ContactStatuses = ({ onStatusesUpdate }) => {
     if (!hasValidCache) fetchStatuses();
 
     intervalId = setInterval(fetchStatuses, 5000);
-    return () => clearInterval(intervalId);
+
+    return () => {
+      clearInterval(intervalId);
+      revokeBlobUrls();
+    };
   }, [onStatusesUpdate]);
 
   return null;
@@ -185,7 +194,7 @@ const ContactStatuses = ({ onStatusesUpdate }) => {
 
 export default ContactStatuses;
 
-// Thumbnail generation
+// Thumbnail generation function unchanged
 function generateThumbnail(src, type) {
   return new Promise((resolve) => {
     if (type.startsWith("image")) {

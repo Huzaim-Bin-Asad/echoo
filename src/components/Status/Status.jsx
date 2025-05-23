@@ -28,9 +28,8 @@ const Status = () => {
   const [statuses, setStatuses] = useState([]);
   const [loadingStatuses, setLoadingStatuses] = useState(true);
 
-  // New states to store userId and mediaUrls for StatusView
+  // Only userId state remains
   const [userId, setUserId] = useState(null);
-  const [mediaUrls, setMediaUrls] = useState([]);
 
   const togglePopup = () => setShowPopup((prev) => !prev);
   const handleArchiveSettingsClick = () => setShowArchiveSettings(true);
@@ -71,7 +70,6 @@ const Status = () => {
     setStatuses(initialStatuses);
 
     const unsubscribe = startPollingStatuses((updatedStatuses) => {
-
       try {
         localStorage.setItem(
           CACHE_KEY,
@@ -90,8 +88,7 @@ const Status = () => {
     };
   }, []);
 
-  useEffect(() => {
-  }, [statuses]);
+  useEffect(() => {}, [statuses]);
 
   if (showPrivacyPage) {
     return <StatusPrivacy handleBackClick={handleBackClick} />;
@@ -107,11 +104,9 @@ const Status = () => {
           setShowStatusView(false);
           setCurrentStatus(null);
           setUserId(null);
-          setMediaUrls([]);
         }}
         currentStatus={currentStatus}
         userId={userId}
-        mediaUrls={mediaUrls}
       />
     );
   }
@@ -197,7 +192,7 @@ const Status = () => {
               onStatusClick={(statusData) => {
                 setCurrentStatus(statusData);
                 setUserId(statusData.userId);
-                setMediaUrls(statusData.mediaUrls);
+                // mediaUrls removed here
                 setShowStatusView(true);
               }}
             />

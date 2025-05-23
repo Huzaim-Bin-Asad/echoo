@@ -9,34 +9,49 @@ const Header = ({
   profileImageUrl,
   progressIndex = 0,
   total = 1,
+  startProgress = false,
+  onProgressComplete,  // New prop
 }) => {
   const [progress, setProgress] = useState(0);
 
-  useEffect(() => {
-    // reset & animate for each new status
-    const duration = 5000;
-    const interval = 100;
-    const startTime = Date.now();
+useEffect(() => {
+  if (!startProgress) {
     setProgress(0);
+    return;
+  }
 
-    const timer = setInterval(() => {
-      const elapsed = Date.now() - startTime;
-      const pct = Math.min((elapsed / duration) * 100, 100);
-      setProgress(pct);
-      if (pct === 100) {
-        clearInterval(timer);
+  const duration = 5000; // total time per status
+  const interval = 100;
+  const startTime = Date.now();
+
+  setProgress(0);
+
+  const timer = setInterval(() => {
+    const elapsed = Date.now() - startTime;
+    const pct = Math.min((elapsed / duration) * 100, 100);
+    setProgress(pct);
+
+    if (pct >= 100) {
+      clearInterval(timer);
+      if (onProgressComplete) {
+        if (total === 1) {
+          onProgressComplete("cycleCompleted");
+        } else {
+          onProgressComplete(progressIndex);
+        }
       }
-    }, interval);
+    }
+  }, interval);
 
-    return () => clearInterval(timer);
-  }, [progressIndex]);
+  return () => clearInterval(timer);
+}, [progressIndex, startProgress]);
 
   return (
     <div className="p-2">
       {/* Multi-step progress bar */}
       <div className="w-100 mb-2 d-flex gap-1">
         {[...Array(total)].map((_, idx) => {
-          // determine this segment's fill
+          // Determine this segment's fill
           let width;
           if (idx < progressIndex) width = "100%";
           else if (idx === progressIndex) width = `${progress}%`;
@@ -57,7 +72,8 @@ const Header = ({
                 style={{
                   width,
                   height: "100%",
-                  backgroundImage: "linear-gradient(to right, #f8d7da, #c8a2c8)",
+                  backgroundImage:
+                    "linear-gradient(to right, #f8d7da, #c8a2c8)",
                   transition: "width 0.1s linear",
                   position: "absolute",
                   top: 0,
@@ -77,12 +93,15 @@ const Header = ({
           onClick={onBack}
         >
           <ChevronLeft color="white" />
-          <img
-            src={profileImageUrl || "https://via.placeholder.com/32"}
-            alt="Profile"
-            className="rounded-circle"
-            style={{ width: 32, height: 32 }}
-          />
+          {profileImageUrl && (
+            <img
+              src={profileImageUrl}
+              alt="Profile"
+              className="rounded-circle"
+              style={{ width: 32, height: 32 }}
+            />
+          )}
+
           <div>
             <strong>{title}</strong>
             <div style={{ fontSize: "0.75rem", color: "#ccc" }}>

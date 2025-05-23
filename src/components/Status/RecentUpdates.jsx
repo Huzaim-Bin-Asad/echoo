@@ -128,14 +128,12 @@ onClick={() => {
       (allStatuses[0] && allStatuses[0].user_id) ||
       "unknown";
 
-    const mediaUrls = allStatuses.map((s) => s.media_url).filter(Boolean);
 
     const clickData = {
       contactName,
       statuses: allStatuses,
       latestStatus,
       userId,
-      mediaUrls,
     };
 
 

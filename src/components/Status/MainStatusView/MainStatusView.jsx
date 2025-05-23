@@ -1,3 +1,4 @@
+// StatusView.jsx
 import React, { useEffect, useState } from "react";
 import Header from "./Header";
 import Footer from "./Footer";
@@ -14,6 +15,7 @@ const StatusView = ({
   const [profilePicture, setProfilePicture] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [subtitle, setSubtitle] = useState("");
+  const [startProgress, setStartProgress] = useState(false); // controls progress start
 
   useEffect(() => {
     if (currentStatus && userId) {
@@ -49,28 +51,31 @@ const StatusView = ({
     }
   }, [currentStatus, userId]);
 
-  // Auto-cycle and auto-close
+  // Reset on new status
   useEffect(() => {
-    if (!currentStatus?.statuses || currentStatus.statuses.length === 0) return;
+    setCurrentIndex(0);
+    setStartProgress(false);
+  }, [currentStatus]);
 
-    const statuses = [...currentStatus.statuses].sort(
-      (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
-    );
+  const allStatusesSorted = [...(currentStatus?.statuses || [])].sort(
+    (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
+  );
+  const currentMedia = allStatusesSorted[currentIndex];
 
-    const timer = setInterval(() => {
-      setCurrentIndex((prevIndex) => {
-        if (prevIndex < statuses.length - 1) {
-          return prevIndex + 1;
-        } else {
-          clearInterval(timer);
-          onBack(); // Close StatusView
-          return prevIndex;
-        }
-      });
-    }, 5000); // 5 seconds per status
+  // Called when image is loaded to start progress
+  const handleImageLoad = () => {
+    setStartProgress(true);
+  };
 
-    return () => clearInterval(timer);
-  }, [currentStatus, onBack]);
+  // Called when progress completes in Header
+  const handleProgressComplete = (info) => {
+    if (currentIndex < allStatusesSorted.length - 1) {
+      setCurrentIndex(currentIndex + 1);
+      setStartProgress(false); // reset progress for next status
+    } else {
+      onBack(); // Close when last status completes
+    }
+  };
 
   if (loading || !currentStatus) {
     return (
@@ -84,11 +89,6 @@ const StatusView = ({
     );
   }
 
-  const allStatusesSorted = [...currentStatus.statuses].sort(
-    (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
-  );
-  const currentMedia = allStatusesSorted[currentIndex];
-
   return (
     <div className="d-flex flex-column vh-100 bg-black text-white p-3">
       <Header
@@ -98,10 +98,12 @@ const StatusView = ({
         profileImageUrl={profilePicture}
         progressIndex={currentIndex}
         total={allStatusesSorted.length}
+        startProgress={startProgress}
+        onProgressComplete={handleProgressComplete}
       />
 
       <div style={{ flexGrow: 1 }}>
-        <StatusImage media_url={currentMedia.media_url} />
+        <StatusImage media_url={currentMedia.media_url} onLoad={handleImageLoad} />
       </div>
 
       <Footer />
