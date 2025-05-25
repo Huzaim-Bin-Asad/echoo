@@ -27,9 +27,9 @@ const Status = () => {
   const [currentStatus, setCurrentStatus] = useState(null);
   const [statuses, setStatuses] = useState([]);
   const [loadingStatuses, setLoadingStatuses] = useState(true);
-
-  // Only userId state remains
   const [userId, setUserId] = useState(null);
+  const [blobUrl, setBlobUrl] = useState(null);
+  const [fromMyStatusView, setFromMyStatusView] = useState(false);
 
   const togglePopup = () => setShowPopup((prev) => !prev);
   const handleArchiveSettingsClick = () => setShowArchiveSettings(true);
@@ -88,13 +88,10 @@ const Status = () => {
     };
   }, []);
 
-  useEffect(() => {}, [statuses]);
-
   if (showPrivacyPage) {
     return <StatusPrivacy handleBackClick={handleBackClick} />;
   }
 
-  // Show StatusView when a status is clicked
   if (showStatusView) {
     return (
       <StatusView
@@ -104,14 +101,17 @@ const Status = () => {
           setShowStatusView(false);
           setCurrentStatus(null);
           setUserId(null);
+          setBlobUrl(null);
+          setFromMyStatusView(false);
         }}
         currentStatus={currentStatus}
         userId={userId}
+        blobUrl={blobUrl}
+        fromMyStatusView={fromMyStatusView}
       />
     );
   }
 
-  // Show MyStatusView for AddStatus flow
   if (showMyStatusView) {
     return (
       <MyStatusView
@@ -133,6 +133,14 @@ const Status = () => {
         startPollingStatuses={startPollingStatuses}
         stopPollingStatuses={stopPollingStatuses}
         currentStatus={currentStatus}
+        onStatusSelect={(blobUrl, userId) => {
+          setCurrentStatus({ blobUrl, userId });
+          setUserId(userId);
+          setBlobUrl(blobUrl);
+          setFromMyStatusView(true);
+          setShowMyStatusView(false);
+          setShowStatusView(true);
+        }}
       />
     );
   }
@@ -192,7 +200,8 @@ const Status = () => {
               onStatusClick={(statusData) => {
                 setCurrentStatus(statusData);
                 setUserId(statusData.userId);
-                // mediaUrls removed here
+                setBlobUrl(statusData.blobUrl);
+                setFromMyStatusView(false);
                 setShowStatusView(true);
               }}
             />

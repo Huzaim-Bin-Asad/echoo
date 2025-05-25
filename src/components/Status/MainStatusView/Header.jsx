@@ -10,52 +10,73 @@ const Header = ({
   progressIndex = 0,
   total = 1,
   startProgress = false,
-  onProgressComplete,  // New prop
+  videoStarted = false,
+  onProgressComplete,
+  mediaDuration = 5000, // ms
+  mediaType = null,
 }) => {
   const [progress, setProgress] = useState(0);
+  const [animating, setAnimating] = useState(false);
 
-useEffect(() => {
-  if (!startProgress) {
+  // Log mediaType and mediaDuration whenever they change
+  useEffect(() => {
+    console.log("📢 Header received mediaType:", mediaType, "mediaDuration (ms):", mediaDuration);
+  }, [mediaType, mediaDuration]);
+
+  useEffect(() => {
+    if (!startProgress || !videoStarted) {
+      setProgress(0);
+      setAnimating(false);
+      return;
+    }
+
+    // Start the animation: set width to 0 immediately
     setProgress(0);
-    return;
-  }
+    setAnimating(true);
 
-  const duration = 5000; // total time per status
-  const interval = 100;
-  const startTime = Date.now();
+    // After a tiny delay, set width to 100% to trigger CSS transition
+    // This ensures the transition actually runs
+    const triggerTimeout = setTimeout(() => {
+      setProgress(100);
+    }, 50);
 
-  setProgress(0);
-
-  const timer = setInterval(() => {
-    const elapsed = Date.now() - startTime;
-    const pct = Math.min((elapsed / duration) * 100, 100);
-    setProgress(pct);
-
-    if (pct >= 100) {
-      clearInterval(timer);
+    // After mediaDuration, end the progress
+    const endTimeout = setTimeout(() => {
+      setAnimating(false);
       if (onProgressComplete) {
-        if (total === 1) {
+        if (progressIndex >= total - 1) {
           onProgressComplete("cycleCompleted");
         } else {
           onProgressComplete(progressIndex);
         }
       }
-    }
-  }, interval);
+    }, mediaDuration);
 
-  return () => clearInterval(timer);
-}, [progressIndex, startProgress]);
+    return () => {
+      clearTimeout(triggerTimeout);
+      clearTimeout(endTimeout);
+    };
+  }, [progressIndex, startProgress, videoStarted, mediaDuration, total, onProgressComplete]);
 
   return (
     <div className="p-2">
       {/* Multi-step progress bar */}
       <div className="w-100 mb-2 d-flex gap-1">
         {[...Array(total)].map((_, idx) => {
-          // Determine this segment's fill
           let width;
-          if (idx < progressIndex) width = "100%";
-          else if (idx === progressIndex) width = `${progress}%`;
-          else width = "0%";
+          let transitionStyle = "none";
+
+          if (idx < progressIndex) {
+            width = "100%";
+            transitionStyle = "none";
+          } else if (idx === progressIndex) {
+            width = `${progress}%`;
+            // Animate only when animating this segment
+            transitionStyle = animating ? `width ${mediaDuration}ms linear` : "none";
+          } else {
+            width = "0%";
+            transitionStyle = "none";
+          }
 
           return (
             <div
@@ -66,15 +87,15 @@ useEffect(() => {
                 height: 4,
                 position: "relative",
                 overflow: "hidden",
+                borderRadius: 2,
               }}
             >
               <div
                 style={{
                   width,
                   height: "100%",
-                  backgroundImage:
-                    "linear-gradient(to right, #f8d7da, #c8a2c8)",
-                  transition: "width 0.1s linear",
+                  backgroundImage: "linear-gradient(to right, #f8d7da, #c8a2c8)",
+                  transition: transitionStyle,
                   position: "absolute",
                   top: 0,
                   left: 0,
@@ -101,12 +122,9 @@ useEffect(() => {
               style={{ width: 32, height: 32 }}
             />
           )}
-
           <div>
             <strong>{title}</strong>
-            <div style={{ fontSize: "0.75rem", color: "#ccc" }}>
-              {subtitle}
-            </div>
+            <div style={{ fontSize: "0.75rem", color: "#ccc" }}>{subtitle}</div>
           </div>
         </div>
         <MoreVertical color="white" />

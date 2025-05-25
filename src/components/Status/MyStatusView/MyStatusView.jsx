@@ -12,6 +12,7 @@ export default function MyStatusView({
   onFileSelected,
   permissionStatus,
   requestMultiplePermissions,
+  onStatusSelect, // ← Forwarded to parent (e.g., App)
 }) {
   const fileInputRef = useRef(null);
 
@@ -47,6 +48,13 @@ export default function MyStatusView({
     }
   };
 
+  const handleStatusClick = (blobUrl, userId) => {
+    console.log('Status clicked:', { blobUrl, userId }); // <-- Log received data here
+    if (onStatusSelect) {
+      onStatusSelect(blobUrl, userId);
+    }
+  };
+
   return (
     <div
       style={{
@@ -57,8 +65,8 @@ export default function MyStatusView({
     >
       <MyStatusHeader onBack={onBack} />
 
-      {/* List of statuses with thumbnails */}
-      <MyStatusList statuses={statuses} />
+      {/* Status list with click forwarding */}
+      <MyStatusList statuses={statuses} onStatusSelect={handleStatusClick} />
 
       {/* Add new status button */}
       <button

@@ -10,11 +10,11 @@ export const startCurrentStatusFetcher = (setStatusPreview) => {
     return;
   }
 
+
   let lastBlobUrl = null;
   let lastStatusTimestamp = null;
   let lastOriginalMediaUrl = null;
 
-  // Load cached status from localStorage if not expired
   const cached = localStorage.getItem(CACHE_KEY);
   if (cached) {
     try {
@@ -35,24 +35,32 @@ export const startCurrentStatusFetcher = (setStatusPreview) => {
         lastOriginalMediaUrl = parsed.originalMediaUrl;
         thumbnailCache[lastBlobUrl] = parsed.thumbnail;
       }
-    } catch {
+    } catch (err) {
+      console.warn('[StatusFetcher] Error parsing cached status. Removing.', err);
       localStorage.removeItem(CACHE_KEY);
     }
   }
 
   async function fetchAndCacheStatus() {
     const raw = localStorage.getItem('user');
-    if (!raw) return;
+    if (!raw) {
+      console.warn('[StatusFetcher] No user found in localStorage.');
+      return;
+    }
 
     let user;
     try {
       user = JSON.parse(raw);
-    } catch {
+    } catch (err) {
+      console.warn('[StatusFetcher] Failed to parse user JSON.', err);
       return;
     }
 
     const userId = user.user_id;
-    if (!userId) return;
+    if (!userId) {
+      console.warn('[StatusFetcher] No user_id found.');
+      return;
+    }
 
     try {
       const response = await fetch('http://localhost:5000/api/getCurrentStatus', {
@@ -65,8 +73,8 @@ export const startCurrentStatusFetcher = (setStatusPreview) => {
         }),
       });
 
+
       if (response.status === 204) {
-        // Backend says cached media is current — do nothing, keep current preview
         return;
       }
 
@@ -78,12 +86,14 @@ export const startCurrentStatusFetcher = (setStatusPreview) => {
           URL.revokeObjectURL(lastBlobUrl);
           lastBlobUrl = null;
         }
+
         lastStatusTimestamp = null;
         lastOriginalMediaUrl = null;
         return;
       }
 
       if (!response.ok) {
+        console.error('[StatusFetcher] Failed to fetch status:', response.statusText);
         return;
       }
 
@@ -91,23 +101,28 @@ export const startCurrentStatusFetcher = (setStatusPreview) => {
       const originalMediaUrl = response.headers.get('x-status-mediaurl');
       const serverTimestamp = Number(timestampHeader);
 
+
       if (!serverTimestamp || !originalMediaUrl) {
+        console.warn('[StatusFetcher] Missing required headers.');
         return;
       }
 
-      // Skip update if same timestamp and media URL
       if (
         serverTimestamp === lastStatusTimestamp &&
         originalMediaUrl === lastOriginalMediaUrl
-      ) return;
+      ) {
+        return;
+      }
 
       lastStatusTimestamp = serverTimestamp;
       lastOriginalMediaUrl = originalMediaUrl;
 
       const mediaBlob = await response.blob();
 
-      // Revoke old blob URL
-      if (lastBlobUrl) URL.revokeObjectURL(lastBlobUrl);
+      if (lastBlobUrl) {
+        URL.revokeObjectURL(lastBlobUrl);
+      }
+
       lastBlobUrl = URL.createObjectURL(mediaBlob);
 
       if (thumbnailCache[lastBlobUrl]) {
@@ -121,7 +136,10 @@ export const startCurrentStatusFetcher = (setStatusPreview) => {
       }
 
       generateThumbnail(lastBlobUrl, mediaBlob.type, (thumbnail) => {
-        if (!thumbnail) return;
+        if (!thumbnail) {
+          console.error('[StatusFetcher] Failed to generate thumbnail.');
+          return;
+        }
 
         thumbnailCache[lastBlobUrl] = thumbnail;
 
@@ -138,12 +156,12 @@ export const startCurrentStatusFetcher = (setStatusPreview) => {
           CACHE_KEY,
           JSON.stringify({
             ...preview,
-            originalMediaUrl, // save MEGA URL in cache ✅
+            originalMediaUrl,
           })
         );
       });
-    } catch {
-      // silently ignore errors
+    } catch (err) {
+      console.error('[StatusFetcher] Fetch error:', err);
     }
   }
 
@@ -158,41 +176,88 @@ export const stopCurrentStatusFetcher = () => {
   }
 };
 
-// Generates a thumbnail image (base64) for image/video blobs
 const generateThumbnail = (src, type, callback) => {
-  const img = new Image();
-  img.crossOrigin = 'anonymous';
-  img.src = src;
+  if (type.startsWith('image/')) {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.src = src;
 
-  img.onload = () => {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    const maxSize = 150;
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const maxSize = 150;
 
-    let width = img.width;
-    let height = img.height;
+      let width = img.width;
+      let height = img.height;
 
-    if (width > height) {
-      if (width > maxSize) {
-        height *= maxSize / width;
-        width = maxSize;
+      if (width > height) {
+        if (width > maxSize) {
+          height *= maxSize / width;
+          width = maxSize;
+        }
+      } else {
+        if (height > maxSize) {
+          width *= maxSize / height;
+          height = maxSize;
+        }
       }
-    } else {
-      if (height > maxSize) {
-        width *= maxSize / height;
-        height = maxSize;
+
+      canvas.width = width;
+      canvas.height = height;
+      ctx.drawImage(img, 0, 0, width, height);
+
+      const thumbnail = canvas.toDataURL('image/jpeg', 0.7);
+      callback(thumbnail);
+    };
+
+    img.onerror = () => {
+      console.error('[ThumbnailGenerator] Image load error for:', src);
+      callback(null);
+    };
+  } else if (type.startsWith('video/')) {
+    const video = document.createElement('video');
+    video.crossOrigin = 'anonymous';
+    video.src = src;
+    video.muted = true;
+    video.playsInline = true;
+
+    video.onloadeddata = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      const maxSize = 150;
+      let width = video.videoWidth;
+      let height = video.videoHeight;
+
+      if (width > height) {
+        if (width > maxSize) {
+          height *= maxSize / width;
+          width = maxSize;
+        }
+      } else {
+        if (height > maxSize) {
+          width *= maxSize / height;
+          height = maxSize;
+        }
       }
-    }
 
-    canvas.width = width;
-    canvas.height = height;
-    ctx.drawImage(img, 0, 0, width, height);
+      canvas.width = width;
+      canvas.height = height;
 
-    const thumbnail = canvas.toDataURL('image/jpeg', 0.7);
-    callback(thumbnail);
-  };
+      video.currentTime = 0.1; // Seek to a frame early in the video
+      video.onseeked = () => {
+        ctx.drawImage(video, 0, 0, width, height);
+        const thumbnail = canvas.toDataURL('image/jpeg', 0.7);
+        callback(thumbnail);
+      };
+    };
 
-  img.onerror = () => {
+    video.onerror = () => {
+      console.error('[ThumbnailGenerator] Video load error for:', src);
+      callback(null);
+    };
+  } else {
+    console.warn('[ThumbnailGenerator] Unsupported media type:', type);
     callback(null);
-  };
+  }
 };

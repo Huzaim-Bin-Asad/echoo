@@ -12,7 +12,7 @@ const ThumbnailStrip = ({
   scrub,
 }) => {
   return (
-    <div style={{ position: 'relative' }}>
+    <div style={{ position: 'relative', width: '100%' }}>
       <div ref={topRef} style={styles.topLine} />
       <div
         ref={stripRef}
@@ -22,14 +22,23 @@ const ThumbnailStrip = ({
         onTouchStart={startScrub}
         onTouchMove={scrub}
       >
-        {thumbnails.map((src, i) => (
-          <img
-            key={i}
-            src={src}
-            alt={`thumb-${i}`}
-            style={{ width: thumbWidth, height: 50, objectFit: 'cover' }}
-          />
-        ))}
+        {thumbnails.length > 0 ? (
+          thumbnails.map((thumb, i) => (
+            <img
+              key={i}
+              src={thumb.dataUrl}
+              alt={`thumb-${i}`}
+              style={{
+                width: thumbWidth,
+                height: 50,
+                objectFit: 'cover',
+                flexShrink: 0,
+              }}
+            />
+          ))
+        ) : (
+          <div style={{ color: '#fff', padding: '10px' }}>Loading thumbnails...</div>
+        )}
         <div ref={scrubberRef} style={styles.scrubberLine} />
         <canvas ref={canvasRef} style={{ display: 'none' }} />
       </div>

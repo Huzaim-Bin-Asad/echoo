@@ -255,23 +255,6 @@ const handleSend = useCallback(async (caption) => {
     const userId = user?.user_id;
     if (!userId) throw new Error("User not found");
 
-    const mediaFile = await saveImage();
-    if (!mediaFile) throw new Error("No media file to upload");
-
-    // Extract base64 content from data URL
-    const base64 = mediaFile.split(',')[1];
-    const binary = atob(base64);
-    const len = binary.length;
-    const bytes = new Uint8Array(len);
-    for (let i = 0; i < len; i++) {
-      bytes[i] = binary.charCodeAt(i);
-    }
-    const file = new File([bytes], `media_${Date.now()}.png`, { type: 'image/png' });
-
-    // Log file size for debugging
-    console.log('File size:', file.size);
-    if (file.size === 0) throw new Error('File is empty');
-
     const storage = new Storage({
       email: process.env.MEGA_EMAIL || 'huzaimbinasad@gmail.com',
       password: process.env.MEGA_PASSWORD || 'Aenduanaael@35793579'
@@ -279,27 +262,86 @@ const handleSend = useCallback(async (caption) => {
 
     await storage.ready; // Wait for storage to be ready
 
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = new Uint8Array(arrayBuffer); // Convert to Buffer-like array
+    let mediaUrl;
+    let file;
 
-    // Create a new upload instance
-    const upload = storage.upload({
-      name: file.name,
-      size: file.size
-    });
+    if (isVideo) {
+      // Video upload logic
+      try {
+        // Fetch the video file from fileUrl
+        const response = await fetch(fileUrl);
+        if (!response.ok) throw new Error('Failed to fetch video file');
+        const videoBlob = await response.blob();
+        file = new File([videoBlob], `video_${Date.now()}.mp4`, { type: videoBlob.type || 'video/mp4' });
 
-    // Write the file buffer to the upload stream
-    upload.write(buffer);
-    upload.end();
+        // Log file size for debugging
+        console.log('Video file size:', file.size);
+        if (file.size === 0) throw new Error('Video file is empty');
 
-    // Wait for the upload to complete
-    const uploadedFile = await upload.complete;
-    if (!uploadedFile || typeof uploadedFile.link !== 'function') {
-      throw new Error('Failed to upload file to Mega or link function is missing');
+        // Create a new upload instance for video
+        const upload = storage.upload({
+          name: file.name,
+          size: file.size
+        });
+
+        // Convert blob to buffer and upload
+        const arrayBuffer = await file.arrayBuffer();
+        const buffer = new Uint8Array(arrayBuffer);
+        upload.write(buffer);
+        upload.end();
+
+        // Wait for the upload to complete
+        const uploadedFile = await upload.complete;
+        if (!uploadedFile || typeof uploadedFile.link !== 'function') {
+          throw new Error('Failed to upload video to Mega or link function is missing');
+        }
+
+        mediaUrl = await uploadedFile.link();
+        console.log('Video Media URL:', mediaUrl);
+      } catch (error) {
+        console.error('Video upload failed:', error);
+        throw error;
+      }
+    } else {
+      // Existing image upload logic (or video frame as image)
+      const mediaFile = await saveImage();
+      if (!mediaFile) throw new Error("No media file to upload");
+
+      // Extract base64 content from data URL
+      const base64 = mediaFile.split(',')[1];
+      const binary = atob(base64);
+      const len = binary.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+      file = new File([bytes], `media_${Date.now()}.png`, { type: 'image/png' });
+
+      // Log file size for debugging
+      console.log('Image file size:', file.size);
+      if (file.size === 0) throw new Error('Image file is empty');
+
+      // Create a new upload instance for image
+      const upload = storage.upload({
+        name: file.name,
+        size: file.size
+      });
+
+      // Write the file buffer to the upload stream
+      const arrayBuffer = await file.arrayBuffer();
+      const buffer = new Uint8Array(arrayBuffer);
+      upload.write(buffer);
+      upload.end();
+
+      // Wait for the upload to complete
+      const uploadedFile = await upload.complete;
+      if (!uploadedFile || typeof uploadedFile.link !== 'function') {
+        throw new Error('Failed to upload image to Mega or link function is missing');
+      }
+
+      mediaUrl = await uploadedFile.link();
+      console.log('Image Media URL:', mediaUrl);
     }
-
-    const mediaUrl = await uploadedFile.link(); // Ensure this is awaited
-    console.log('Media URL:', mediaUrl); // Log the media URL for debugging
 
     if (!mediaUrl) throw new Error('Media URL is empty');
 
@@ -323,10 +365,10 @@ const handleSend = useCallback(async (caption) => {
 
   } catch (error) {
     console.error('Upload failed:', error);
-    alert('An error occurred while uploading the file. Please try again.'); // Show alert to user
-    throw error; // Re-throw error to propagate it if needed
+    alert('An error occurred while uploading the file. Please try again.');
+    throw error;
   }
-}, [saveImage]);
+}, [saveImage, isVideo, fileUrl]);
 
   const exitDrawingMode = useCallback(() => {
     setDrawingMode(false);
@@ -532,7 +574,7 @@ const handleSend = useCallback(async (caption) => {
             position: 'absolute',
             left: `${text.x}px`,
             top: `${text.y}px`,
-            color: text.color || '#ffffff',
+            color: text.color || 'transparent',
             fontFamily: text.font || 'Arial',
             fontSize: `${text.fontSize || 20}px`,
             textAlign: text.align || 'center',

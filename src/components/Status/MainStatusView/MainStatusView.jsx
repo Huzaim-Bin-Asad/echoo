@@ -1,4 +1,3 @@
-// StatusView.jsx
 import React, { useEffect, useState } from "react";
 import Header from "./Header";
 import Footer from "./Footer";
@@ -10,38 +9,47 @@ const StatusView = ({
   onBack,
   currentStatus,
   userId,
-  mediaUrls,
+  blobUrl,
+  fromMyStatusView,
 }) => {
   const [profilePicture, setProfilePicture] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [subtitle, setSubtitle] = useState("");
-  const [startProgress, setStartProgress] = useState(false); // controls progress start
+  const [startProgress, setStartProgress] = useState(false);
+  const [myStatusObject, setMyStatusObject] = useState(null);
+
+  // Track media type and duration from StatusImage
+  const [mediaType, setMediaType] = useState(null);
+  const [mediaDuration, setMediaDuration] = useState(5000); // default 5s
+  const [videoStarted, setVideoStarted] = useState(false);
 
   useEffect(() => {
-    if (currentStatus && userId) {
-      const fetchProfilePicture = async () => {
-        try {
-          const response = await fetch("http://localhost:5000/api/profile-picture", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ userId }),
-          });
+    if (!currentStatus || !userId) return;
 
-          if (!response.ok) throw new Error("Failed to fetch profile picture");
+    const fetchProfilePicture = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/api/profile-picture", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId }),
+        });
 
-          const data = await response.json();
-          setProfilePicture(data.profilePicture);
-        } catch (error) {
-          console.error("Error fetching profile picture:", error);
-        }
-      };
+        if (!response.ok) throw new Error("Failed to fetch profile picture");
 
-      fetchProfilePicture();
+        const data = await response.json();
+        setProfilePicture(data.profilePicture);
+      } catch (error) {
+        console.error("❌ Error fetching profile picture:", error);
+      }
+    };
 
-      const oldest = [...(currentStatus.statuses || [])].sort(
-        (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
-      )[0];
+    fetchProfilePicture();
 
+    const oldest = [...(currentStatus.statuses || [])].sort(
+      (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
+    )[0];
+
+    if (oldest?.timestamp) {
       const formatted = new Date(oldest.timestamp).toLocaleString("en-US", {
         weekday: "short",
         hour: "numeric",
@@ -49,35 +57,62 @@ const StatusView = ({
       });
       setSubtitle(formatted);
     }
-  }, [currentStatus, userId]);
 
-  // Reset on new status
+    if (fromMyStatusView && blobUrl) {
+      setMyStatusObject({
+        statuses: [
+          {
+            media_url: blobUrl,
+            timestamp: Date.now(),
+          },
+        ],
+        contactName: "You",
+      });
+    }
+  }, [currentStatus, userId, blobUrl, fromMyStatusView]);
+
   useEffect(() => {
     setCurrentIndex(0);
     setStartProgress(false);
-  }, [currentStatus]);
+    setMediaType(null);
+    setMediaDuration(5000);
+    setVideoStarted(false);
+  }, [currentStatus, blobUrl]);
 
-  const allStatusesSorted = [...(currentStatus?.statuses || [])].sort(
+  const actualStatusObj = fromMyStatusView && blobUrl ? myStatusObject : currentStatus;
+
+  const allStatusesSorted = [...(actualStatusObj?.statuses || [])].sort(
     (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
   );
+
   const currentMedia = allStatusesSorted[currentIndex];
 
-  // Called when image is loaded to start progress
   const handleImageLoad = () => {
     setStartProgress(true);
   };
 
-  // Called when progress completes in Header
-  const handleProgressComplete = (info) => {
+  const handleProgressComplete = () => {
     if (currentIndex < allStatusesSorted.length - 1) {
       setCurrentIndex(currentIndex + 1);
-      setStartProgress(false); // reset progress for next status
+      setStartProgress(false);
+      setVideoStarted(false);
     } else {
-      onBack(); // Close when last status completes
+      onBack();
     }
   };
 
-  if (loading || !currentStatus) {
+  const handleMediaInfo = (durationMs, type) => {
+    console.log("⏳ Duration from StatusImage:", durationMs, "🧾 Type:", type);
+    setMediaDuration(durationMs);
+    setMediaType(type);
+  };
+
+  const handlePlayStart = () => {
+    setVideoStarted(true);
+    setStartProgress(true);
+  };
+
+  if (loading || !actualStatusObj || !currentMedia) {
     return (
       <div className="d-flex flex-column vh-100 bg-black text-white">
         <Header onBack={onBack} />
@@ -93,17 +128,30 @@ const StatusView = ({
     <div className="d-flex flex-column vh-100 bg-black text-white p-3">
       <Header
         onBack={onBack}
-        title={currentStatus.contactName}
+        title={
+          fromMyStatusView
+            ? `${actualStatusObj.contactName} (My Status)`
+            : actualStatusObj.contactName
+        }
         subtitle={subtitle}
         profileImageUrl={profilePicture}
         progressIndex={currentIndex}
         total={allStatusesSorted.length}
         startProgress={startProgress}
         onProgressComplete={handleProgressComplete}
+        mediaType={mediaType}
+        mediaDuration={mediaDuration}
+        videoStarted={videoStarted}
       />
 
       <div style={{ flexGrow: 1 }}>
-        <StatusImage media_url={currentMedia.media_url} onLoad={handleImageLoad} />
+<StatusImage
+  media_url={currentMedia.media_url}
+  onLoad={handleImageLoad}
+  onDuration={handleMediaInfo}  // <-- change here to match StatusImage's expected prop
+  onPlayStart={handlePlayStart}
+/>
+
       </div>
 
       <Footer />
