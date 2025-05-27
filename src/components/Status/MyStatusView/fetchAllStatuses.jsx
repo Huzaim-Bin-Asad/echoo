@@ -9,7 +9,6 @@ let pollingCallback = null;
 
 const getFixedTime = () => new Date().toISOString();
 
-
 const ensureBlobUrl = async (status) => {
   if (status.blobUrl) return status; // already has blobUrl
 
@@ -137,50 +136,114 @@ const generateThumbnail = async (mediaUrl) => {
 
     const blob = await res.blob();
     const type = blob.type;
+    const src = URL.createObjectURL(blob);
+    const maxSize = 64;
 
     return await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const src = reader.result;
+      if (type.startsWith('image/')) {
+        const img = new Image();
+        img.onload = () => {
+          try {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
 
-        if (type.startsWith('image/')) {
-          const img = new Image();
-          img.onload = () => {
-            const canvas = document.createElement('canvas');
-            canvas.width = 64;
-            canvas.height = 64;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, 64, 64);
+            let { width, height } = img;
+            if (width > height && width > maxSize) {
+              height *= maxSize / width;
+              width = maxSize;
+            } else if (height > width && height > maxSize) {
+              width *= maxSize / height;
+              height = maxSize;
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            ctx.drawImage(img, 0, 0, width, height);
             resolve(canvas.toDataURL('image/jpeg', 0.7));
-          };
-          img.onerror = (err) => reject(err);
-          img.src = src;
-        } else if (type.startsWith('video/')) {
-          const video = document.createElement('video');
-          video.preload = 'metadata';
-          video.muted = true;
-          video.src = src;
-          video.onloadeddata = () => {
+            URL.revokeObjectURL(src);
+          } catch (e) {
+            reject(e);
+            URL.revokeObjectURL(src);
+          }
+        };
+        img.onerror = (err) => {
+          URL.revokeObjectURL(src);
+          reject(err);
+        };
+        img.src = src;
+
+      } else if (type.startsWith('video/')) {
+        const video = document.createElement('video');
+        video.muted = true;
+        video.preload = 'auto';
+        video.src = src;
+        video.crossOrigin = 'anonymous';
+
+        const cleanup = () => {
+          URL.revokeObjectURL(src);
+          video.removeEventListener('loadeddata', onLoadedData);
+          video.removeEventListener('seeked', onSeeked);
+          video.removeEventListener('error', onError);
+        };
+
+        const onError = (e) => {
+          cleanup();
+          reject(e);
+        };
+
+        const onLoadedData = () => {
+          const seekTo = Math.min(1, video.duration || 0);
+          video.currentTime = seekTo;
+        };
+
+        const onSeeked = () => {
+          try {
             const canvas = document.createElement('canvas');
-            canvas.width = 64;
-            canvas.height = 64;
             const ctx = canvas.getContext('2d');
-            ctx.drawImage(video, 0, 0, 64, 64);
+
+            let width = video.videoWidth;
+            let height = video.videoHeight;
+
+            if (width > height && width > maxSize) {
+              height *= maxSize / width;
+              width = maxSize;
+            } else if (height > width && height > maxSize) {
+              width *= maxSize / height;
+              height = maxSize;
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            ctx.drawImage(video, 0, 0, width, height);
+            cleanup();
             resolve(canvas.toDataURL('image/jpeg', 0.7));
-          };
-          video.onerror = (err) => reject(err);
-        } else {
-          resolve(null);
-        }
-      };
-      reader.onerror = (err) => reject(err);
-      reader.readAsDataURL(blob);
+          } catch (e) {
+            cleanup();
+            reject(e);
+          }
+        };
+
+        video.addEventListener('error', onError);
+        video.addEventListener('loadeddata', onLoadedData);
+        video.addEventListener('seeked', onSeeked);
+
+        // Fallback if seeked event doesn't fire within 3s
+        setTimeout(() => {
+          if (video.readyState >= 2 && !video.seeking) {
+            onSeeked();
+          }
+        }, 3000);
+
+      } else {
+        resolve(null);
+      }
     });
   } catch (e) {
     console.error(`[${getFixedTime()}][Thumbnail] Failed to generate thumbnail:`, e);
     return null;
   }
 };
+
 
 export const updateStatusMediaUrl = (statusId, newMediaUrl) => {
   if (!cachedStatuses) return;
@@ -306,22 +369,25 @@ export const startPollingStatuses = (onUpdate) => {
   });
 
   pollingIntervalId = setInterval(async () => {
-    const rawUser = localStorage.getItem('user');
-    if (!rawUser) return;
-
-    let user;
     try {
-      user = JSON.parse(rawUser);
-    } catch {
-      return;
-    }
+      const rawUser = localStorage.getItem('user');
+      if (!rawUser) return;
 
-    const freshData = await refreshStatusesFromBackend(user.user_id);
-    if (onUpdate) onUpdate(freshData);
-  }, 5000);
+      let user;
+      try {
+        user = JSON.parse(rawUser);
+      } catch {
+        return;
+      }
+
+      await refreshStatusesFromBackend(user.user_id);
+    } catch (e) {
+      console.error(`[${getFixedTime()}][Polling] Unexpected error:`, e);
+    }
+  }, 3000);
 
   return () => {
-    if (pollingIntervalId) {
+    if (pollingIntervalId !== null) {
       clearInterval(pollingIntervalId);
       pollingIntervalId = null;
       pollingCallback = null;

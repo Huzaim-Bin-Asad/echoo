@@ -17,13 +17,14 @@ const StatusView = ({
   const [subtitle, setSubtitle] = useState("");
   const [startProgress, setStartProgress] = useState(false);
   const [mediaType, setMediaType] = useState(null);
-  const [mediaDuration, setMediaDuration] = useState(5000);
+  const [mediaDuration, setMediaDuration] = useState(8000);
   const [videoStarted, setVideoStarted] = useState(false);
   const [statusObject, setStatusObject] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
     if (!userId) return;
+
 
     const fetchProfilePicture = async () => {
       try {
@@ -51,7 +52,6 @@ const StatusView = ({
         minute: "2-digit",
       });
       setSubtitle(formatted);
-      console.log("🕒 Subtitle set with timestamp:", formatted);
     };
 
     if (blobUrl && statuses?.length) {
@@ -66,7 +66,7 @@ const StatusView = ({
       setCurrentIndex(0);
       setStartProgress(false);
       setMediaType(null);
-      setMediaDuration(5000);
+      setMediaDuration(8000);
       setVideoStarted(false);
       return;
     }
@@ -84,7 +84,7 @@ const StatusView = ({
         return {
           ...status,
           media_url: mediaItem?.blobUrl || status.media_url_original || "",
-          duration: mediaItem?.duration || 5000,
+          duration: mediaItem?.duration || 8000,
         };
       });
 
@@ -102,7 +102,7 @@ const StatusView = ({
       setCurrentIndex(0);
       setStartProgress(false);
       setMediaType(null);
-      setMediaDuration(5000);
+      setMediaDuration(8000);
       setVideoStarted(false);
       return;
     }
@@ -124,7 +124,7 @@ const StatusView = ({
       setCurrentIndex(0);
       setStartProgress(false);
       setMediaType(null);
-      setMediaDuration(5000);
+      setMediaDuration(8000);
       setVideoStarted(false);
     }
   }, [userId, blobUrl, contactName, statuses, latestStatus, mediaItems]);
@@ -154,7 +154,7 @@ const StatusView = ({
         setCurrentIndex((prev) => prev + 1);
         setStartProgress(false);
         setMediaType(null);
-        setMediaDuration(5000);
+        setMediaDuration(8000);
         setVideoStarted(false);
       } else {
         console.log("Last media finished, calling onBack.");
@@ -164,7 +164,6 @@ const StatusView = ({
   };
 
   const handleMediaInfo = (durationMs, type) => {
-    console.log(`Media info received: duration=${durationMs}ms, type=${type}`);
     setMediaDuration(durationMs);
     setMediaType(type);
   };
@@ -187,6 +186,8 @@ const StatusView = ({
     );
   }
 
+  // Log userId when passing to Header
+
   return (
     <div className="d-flex flex-column vh-100 bg-black text-white p-3">
       <Header
@@ -194,6 +195,7 @@ const StatusView = ({
         title={`${statusObject.contactName} (Status)`}
         subtitle={subtitle}
         profileImageUrl={profilePicture}
+        userId={userId} // ✅ Pass userId to Header
         progressIndex={currentIndex}
         total={statusObject.statuses.length}
         startProgress={startProgress}

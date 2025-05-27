@@ -14,20 +14,20 @@ const Header = ({
   onProgressComplete,
   mediaDuration = 5000, // ms
   mediaType = null,
+  userId, // ✅ Add userId to props
 }) => {
   const [progress, setProgress] = useState(0);
   const [animating, setAnimating] = useState(false);
 
-  // Log mediaType and mediaDuration whenever they change
   useEffect(() => {
-    console.log("📥 Header received media data:");
-    console.log("   📺 mediaType:", mediaType);
-    console.log("   ⏱️ mediaDuration (ms):", mediaDuration);
+  
   }, [mediaType, mediaDuration]);
 
   useEffect(() => {
-    // For videos: wait for videoStarted & startProgress
-    // For images: start progress immediately if startProgress is true (videoStarted ignored)
+    console.log("👤 Header received userId:", userId); // ✅ Log userId on change
+  }, [userId]);
+
+  useEffect(() => {
     const shouldStartProgress =
       startProgress && (mediaType === "image" || videoStarted);
 
@@ -47,7 +47,6 @@ const Header = ({
     const endTimeout = setTimeout(() => {
       setAnimating(false);
       if (onProgressComplete) {
-        // Instead of "cycleCompleted" use "mediaComplete" as your request
         onProgressComplete("mediaComplete");
       }
     }, mediaDuration);
@@ -56,7 +55,14 @@ const Header = ({
       clearTimeout(triggerTimeout);
       clearTimeout(endTimeout);
     };
-  }, [progressIndex, startProgress, videoStarted, mediaDuration, mediaType, onProgressComplete]);
+  }, [
+    progressIndex,
+    startProgress,
+    videoStarted,
+    mediaDuration,
+    mediaType,
+    onProgressComplete,
+  ]);
 
   return (
     <div className="p-2">
@@ -71,7 +77,9 @@ const Header = ({
             transitionStyle = "none";
           } else if (idx === progressIndex) {
             width = `${progress}%`;
-            transitionStyle = animating ? `width ${mediaDuration}ms linear` : "none";
+            transitionStyle = animating
+              ? `width ${mediaDuration}ms linear`
+              : "none";
           } else {
             width = "0%";
             transitionStyle = "none";
@@ -93,7 +101,8 @@ const Header = ({
                 style={{
                   width,
                   height: "100%",
-                  backgroundImage: "linear-gradient(to right, #f8d7da, #c8a2c8)",
+                  backgroundImage:
+                    "linear-gradient(to right, #f8d7da, #c8a2c8)",
                   transition: transitionStyle,
                   position: "absolute",
                   top: 0,
@@ -126,6 +135,8 @@ const Header = ({
             <div style={{ fontSize: "0.75rem", color: "#ccc" }}>{subtitle}</div>
           </div>
         </div>
+          <div style={{ display: "none" }}>{userId}</div>
+
         <MoreVertical color="white" />
       </div>
     </div>

@@ -26,7 +26,6 @@ const StatusImage = ({ media_url, onLoad, onDuration, onPlayStart }) => {
     const loadMedia = async () => {
       if (!media_url) return;
 
-      console.log("📥 Loading media:", media_url);
 
       if (media_url.startsWith("data:image")) {
         console.log("🖼 Detected inline image");
@@ -64,7 +63,6 @@ const StatusImage = ({ media_url, onLoad, onDuration, onPlayStart }) => {
             ? "video"
             : "image";
 
-        console.log(`🧠 Media type detected: ${type} (MIME: ${mime})`);
 
         blobUrlCache.set(media_url, { url: objectUrl, type });
         shouldRevoke = false;
@@ -73,7 +71,6 @@ const StatusImage = ({ media_url, onLoad, onDuration, onPlayStart }) => {
           setMediaType(type);
           setMediaSrc(objectUrl);
           if (type === "image" && onDuration) {
-            console.log("🧾 Forwarding image type with default duration (5000ms)");
             onDuration(5000, "image");
           }
         }
@@ -94,7 +91,6 @@ const StatusImage = ({ media_url, onLoad, onDuration, onPlayStart }) => {
 
   const handleLoad = () => {
     setLoaded(true);
-    console.log("✅ Media loaded.");
     if (onLoad) onLoad();
   };
 
@@ -134,7 +130,7 @@ className="d-flex justify-content-end align-items-end position-relative mx-auto"
 style={{
   maxWidth: "95vw",
   maxHeight: "80vh",
-  height: mediaType === "video" ? "45vh" : "60vh",
+height: mediaType === "video" ? "60vh" : "60vh",
   borderRadius: "12px",
   overflow: "hidden",
   backgroundColor: "#000",
@@ -150,41 +146,41 @@ style={{
 
       {/* Image */}
       {mediaType === "image" && mediaSrc && (
-        <img
-          src={mediaSrc}
-          alt="Status"
-          onLoad={handleLoad}
-          className="w-100 h-100"
-          style={{
-            objectFit: "contain",
-            borderRadius: "12px",
-            display: loaded ? "block" : "none",
-            userSelect: "none",
-            margin: "auto",
-          }}
-        />
+<img
+  src={mediaSrc}
+  alt="Status"
+  onLoad={handleLoad}
+  className="w-100 h-100"
+  style={{
+    objectFit: "cover", // changed from "contain"
+    borderRadius: "12px",
+    display: loaded ? "block" : "none",
+    userSelect: "none"
+  }}
+/>
+
       )}
 
       {/* Video */}
       {mediaType === "video" && mediaSrc && (
         <>
-          <video
-            ref={videoRef}
-            src={mediaSrc}
-            muted={muted}
-            playsInline
-            onLoadedData={handleLoadedData}
-            className="w-100 h-100"
-            style={{
-              objectFit: "contain",
-              borderRadius: "12px",
-              display: loaded ? "block" : "none",
-              userSelect: "none",
-              margin: "auto",
-            }}
-            autoPlay={isPlaying}
-            controls={false} // disable native controls
-          />
+  <video
+    ref={videoRef}
+    src={mediaSrc}
+    muted={muted}
+    playsInline
+    onLoadedData={handleLoadedData}
+    className="w-100 h-100"
+    style={{
+      objectFit: "cover", // changed from "contain"
+      borderRadius: "12px",
+      display: loaded ? "block" : "none",
+      userSelect: "none"
+    }}
+    autoPlay={isPlaying}
+    controls={false}
+  />
+
 
           {/* Play button overlay */}
           {!isPlaying && loaded && (
@@ -193,15 +189,15 @@ style={{
               aria-label="Play video"
               className="btn btn-dark position-absolute top-50 start-50 translate-middle rounded-circle d-flex justify-content-center align-items-center"
               style={{
-                width: "56px",
-                height: "56px",
+                width: "46px",
+                height: "46px",
                 backgroundColor: "rgba(0,0,0,0.6)",
                 border: "none",
                 cursor: "pointer",
                 zIndex: 10,
               }}
             >
-              <Play color="white" size={32} />
+              <Play color="white" size={27} />
             </button>
           )}
 
