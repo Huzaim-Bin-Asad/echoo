@@ -20,35 +20,35 @@ const Header = ({
 
   // Log mediaType and mediaDuration whenever they change
   useEffect(() => {
-    console.log("📢 Header received mediaType:", mediaType, "mediaDuration (ms):", mediaDuration);
+    console.log("📥 Header received media data:");
+    console.log("   📺 mediaType:", mediaType);
+    console.log("   ⏱️ mediaDuration (ms):", mediaDuration);
   }, [mediaType, mediaDuration]);
 
   useEffect(() => {
-    if (!startProgress || !videoStarted) {
+    // For videos: wait for videoStarted & startProgress
+    // For images: start progress immediately if startProgress is true (videoStarted ignored)
+    const shouldStartProgress =
+      startProgress && (mediaType === "image" || videoStarted);
+
+    if (!shouldStartProgress) {
       setProgress(0);
       setAnimating(false);
       return;
     }
 
-    // Start the animation: set width to 0 immediately
     setProgress(0);
     setAnimating(true);
 
-    // After a tiny delay, set width to 100% to trigger CSS transition
-    // This ensures the transition actually runs
     const triggerTimeout = setTimeout(() => {
       setProgress(100);
     }, 50);
 
-    // After mediaDuration, end the progress
     const endTimeout = setTimeout(() => {
       setAnimating(false);
       if (onProgressComplete) {
-        if (progressIndex >= total - 1) {
-          onProgressComplete("cycleCompleted");
-        } else {
-          onProgressComplete(progressIndex);
-        }
+        // Instead of "cycleCompleted" use "mediaComplete" as your request
+        onProgressComplete("mediaComplete");
       }
     }, mediaDuration);
 
@@ -56,7 +56,7 @@ const Header = ({
       clearTimeout(triggerTimeout);
       clearTimeout(endTimeout);
     };
-  }, [progressIndex, startProgress, videoStarted, mediaDuration, total, onProgressComplete]);
+  }, [progressIndex, startProgress, videoStarted, mediaDuration, mediaType, onProgressComplete]);
 
   return (
     <div className="p-2">
@@ -71,7 +71,6 @@ const Header = ({
             transitionStyle = "none";
           } else if (idx === progressIndex) {
             width = `${progress}%`;
-            // Animate only when animating this segment
             transitionStyle = animating ? `width ${mediaDuration}ms linear` : "none";
           } else {
             width = "0%";

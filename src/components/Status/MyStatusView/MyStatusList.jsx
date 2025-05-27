@@ -1,6 +1,6 @@
 import React from "react";
 import { MoreVertical } from "lucide-react";
-import { getBlobFromDB } from "./blobUrlDB"; // Use your proper path
+import { getBlobFromDB } from "./blobUrlDB"; // Ensure correct path
 
 function formatTimestamp(isoString) {
   if (!isoString) return "";
@@ -15,8 +15,10 @@ function formatTimestamp(isoString) {
 async function getStatusBlobUrl(status_id) {
   const blob = await getBlobFromDB(status_id);
   if (blob) {
-    return { blob, blobUrl: URL.createObjectURL(blob) };
+    const blobUrl = URL.createObjectURL(blob);
+    return { blob, blobUrl };
   }
+  console.error(`❌ No blob found in IndexedDB for status_id: ${status_id}`);
   throw new Error("Status not found in IndexedDB");
 }
 
@@ -44,7 +46,17 @@ export default function MyStatusesList({ statuses, onStatusSelect }) {
     );
   }
 
-  const handleClick = async (e, status_id) => {
+  const handleClick = async (e) => {
+    const status_id = e.currentTarget.getAttribute("data-status-id");
+    const clicked_user_id = e.currentTarget.getAttribute("data-user-id");
+
+
+
+    if (!status_id || !clicked_user_id) {
+      console.warn("⚠️ Missing status_id or user_id on clicked element.");
+      return;
+    }
+
     try {
       const { blob, blobUrl } = await getStatusBlobUrl(status_id);
 
@@ -52,24 +64,26 @@ export default function MyStatusesList({ statuses, onStatusSelect }) {
       let duration = 5000; // Default 5s for images
 
       if (isVideo) {
-        duration = await new Promise((resolve, reject) => {
+        duration = await new Promise((resolve) => {
           const video = document.createElement("video");
           video.preload = "metadata";
           video.src = blobUrl;
           video.onloadedmetadata = () => {
-            const durationMs = video.duration * 1000;
-            resolve(durationMs);
+            const calculatedDuration = video.duration * 1000;
+            resolve(calculatedDuration);
           };
           video.onerror = (err) => {
             console.warn("⚠️ Failed to load video metadata:", err);
-            resolve(5000); // Fallback
+            resolve(5000); // fallback
           };
         });
+      } else {
       }
 
+
+
       if (onStatusSelect) {
-  
-        onStatusSelect(blobUrl, user_id, duration);
+        onStatusSelect(blobUrl, clicked_user_id, duration);
       } else {
         console.warn("⚠️ onStatusSelect not provided.");
       }
@@ -88,7 +102,7 @@ export default function MyStatusesList({ statuses, onStatusSelect }) {
           key={status_id}
           data-status-id={status_id}
           data-user-id={user_id}
-          onClick={(e) => handleClick(e, status_id)}
+          onClick={handleClick}
           style={{
             display: "flex",
             alignItems: "center",

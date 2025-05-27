@@ -28,7 +28,9 @@ const Status = () => {
   const [statuses, setStatuses] = useState([]);
   const [loadingStatuses, setLoadingStatuses] = useState(true);
   const [userId, setUserId] = useState(null);
-  const [blobUrl, setBlobUrl] = useState(null);
+  // eslint-disable-next-line no-unused-vars
+  const [statusIds, setStatusIds] = useState([]);  // NEW state for status ID
+    // eslint-disable-next-line no-unused-vars
   const [fromMyStatusView, setFromMyStatusView] = useState(false);
 
   const togglePopup = () => setShowPopup((prev) => !prev);
@@ -92,56 +94,61 @@ const Status = () => {
     return <StatusPrivacy handleBackClick={handleBackClick} />;
   }
 
-  if (showStatusView) {
-    return (
-      <StatusView
-        statuses={statuses}
-        loading={loadingStatuses}
-        onBack={() => {
-          setShowStatusView(false);
-          setCurrentStatus(null);
-          setUserId(null);
-          setBlobUrl(null);
-          setFromMyStatusView(false);
-        }}
-        currentStatus={currentStatus}
-        userId={userId}
-        blobUrl={blobUrl}
-        fromMyStatusView={fromMyStatusView}
-      />
-    );
-  }
+// In your Status component, inside the showStatusView condition:
+if (showStatusView) {
+  return (
+    <StatusView
+      userId={userId}
+      blobUrl={currentStatus?.blobUrl || ""}
+      contactName={currentStatus?.contactName}
+      statuses={currentStatus?.statuses}
+      latestStatus={currentStatus?.latestStatus}
+      mediaItems={currentStatus?.mediaItems}
+      statusIds={currentStatus?.statusIds}
+      onBack={() => {
+        setShowStatusView(false);
+        setCurrentStatus(null);
+        setUserId(null);
+        setStatusIds([]);
+        setFromMyStatusView(false);
+      }}
+    />
+  );
+}
+
 
   if (showMyStatusView) {
     return (
-      <MyStatusView
-        statuses={statuses}
-        loading={loadingStatuses}
-        onBack={() => {
-          setShowMyStatusView(false);
-          setCurrentStatus(null);
-        }}
-        onFileSelected={handleFileSelected}
-        requestMultiplePermissions={async () => ({
-          camera: "granted",
-          microphone: "granted",
-        })}
-        permissionStatus={{
-          camera: "granted",
-          microphone: "granted",
-        }}
-        startPollingStatuses={startPollingStatuses}
-        stopPollingStatuses={stopPollingStatuses}
-        currentStatus={currentStatus}
-        onStatusSelect={(blobUrl, userId) => {
-          setCurrentStatus({ blobUrl, userId });
-          setUserId(userId);
-          setBlobUrl(blobUrl);
-          setFromMyStatusView(true);
-          setShowMyStatusView(false);
-          setShowStatusView(true);
-        }}
-      />
+<MyStatusView
+  statuses={statuses}
+  loading={loadingStatuses}
+  onBack={() => {
+    setShowMyStatusView(false);
+    setCurrentStatus(null);
+  }}
+  onFileSelected={handleFileSelected}
+  requestMultiplePermissions={async () => ({
+    camera: "granted",
+    microphone: "granted",
+  })}
+  permissionStatus={{
+    camera: "granted",
+    microphone: "granted",
+  }}
+  startPollingStatuses={startPollingStatuses}
+  stopPollingStatuses={stopPollingStatuses}
+  currentStatus={currentStatus}
+  onStatusSelect={(blobUrl, userId) => {
+    console.log("🟢 Received from MyStatusView →", { blobUrl, userId }); // ✅ Log added
+
+    setCurrentStatus({ blobUrl, userId });
+    setUserId(userId);
+    setFromMyStatusView(true);
+    setShowMyStatusView(false);
+    setShowStatusView(true);
+  }}
+/>
+
     );
   }
 
@@ -196,15 +203,17 @@ const Status = () => {
               }}
             />
 
-            <RecentUpdates
-              onStatusClick={(statusData) => {
-                setCurrentStatus(statusData);
-                setUserId(statusData.userId);
-                setBlobUrl(statusData.blobUrl);
-                setFromMyStatusView(false);
-                setShowStatusView(true);
-              }}
-            />
+<RecentUpdates
+  onStatusClick={(statusData) => {
+
+    setCurrentStatus(statusData);
+    setUserId(statusData.userId);
+    setStatusIds(statusData.statusIds || []);
+    setFromMyStatusView(false);
+    setShowStatusView(true);
+  }}
+/>
+
           </div>
 
           <BottomNav />

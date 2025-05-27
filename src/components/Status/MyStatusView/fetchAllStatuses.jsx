@@ -92,8 +92,8 @@ try {
       );
 
       cachedStatuses = statusesWithBlobs;
+      // eslint-disable-next-line no-unused-vars
       const mediaUrls = cachedStatuses.map(s => s.media_url).filter(Boolean);
-      console.info(`[${getFixedTime()}][Cache Init] Loaded cachedStatuses media_urls:`, mediaUrls);
     })();
   }
 } catch (e) {

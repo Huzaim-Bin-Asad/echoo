@@ -177,87 +177,116 @@ export const stopCurrentStatusFetcher = () => {
 };
 
 const generateThumbnail = (src, type, callback) => {
-  if (type.startsWith('image/')) {
+  const maxSize = 150;
+  const normalizedType = (type || "").toLowerCase().trim();
+
+  if (normalizedType.startsWith("image/")) {
     const img = new Image();
-    img.crossOrigin = 'anonymous';
+    img.crossOrigin = "anonymous";
     img.src = src;
 
     img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      const maxSize = 150;
+      try {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
 
-      let width = img.width;
-      let height = img.height;
+        let width = img.width;
+        let height = img.height;
 
-      if (width > height) {
-        if (width > maxSize) {
+        if (width > height && width > maxSize) {
           height *= maxSize / width;
           width = maxSize;
-        }
-      } else {
-        if (height > maxSize) {
+        } else if (height >= width && height > maxSize) {
           width *= maxSize / height;
           height = maxSize;
         }
+
+        canvas.width = width;
+        canvas.height = height;
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const thumbnail = canvas.toDataURL("image/jpeg", 0.7);
+        callback(thumbnail);
+      } catch (e) {
+        console.error("[ThumbnailGenerator] Image processing error:", e);
+        callback(null);
       }
-
-      canvas.width = width;
-      canvas.height = height;
-      ctx.drawImage(img, 0, 0, width, height);
-
-      const thumbnail = canvas.toDataURL('image/jpeg', 0.7);
-      callback(thumbnail);
     };
 
-    img.onerror = () => {
-      console.error('[ThumbnailGenerator] Image load error for:', src);
+    img.onerror = (e) => {
+      console.error("[ThumbnailGenerator] Image load error for:", src, e);
       callback(null);
     };
-  } else if (type.startsWith('video/')) {
-    const video = document.createElement('video');
-    video.crossOrigin = 'anonymous';
+
+  } else if (
+    normalizedType.startsWith("video/") ||
+    normalizedType === "video/mp4"
+  ) {
+    const video = document.createElement("video");
+    video.crossOrigin = "anonymous";
     video.src = src;
     video.muted = true;
     video.playsInline = true;
+    video.preload = "auto";
 
-    video.onloadeddata = () => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
+    const fallback = () => {
+      console.warn("[ThumbnailGenerator] Video seek fallback triggered");
+      if (video.readyState >= 2 && !video.seeking) {
+        handleSeek();
+      } else {
+        callback(null);
+      }
+    };
 
-      const maxSize = 150;
-      let width = video.videoWidth;
-      let height = video.videoHeight;
+    const handleSeek = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
 
-      if (width > height) {
-        if (width > maxSize) {
+        let width = video.videoWidth;
+        let height = video.videoHeight;
+
+        if (width > height && width > maxSize) {
           height *= maxSize / width;
           width = maxSize;
-        }
-      } else {
-        if (height > maxSize) {
+        } else if (height >= width && height > maxSize) {
           width *= maxSize / height;
           height = maxSize;
         }
-      }
 
-      canvas.width = width;
-      canvas.height = height;
-
-      video.currentTime = 0.1; // Seek to a frame early in the video
-      video.onseeked = () => {
+        canvas.width = width;
+        canvas.height = height;
         ctx.drawImage(video, 0, 0, width, height);
-        const thumbnail = canvas.toDataURL('image/jpeg', 0.7);
+
+        const thumbnail = canvas.toDataURL("image/jpeg", 0.7);
         callback(thumbnail);
-      };
+      } catch (e) {
+        console.error("[ThumbnailGenerator] Video draw error:", e);
+        callback(null);
+      }
     };
 
-    video.onerror = () => {
-      console.error('[ThumbnailGenerator] Video load error for:', src);
+    video.onloadeddata = () => {
+      try {
+        video.currentTime = Math.min(0.1, video.duration || 1);
+      } catch (e) {
+        console.error("[ThumbnailGenerator] Seek error:", e);
+        callback(null);
+      }
+    };
+
+    video.onseeked = handleSeek;
+
+    video.onerror = (e) => {
+      console.error("[ThumbnailGenerator] Video load error for:", src, e);
       callback(null);
     };
+
+    // Timeout fallback in case onseeked doesn't trigger
+    setTimeout(fallback, 3000);
+
   } else {
-    console.warn('[ThumbnailGenerator] Unsupported media type:', type);
+    console.warn("[ThumbnailGenerator] Unsupported media type:", type);
     callback(null);
   }
 };
