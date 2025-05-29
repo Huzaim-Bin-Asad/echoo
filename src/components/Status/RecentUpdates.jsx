@@ -168,6 +168,15 @@ const RecentUpdates = ({ onStatusClick }) => {
       mediaItems,
     };
 
+    console.log("clickData:", JSON.stringify({
+  contactName,
+  statuses: allStatuses,
+  latestStatus,
+  userId: meta.userId,
+  statusIds: meta.statusIds,
+  mediaItems
+}, null, 2));
+
     if (onStatusClick) {
       onStatusClick(clickData);
     }

@@ -2,11 +2,14 @@ import React, { useEffect, useState } from "react";
 import Header from "./Header";
 import Footer from "./Footer";
 import StatusImage from "./StatusImage";
+import ViewerWrapper from "./viewer/ViewerWrapper"; // <-- make sure path is correct
+import StatusViewsInfo from "./StatusViewsInfo";
 
 const StatusView = ({
   onBack,
   userId,
-  blobUrl,
+  blobUrl, 
+
   contactName,
   statuses,
   latestStatus,
@@ -21,10 +24,10 @@ const StatusView = ({
   const [videoStarted, setVideoStarted] = useState(false);
   const [statusObject, setStatusObject] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [showViewer, setShowViewer] = useState(false); // <-- NEW
 
   useEffect(() => {
     if (!userId) return;
-
 
     const fetchProfilePicture = async () => {
       try {
@@ -129,6 +132,12 @@ const StatusView = ({
     }
   }, [userId, blobUrl, contactName, statuses, latestStatus, mediaItems]);
 
+  useEffect(() => {
+  if (statusIds && statusIds.length) {
+    console.log("📌 Received status IDs:", statusIds);
+  }
+}, [statusIds]);
+
   const handleImageLoad = () => {
     console.log("Image loaded, starting progress.");
     setStartProgress(true);
@@ -189,13 +198,13 @@ const StatusView = ({
   // Log userId when passing to Header
 
   return (
-    <div className="d-flex flex-column vh-100 bg-black text-white p-3">
+    <div className="d-flex flex-column vh-100 bg-black text-white p-3 relative">
       <Header
         onBack={onBack}
         title={`${statusObject.contactName} (Status)`}
         subtitle={subtitle}
         profileImageUrl={profilePicture}
-        userId={userId} // ✅ Pass userId to Header
+        userId={userId}
         progressIndex={currentIndex}
         total={statusObject.statuses.length}
         startProgress={startProgress}
@@ -215,7 +224,17 @@ const StatusView = ({
         />
       </div>
 
-      <Footer />
+      {statusObject?.contactName === "Me" && !showViewer ? (
+        <StatusViewsInfo onEyeClick={() => setShowViewer(true)} />
+      ) : (
+        !showViewer && <Footer />
+      )}
+
+      {showViewer && (
+        <div className="absolute top-0 left-0 w-full max-w-md z-50">
+          <ViewerWrapper onHeaderClick={() => setShowViewer(false)} />
+        </div>
+      )}
     </div>
   );
 };

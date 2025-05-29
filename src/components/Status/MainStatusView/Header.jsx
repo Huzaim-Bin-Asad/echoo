@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { ChevronLeft, MoreVertical } from "lucide-react";
 import "bootstrap/dist/css/bootstrap.min.css";
 
@@ -14,46 +14,69 @@ const Header = ({
   onProgressComplete,
   mediaDuration = 5000, // ms
   mediaType = null,
-  userId, // ✅ Add userId to props
+  userId,
 }) => {
   const [progress, setProgress] = useState(0);
   const [animating, setAnimating] = useState(false);
 
-  useEffect(() => {
-  
-  }, [mediaType, mediaDuration]);
+  // refs to store previous values to detect changes
+  const prevStartProgress = useRef(startProgress);
+  const prevProgressIndex = useRef(progressIndex);
 
   useEffect(() => {
-    console.log("👤 Header received userId:", userId); // ✅ Log userId on change
   }, [userId]);
 
   useEffect(() => {
     const shouldStartProgress =
       startProgress && (mediaType === "image" || videoStarted);
 
+    // Only proceed if startProgress changed from false → true
+    // OR progressIndex changed
+    const startProgressChanged =
+      startProgress && !prevStartProgress.current;
+    const progressIndexChanged = progressIndex !== prevProgressIndex.current;
+
     if (!shouldStartProgress) {
       setProgress(0);
       setAnimating(false);
+      prevStartProgress.current = startProgress;
+      prevProgressIndex.current = progressIndex;
       return;
     }
+
+    if (!startProgressChanged && !progressIndexChanged) {
+      // No meaningful change, do nothing
+      return;
+    }
+
+    console.log("▶️ Starting progress animation");
 
     setProgress(0);
     setAnimating(true);
 
     const triggerTimeout = setTimeout(() => {
       setProgress(100);
+      console.log("➡️ Progress set to 100%");
     }, 50);
 
     const endTimeout = setTimeout(() => {
       setAnimating(false);
+      console.log(
+        `✅ Progress reached 100% for index ${progressIndex}, signaling parent.`
+      );
       if (onProgressComplete) {
         onProgressComplete("mediaComplete");
       }
-    }, mediaDuration);
+    }, mediaDuration + 60);
+
+    // Update refs after starting timers
+    prevStartProgress.current = startProgress;
+    prevProgressIndex.current = progressIndex;
 
     return () => {
       clearTimeout(triggerTimeout);
       clearTimeout(endTimeout);
+      console.log("🔄 Cleanup progress timers");
     };
   }, [
     progressIndex,
@@ -66,7 +89,6 @@ const Header = ({
 
   return (
     <div className="p-2">
-      {/* Multi-step progress bar */}
       <div className="w-100 mb-2 d-flex gap-1">
         {[...Array(total)].map((_, idx) => {
           let width;
@@ -114,7 +136,6 @@ const Header = ({
         })}
       </div>
 
-      {/* Header content */}
       <div className="d-flex align-items-center justify-content-between">
         <div
           className="d-flex align-items-center gap-2"
@@ -135,7 +156,7 @@ const Header = ({
             <div style={{ fontSize: "0.75rem", color: "#ccc" }}>{subtitle}</div>
           </div>
         </div>
-          <div style={{ display: "none" }}>{userId}</div>
+        <div style={{ display: "none" }}>{userId}</div>
 
         <MoreVertical color="white" />
       </div>

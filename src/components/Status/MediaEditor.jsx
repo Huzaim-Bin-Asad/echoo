@@ -50,16 +50,17 @@ const MediaEditor = ({ fileUrl, fileType, onClose }) => {
   const [draggingTextIndex, setDraggingTextIndex] = useState(null);
   const [caption, setCaption] = useState('');
 
-  const mediaStyle = {
-    ...styles.video,
-    width: '100%',
-    height: '100%',
-    maxWidth: '100%',
-    objectFit: 'contain',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-  };
+const mediaStyle = {
+  ...styles.video,
+  width: '100%',
+  height: '100%',
+  maxWidth: '100%',
+  maxHeight: '88%', // or remove this line if not needed
+  objectFit: 'cover', // fills the container, cropping if needed
+  position: 'absolute',
+  top: 40, // align to top edge
+  left: 0,
+};
 
   const { isPlaying, togglePlay, startScrub, scrub } = VideoManager({
     isVideo,
