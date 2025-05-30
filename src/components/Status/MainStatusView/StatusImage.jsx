@@ -4,6 +4,25 @@ import "bootstrap/dist/css/bootstrap.min.css";
 
 const blobUrlCache = new Map(); // In-memory cache for object URLs
 
+// New function to mark status as read on backend
+const markStatusAsRead = async (userId, statusId) => {
+  try {
+    const response = await fetch("http://localhost:5000/api/read", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ userId, statusId }),
+    });
+    if (!response.ok) {
+      throw new Error("Failed to mark status as read");
+    }
+    console.log("✅ Marked status as read on backend");
+  } catch (err) {
+    console.error("❌ Error marking status as read:", err);
+  }
+};
+
 const StatusImage = ({ media_url, statusId, onLoad, onDuration, onPlayStart }) => {
   const [mediaSrc, setMediaSrc] = useState(null);
   const [mediaType, setMediaType] = useState(null);
@@ -12,11 +31,10 @@ const StatusImage = ({ media_url, statusId, onLoad, onDuration, onPlayStart }) =
   const [muted, setMuted] = useState(true);
   const videoRef = useRef(null);
 
-  // Log props whenever they change:
   useEffect(() => {
     console.log("📥 StatusImage received props:");
-    console.log({ media_url, statusId });  // <-- add statusId here
-  }, [media_url,  statusId]);
+    console.log({ media_url, statusId });
+  }, [media_url, statusId]);
 
   useEffect(() => {
     let isCancelled = false;
@@ -93,11 +111,24 @@ const StatusImage = ({ media_url, statusId, onLoad, onDuration, onPlayStart }) =
     };
   }, [media_url]);
 
-  // Also log when callbacks are triggered:
+  // Updated handleLoad to mark status as read
   const handleLoad = () => {
     console.log("✅ Image/video loaded");
     setLoaded(true);
     if (onLoad) onLoad();
+
+    // Get user from localStorage
+    const userJson = localStorage.getItem("user");
+    if (userJson) {
+      try {
+        const userObj = JSON.parse(userJson);
+        if (userObj?.user_id && statusId) {
+          markStatusAsRead(userObj.user_id, statusId);
+        }
+      } catch (e) {
+        console.error("❌ Failed to parse user from localStorage", e);
+      }
+    }
   };
 
   const handleLoadedData = (event) => {
