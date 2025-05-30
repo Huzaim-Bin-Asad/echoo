@@ -4,13 +4,19 @@ import "bootstrap/dist/css/bootstrap.min.css";
 
 const blobUrlCache = new Map(); // In-memory cache for object URLs
 
-const StatusImage = ({ media_url, onLoad, onDuration, onPlayStart }) => {
+const StatusImage = ({ media_url, statusId, onLoad, onDuration, onPlayStart }) => {
   const [mediaSrc, setMediaSrc] = useState(null);
   const [mediaType, setMediaType] = useState(null);
   const [loaded, setLoaded] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [muted, setMuted] = useState(true);
   const videoRef = useRef(null);
+
+  // Log props whenever they change:
+  useEffect(() => {
+    console.log("📥 StatusImage received props:");
+    console.log({ media_url, statusId });  // <-- add statusId here
+  }, [media_url,  statusId]);
 
   useEffect(() => {
     let isCancelled = false;
@@ -25,7 +31,6 @@ const StatusImage = ({ media_url, onLoad, onDuration, onPlayStart }) => {
 
     const loadMedia = async () => {
       if (!media_url) return;
-
 
       if (media_url.startsWith("data:image")) {
         console.log("🖼 Detected inline image");
@@ -63,7 +68,6 @@ const StatusImage = ({ media_url, onLoad, onDuration, onPlayStart }) => {
             ? "video"
             : "image";
 
-
         blobUrlCache.set(media_url, { url: objectUrl, type });
         shouldRevoke = false;
 
@@ -89,28 +93,30 @@ const StatusImage = ({ media_url, onLoad, onDuration, onPlayStart }) => {
     };
   }, [media_url]);
 
+  // Also log when callbacks are triggered:
   const handleLoad = () => {
+    console.log("✅ Image/video loaded");
     setLoaded(true);
     if (onLoad) onLoad();
   };
 
   const handleLoadedData = (event) => {
-    handleLoad();
     const duration = event.target?.duration;
     if (onDuration && duration) {
       const durationMs = duration * 1000;
       console.log("⏱ Video duration detected (ms):", durationMs);
       onDuration(durationMs, "video");
     }
+    handleLoad();
   };
 
   const handlePlayClick = () => {
+    console.log("▶️ Play clicked");
     setIsPlaying(true);
     setMuted(false);
     if (videoRef.current) {
       videoRef.current.muted = false;
       videoRef.current.play();
-      console.log("▶️ Video playback started (unmuted).");
     }
     if (onPlayStart) {
       onPlayStart();
@@ -126,18 +132,18 @@ const StatusImage = ({ media_url, onLoad, onDuration, onPlayStart }) => {
 
   return (
     <div
-className="d-flex justify-content-end align-items-end position-relative mx-auto"
-style={{
-  maxWidth: "95vw",
-  maxHeight: "80vh",
-height: mediaType === "video" ? "60vh" : "60vh",
-  borderRadius: "12px",
-  overflow: "hidden",
-  backgroundColor: "#000",
+      className="d-flex justify-content-end align-items-end position-relative mx-auto"
+      style={{
+        maxWidth: "95vw",
+        maxHeight: "80vh",
+        height: mediaType === "video" ? "60vh" : "60vh",
+        borderRadius: "12px",
+        overflow: "hidden",
+        backgroundColor: "#000",
 
- transform: "translateY(80px)", // Option B: Shift all content lower
-}}
->
+        transform: "translateY(80px)", // Option B: Shift all content lower
+      }}
+    >
       {!loaded && (
         <div className="text-light position-absolute top-50 start-50 translate-middle">
           Loading media...
@@ -146,41 +152,39 @@ height: mediaType === "video" ? "60vh" : "60vh",
 
       {/* Image */}
       {mediaType === "image" && mediaSrc && (
-<img
-  src={mediaSrc}
-  alt="Status"
-  onLoad={handleLoad}
-  className="w-100 h-100"
-  style={{
-    objectFit: "cover", // changed from "contain"
-    borderRadius: "12px",
-    display: loaded ? "block" : "none",
-    userSelect: "none"
-  }}
-/>
-
+        <img
+          src={mediaSrc}
+          alt="Status"
+          onLoad={handleLoad}
+          className="w-100 h-100"
+          style={{
+            objectFit: "cover", // changed from "contain"
+            borderRadius: "12px",
+            display: loaded ? "block" : "none",
+            userSelect: "none",
+          }}
+        />
       )}
 
       {/* Video */}
       {mediaType === "video" && mediaSrc && (
         <>
-  <video
-    ref={videoRef}
-    src={mediaSrc}
-    muted={muted}
-    playsInline
-    onLoadedData={handleLoadedData}
-    className="w-100 h-100"
-    style={{
-      objectFit: "cover", // changed from "contain"
-      borderRadius: "12px",
-      display: loaded ? "block" : "none",
-      userSelect: "none"
-    }}
-    autoPlay={isPlaying}
-    controls={false}
-  />
-
+          <video
+            ref={videoRef}
+            src={mediaSrc}
+            muted={muted}
+            playsInline
+            onLoadedData={handleLoadedData}
+            className="w-100 h-100"
+            style={{
+              objectFit: "cover", // changed from "contain"
+              borderRadius: "12px",
+              display: loaded ? "block" : "none",
+              userSelect: "none",
+            }}
+            autoPlay={isPlaying}
+            controls={false}
+          />
 
           {/* Play button overlay */}
           {!isPlaying && loaded && (

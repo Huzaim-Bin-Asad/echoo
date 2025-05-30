@@ -2,20 +2,23 @@ import React, { useEffect, useState } from "react";
 import Header from "./Header";
 import Footer from "./Footer";
 import StatusImage from "./StatusImage";
-import ViewerWrapper from "./viewer/ViewerWrapper"; // <-- make sure path is correct
+import ViewerWrapper from "./viewer/ViewerWrapper";
 import StatusViewsInfo from "./StatusViewsInfo";
 
 const StatusView = ({
   onBack,
   userId,
-  blobUrl, 
-
+  blobUrl,
   contactName,
   statuses,
   latestStatus,
   mediaItems,
   statusIds,
 }) => {
+  useEffect(() => {
+   
+  }, [userId, blobUrl, contactName, statuses, latestStatus, mediaItems, statusIds]);
+
   const [profilePicture, setProfilePicture] = useState(null);
   const [subtitle, setSubtitle] = useState("");
   const [startProgress, setStartProgress] = useState(false);
@@ -24,7 +27,7 @@ const StatusView = ({
   const [videoStarted, setVideoStarted] = useState(false);
   const [statusObject, setStatusObject] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [showViewer, setShowViewer] = useState(false); // <-- NEW
+  const [showViewer, setShowViewer] = useState(false);
 
   useEffect(() => {
     if (!userId) return;
@@ -88,6 +91,7 @@ const StatusView = ({
           ...status,
           media_url: mediaItem?.blobUrl || status.media_url_original || "",
           duration: mediaItem?.duration || 8000,
+          statusId: mediaItem?.statusId || status.statusId || null,
         };
       });
 
@@ -120,6 +124,7 @@ const StatusView = ({
           {
             media_url: blobUrl,
             timestamp,
+            statusId: statusIds?.[0] || null,
           },
         ],
       });
@@ -133,13 +138,11 @@ const StatusView = ({
   }, [userId, blobUrl, contactName, statuses, latestStatus, mediaItems]);
 
   useEffect(() => {
-  if (statusIds && statusIds.length) {
-    console.log("📌 Received status IDs:", statusIds);
-  }
-}, [statusIds]);
+    if (statusIds && statusIds.length) {
+    }
+  }, [statusIds]);
 
   const handleImageLoad = () => {
-    console.log("Image loaded, starting progress.");
     setStartProgress(true);
   };
 
@@ -152,21 +155,17 @@ const StatusView = ({
     }
 
     const totalStatuses = statusObject.statuses.length;
-    console.log("Progress complete. Current index:", currentIndex, "Total statuses:", totalStatuses);
 
     if (totalStatuses <= 1) {
-      console.log("Only one or no media item, calling onBack.");
       onBack();
     } else {
       if (currentIndex < totalStatuses - 1) {
-        console.log("Moving to next media.");
         setCurrentIndex((prev) => prev + 1);
         setStartProgress(false);
         setMediaType(null);
         setMediaDuration(8000);
         setVideoStarted(false);
       } else {
-        console.log("Last media finished, calling onBack.");
         onBack();
       }
     }
@@ -178,7 +177,6 @@ const StatusView = ({
   };
 
   const handlePlayStart = () => {
-    console.log("Video started playing.");
     setVideoStarted(true);
     setStartProgress(true);
   };
@@ -194,8 +192,6 @@ const StatusView = ({
       </div>
     );
   }
-
-  // Log userId when passing to Header
 
   return (
     <div className="d-flex flex-column vh-100 bg-black text-white p-3 relative">
@@ -218,6 +214,7 @@ const StatusView = ({
         <StatusImage
           key={currentMedia.media_url}
           media_url={currentMedia.media_url}
+          statusId={currentMedia.statusId} // ✅ Forwarded here
           onLoad={handleImageLoad}
           onDuration={handleMediaInfo}
           onPlayStart={handlePlayStart}

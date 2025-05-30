@@ -152,10 +152,10 @@ const RecentUpdates = ({ onStatusClick }) => {
         const matched = matchingStatuses.find((s) => s.status_id === statusId);
         const timestamp = matched?.timestamp || null;
 
-        mediaItems.push({ blobUrl, timestamp, duration });
+        mediaItems.push({ statusId, blobUrl, timestamp, duration });
       } catch (err) {
         console.error(`🚨 Error handling status ID ${statusId}:`, err);
-        mediaItems.push({ blobUrl: null, timestamp: null, duration: 5000 });
+        mediaItems.push({ statusId, blobUrl: null, timestamp: null, duration: 5000 });
       }
     }
 
@@ -168,14 +168,6 @@ const RecentUpdates = ({ onStatusClick }) => {
       mediaItems,
     };
 
-    console.log("clickData:", JSON.stringify({
-  contactName,
-  statuses: allStatuses,
-  latestStatus,
-  userId: meta.userId,
-  statusIds: meta.statusIds,
-  mediaItems
-}, null, 2));
 
     if (onStatusClick) {
       onStatusClick(clickData);
