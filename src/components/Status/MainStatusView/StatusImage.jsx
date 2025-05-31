@@ -4,6 +4,48 @@ import "bootstrap/dist/css/bootstrap.min.css";
 
 const blobUrlCache = new Map(); // In-memory cache for object URLs
 
+// New function to fetch readers of this status from server (without cache check)
+const fetchReadersFromServer = async (statusId) => {
+  try {
+    const response = await fetch("http://localhost:5000/api/readers", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ statusId }),
+    });
+
+    if (!response.ok) throw new Error("Failed to fetch readers");
+
+    const data = await response.json();
+    return data.readers || [];
+  } catch (err) {
+    console.error("❌ Error fetching readers:", err);
+    return [];
+  }
+};
+
+// Function to update cached readers for a statusId only if new data arrived
+const updateReadersCacheIfNew = (statusId, newReaders) => {
+  const cacheKey = "StatusViewers";
+  const rawCache = localStorage.getItem(cacheKey);
+  const cache = rawCache ? JSON.parse(rawCache) : {};
+
+  const existingReaders = cache[statusId] || [];
+
+  // Simple deep compare by JSON string (could improve with IDs)
+  const existingStr = JSON.stringify(existingReaders);
+  const newStr = JSON.stringify(newReaders);
+
+  if (existingStr !== newStr) {
+    cache[statusId] = newReaders;
+    localStorage.setItem(cacheKey, JSON.stringify(cache));
+    console.log("🔄 Updated readers cache for statusId:", statusId);
+    return true; // indicates cache updated
+  }
+  return false; // no update needed
+};
+
 // New function to mark status as read on backend
 const markStatusAsRead = async (userId, statusId) => {
   try {
@@ -30,11 +72,7 @@ const StatusImage = ({ media_url, statusId, onLoad, onDuration, onPlayStart }) =
   const [isPlaying, setIsPlaying] = useState(false);
   const [muted, setMuted] = useState(true);
   const videoRef = useRef(null);
-
-  useEffect(() => {
-    console.log("📥 StatusImage received props:");
-    console.log({ media_url, statusId });
-  }, [media_url, statusId]);
+  const pollingIntervalRef = useRef(null);
 
   useEffect(() => {
     let isCancelled = false;
@@ -51,11 +89,9 @@ const StatusImage = ({ media_url, statusId, onLoad, onDuration, onPlayStart }) =
       if (!media_url) return;
 
       if (media_url.startsWith("data:image")) {
-        console.log("🖼 Detected inline image");
         setMediaType("image");
         setMediaSrc(media_url);
         if (onDuration) {
-          console.log("🧾 Forwarding image type with default duration (5000ms)");
           onDuration(5000, "image");
         }
         return;
@@ -63,11 +99,9 @@ const StatusImage = ({ media_url, statusId, onLoad, onDuration, onPlayStart }) =
 
       if (blobUrlCache.has(media_url)) {
         const { url, type } = blobUrlCache.get(media_url);
-        console.log("♻️ Using cached media URL:", { url, type });
         setMediaType(type);
         setMediaSrc(url);
         if (type === "image" && onDuration) {
-          console.log("🧾 Forwarding cached image type with default duration (5000ms)");
           onDuration(5000, "image");
         }
         return;
@@ -81,10 +115,7 @@ const StatusImage = ({ media_url, statusId, onLoad, onDuration, onPlayStart }) =
         objectUrl = URL.createObjectURL(blob);
 
         const mime = blob.type;
-        const type =
-          mime.startsWith("video") || mime === "application/mp4"
-            ? "video"
-            : "image";
+        const type = mime.startsWith("video") || mime === "application/mp4" ? "video" : "image";
 
         blobUrlCache.set(media_url, { url: objectUrl, type });
         shouldRevoke = false;
@@ -111,19 +142,54 @@ const StatusImage = ({ media_url, statusId, onLoad, onDuration, onPlayStart }) =
     };
   }, [media_url]);
 
+  // Polling readers every 500ms to update cache if new readers
+  useEffect(() => {
+    if (!statusId) return;
+
+    let isMounted = true;
+
+    const pollReaders = async () => {
+      if (!isMounted) return;
+
+      try {
+        const newReaders = await fetchReadersFromServer(statusId);
+        const updated = updateReadersCacheIfNew(statusId, newReaders);
+        if (updated) {
+          console.log("📦 Cache updated with new readers");
+          // Optionally: you can trigger some state update here or callback to parent
+        }
+      } catch (e) {
+        console.error("❌ Polling error:", e);
+      }
+    };
+
+    // Initial call immediately
+    pollReaders();
+
+    // Setup interval
+    pollingIntervalRef.current = setInterval(pollReaders, 500);
+
+    return () => {
+      isMounted = false;
+      clearInterval(pollingIntervalRef.current);
+    };
+  }, [statusId]);
+
   // Updated handleLoad to mark status as read
-  const handleLoad = () => {
-    console.log("✅ Image/video loaded");
+  const handleLoad = async () => {
     setLoaded(true);
     if (onLoad) onLoad();
 
-    // Get user from localStorage
     const userJson = localStorage.getItem("user");
     if (userJson) {
       try {
         const userObj = JSON.parse(userJson);
         if (userObj?.user_id && statusId) {
-          markStatusAsRead(userObj.user_id, statusId);
+          await markStatusAsRead(userObj.user_id, statusId);
+
+          // Fetch readers after marking read (optional because polling is running)
+          // const readers = await fetchReadersFromServer(statusId);
+          // updateReadersCacheIfNew(statusId, readers);
         }
       } catch (e) {
         console.error("❌ Failed to parse user from localStorage", e);
@@ -135,14 +201,12 @@ const StatusImage = ({ media_url, statusId, onLoad, onDuration, onPlayStart }) =
     const duration = event.target?.duration;
     if (onDuration && duration) {
       const durationMs = duration * 1000;
-      console.log("⏱ Video duration detected (ms):", durationMs);
       onDuration(durationMs, "video");
     }
     handleLoad();
   };
 
   const handlePlayClick = () => {
-    console.log("▶️ Play clicked");
     setIsPlaying(true);
     setMuted(false);
     if (videoRef.current) {
@@ -171,8 +235,7 @@ const StatusImage = ({ media_url, statusId, onLoad, onDuration, onPlayStart }) =
         borderRadius: "12px",
         overflow: "hidden",
         backgroundColor: "#000",
-
-        transform: "translateY(80px)", // Option B: Shift all content lower
+        transform: "translateY(80px)",
       }}
     >
       {!loaded && (
@@ -189,7 +252,7 @@ const StatusImage = ({ media_url, statusId, onLoad, onDuration, onPlayStart }) =
           onLoad={handleLoad}
           className="w-100 h-100"
           style={{
-            objectFit: "cover", // changed from "contain"
+            objectFit: "cover",
             borderRadius: "12px",
             display: loaded ? "block" : "none",
             userSelect: "none",
@@ -208,7 +271,7 @@ const StatusImage = ({ media_url, statusId, onLoad, onDuration, onPlayStart }) =
             onLoadedData={handleLoadedData}
             className="w-100 h-100"
             style={{
-              objectFit: "cover", // changed from "contain"
+              objectFit: "cover",
               borderRadius: "12px",
               display: loaded ? "block" : "none",
               userSelect: "none",
@@ -217,7 +280,6 @@ const StatusImage = ({ media_url, statusId, onLoad, onDuration, onPlayStart }) =
             controls={false}
           />
 
-          {/* Play button overlay */}
           {!isPlaying && loaded && (
             <button
               onClick={handlePlayClick}
@@ -236,7 +298,6 @@ const StatusImage = ({ media_url, statusId, onLoad, onDuration, onPlayStart }) =
             </button>
           )}
 
-          {/* Volume toggle button top-left */}
           {isPlaying && loaded && (
             <button
               onClick={toggleMute}
@@ -251,11 +312,7 @@ const StatusImage = ({ media_url, statusId, onLoad, onDuration, onPlayStart }) =
                 zIndex: 10,
               }}
             >
-              {muted ? (
-                <VolumeX color="white" size={24} />
-              ) : (
-                <Volume2 color="white" size={24} />
-              )}
+              {muted ? <VolumeX color="white" size={20} /> : <Volume2 color="white" size={20} />}
             </button>
           )}
         </>

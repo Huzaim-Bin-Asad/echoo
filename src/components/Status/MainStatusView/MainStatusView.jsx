@@ -15,10 +15,6 @@ const StatusView = ({
   mediaItems,
   statusIds,
 }) => {
-  useEffect(() => {
-   
-  }, [userId, blobUrl, contactName, statuses, latestStatus, mediaItems, statusIds]);
-
   const [profilePicture, setProfilePicture] = useState(null);
   const [subtitle, setSubtitle] = useState("");
   const [startProgress, setStartProgress] = useState(false);
@@ -29,6 +25,7 @@ const StatusView = ({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showViewer, setShowViewer] = useState(false);
 
+  // Fetch profile picture and prepare statuses
   useEffect(() => {
     if (!userId) return;
 
@@ -135,12 +132,16 @@ const StatusView = ({
       setMediaDuration(8000);
       setVideoStarted(false);
     }
-  }, [userId, blobUrl, contactName, statuses, latestStatus, mediaItems]);
+  }, [userId, blobUrl, contactName, statuses, latestStatus, mediaItems, statusIds]);
 
+  // Optional logging
   useEffect(() => {
-    if (statusIds && statusIds.length) {
+    if (!statusObject) return;
+    const currentMedia = statusObject.statuses?.[currentIndex];
+    if (currentMedia?.statusId) {
+      console.log("📦 Current statusId:", currentMedia.statusId);
     }
-  }, [statusIds]);
+  }, [statusObject, currentIndex]);
 
   const handleImageLoad = () => {
     setStartProgress(true);
@@ -214,22 +215,27 @@ const StatusView = ({
         <StatusImage
           key={currentMedia.media_url}
           media_url={currentMedia.media_url}
-          statusId={currentMedia.statusId} // ✅ Forwarded here
+          statusId={currentMedia.statusId}
           onLoad={handleImageLoad}
           onDuration={handleMediaInfo}
           onPlayStart={handlePlayStart}
         />
       </div>
 
-      {statusObject?.contactName === "Me" && !showViewer ? (
-        <StatusViewsInfo onEyeClick={() => setShowViewer(true)} />
-      ) : (
-        !showViewer && <Footer />
-      )}
+{statusObject?.contactName === "Me" && !showViewer ? (
+  <StatusViewsInfo onEyeClick={() => setShowViewer(true)} />
+) : (
+  !showViewer && <Footer statusId={currentMedia?.statusId} />
+)}
+
 
       {showViewer && (
         <div className="absolute top-0 left-0 w-full max-w-md z-50">
-          <ViewerWrapper onHeaderClick={() => setShowViewer(false)} />
+          <ViewerWrapper
+            onHeaderClick={() => setShowViewer(false)}
+            statusId={currentMedia?.statusId}  // <-- Pass current statusId
+            statusIds={statusIds}              // <-- Pass full statusIds array
+          />
         </div>
       )}
     </div>

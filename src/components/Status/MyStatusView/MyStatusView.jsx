@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import MyStatusHeader from './MyStatusHeader';
-import MyStatusList from './MyStatusList';
+import MyStatusesList from './MyStatusList';
 import { ImagePlus } from 'lucide-react';
 
 const isMobileDevice = () =>
@@ -12,7 +12,7 @@ export default function MyStatusView({
   onFileSelected,
   permissionStatus,
   requestMultiplePermissions,
-  onStatusSelect, // ← Forwarded to parent (e.g., App)
+  onStatusSelect, // ← Forwarded to parent (e.g., Status.jsx)
 }) {
   const fileInputRef = useRef(null);
 
@@ -48,10 +48,17 @@ export default function MyStatusView({
     }
   };
 
-  const handleStatusClick = (blobUrl, userId) => {
-    console.log('Status clicked:', { blobUrl, userId }); // <-- Log received data here
+  // <-- Updated to receive all 4 parameters from MyStatusesList and forward them up
+  const handleStatusClick = (blobUrl, userId, duration, statusId) => {
+    const payloadFromMyStatusView = {
+      blobUrl,
+      userId,
+      duration,
+      statusId,
+    };
+
     if (onStatusSelect) {
-      onStatusSelect(blobUrl, userId);
+      onStatusSelect(blobUrl, userId, duration, statusId);
     }
   };
 
@@ -66,7 +73,7 @@ export default function MyStatusView({
       <MyStatusHeader onBack={onBack} />
 
       {/* Status list with click forwarding */}
-      <MyStatusList statuses={statuses} onStatusSelect={handleStatusClick} />
+      <MyStatusesList statuses={statuses} onStatusSelect={handleStatusClick} />
 
       {/* Add new status button */}
       <button

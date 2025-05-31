@@ -50,8 +50,6 @@ export default function MyStatusesList({ statuses, onStatusSelect }) {
     const status_id = e.currentTarget.getAttribute("data-status-id");
     const clicked_user_id = e.currentTarget.getAttribute("data-user-id");
 
-
-
     if (!status_id || !clicked_user_id) {
       console.warn("⚠️ Missing status_id or user_id on clicked element.");
       return;
@@ -77,13 +75,11 @@ export default function MyStatusesList({ statuses, onStatusSelect }) {
             resolve(5000); // fallback
           };
         });
-      } else {
       }
 
-
-
       if (onStatusSelect) {
-        onStatusSelect(blobUrl, clicked_user_id, duration);
+        // ✅ Now passing statusId to the parent
+        onStatusSelect(blobUrl, clicked_user_id, duration, status_id);
       } else {
         console.warn("⚠️ onStatusSelect not provided.");
       }
@@ -168,10 +164,7 @@ export default function MyStatusesList({ statuses, onStatusSelect }) {
             </p>
           </div>
 
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{ flexShrink: 0 }}
-          >
+          <div onClick={(e) => e.stopPropagation()} style={{ flexShrink: 0 }}>
             <MoreVertical size={28} style={{ color: "#6c757d" }} />
           </div>
         </div>
