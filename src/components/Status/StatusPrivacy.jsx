@@ -1,124 +1,137 @@
 import React, { useState } from 'react';
-import { ChevronLeft, Check, User, UserX, Users } from 'lucide-react';
+import { ChevronLeft, User, ShieldBan, HandCoins } from 'lucide-react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
-const StatusPrivacy = ({ handleBackClick }) => {
+const StatusPrivacy = ({
+  handleBackClick,
+  onOnlyShareWithClick,
+  onContactsExceptClick,
+}) => {
   const [selectedOption, setSelectedOption] = useState('contacts');
+
+  const options = [
+    {
+      key: 'contacts',
+      label: 'My contacts',
+      icon: <User size={18} />,
+    },
+    {
+      key: 'contactsExcept',
+      label: 'My contacts except...',
+      icon: <ShieldBan size={18} />,
+      note: '0 excluded',
+      onNoteClick: onContactsExceptClick,
+    },
+    {
+      key: 'onlyShareWith',
+      label: 'Only share with...',
+      icon: <HandCoins size={18} />,
+      note: '0 included',
+      onNoteClick: onOnlyShareWithClick,
+    },
+  ];
+
+  const getItemStyle = (optionKey) => ({
+    backgroundColor: selectedOption === optionKey ? 'rgba(40, 167, 69, 0.1)' : 'transparent',
+    border: selectedOption === optionKey ? '1px solid rgba(40, 167, 69, 0.3)' : '1px solid rgba(255,255,255,0.1)',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    borderRadius: '1rem',
+    padding: '1rem',
+    marginBottom: '1rem',
+  });
+
+  const getIconColor = (optionKey) =>
+    selectedOption === optionKey ? '#28a745' : 'rgba(255,255,255,0.6)';
 
   return (
     <div
       className="container-fluid"
-      style={{ 
-        backgroundColor: '#121212', 
-        minHeight: '100vh', 
+      style={{
+        backgroundColor: '#121212',
+        minHeight: '100vh',
         color: 'white',
-        fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif'
+        fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+        padding: '1rem',
       }}
     >
-      {/* Header with Back Button */}
-      <div 
-        className="border-bottom d-flex align-items-center px-3 py-3"
-        style={{ borderColor: 'rgba(255,255,255,0.1)' }}
+      {/* Header */}
+      <div
+        className="d-flex align-items-center mb-4"
+        style={{ borderBottom: '1px solid rgba(255,255,255,0.2)', paddingBottom: '1rem' }}
       >
-        <ChevronLeft 
-          className="me-3" 
-          onClick={handleBackClick} 
-          style={{ 
+        <ChevronLeft
+          onClick={handleBackClick}
+          style={{
             cursor: 'pointer',
             width: '24px',
-            height: '24px'
-          }} 
+            height: '24px',
+            marginRight: '0.5rem',
+          }}
         />
-        <h5 className="mb-0 fw-semibold" style={{ fontSize: '1.1rem' }}>Status Privacy</h5>
+        <h5 className="mb-0 fw-semibold" style={{ fontSize: '1.1rem' }}>
+          Status Privacy
+        </h5>
       </div>
 
       {/* Body */}
-      <div className="px-3 px-sm-4 px-md-5 pt-4">
-        <div 
-          className="mb-3 text-secondary" 
-          style={{ 
-            fontSize: '0.9rem',
-            color: 'rgba(255,255,255,0.6)'
-          }}
-        >
+      <div>
+        <div className="mb-3 text-secondary" style={{ fontSize: '0.9rem' }}>
           Who can see my status updates
         </div>
 
-        {/* Option 1: My Contacts */}
-        <div 
-          className="d-flex align-items-center justify-content-between mb-4 p-3 rounded-3"
-          style={{ 
-            backgroundColor: selectedOption === 'contacts' ? 'rgba(40, 167, 69, 0.1)' : 'transparent',
-            border: selectedOption === 'contacts' ? '1px solid rgba(40, 167, 69, 0.3)' : '1px solid rgba(255,255,255,0.1)',
-            cursor: 'pointer'
-          }}
-          onClick={() => setSelectedOption('contacts')}
-        >
-          <div className="d-flex align-items-center">
-            <div className="bg-primary bg-opacity-10 p-2 rounded-circle me-3">
-              <User size={18} color={selectedOption === 'contacts' ? '#28a745' : 'rgba(255,255,255,0.6)'} />
-            </div>
-            <div>
-              <div className="fw-medium">My contacts</div>
-            </div>
-          </div>
-          {selectedOption === 'contacts' && <Check size={18} color="#28a745" />}
-        </div>
+        {options.map((option) => (
+          <div
+            key={option.key}
+            className="d-flex align-items-center justify-content-between"
+            style={getItemStyle(option.key)}
+            onClick={() => setSelectedOption(option.key)}
+          >
+            <div className="d-flex align-items-center">
+            <div
+  className="d-flex justify-content-center align-items-center rounded-circle me-3"
+  style={{
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    width: '40px',
+    height: '40px',
+  }}
+>
+  {React.cloneElement(option.icon, {
+    color: getIconColor(option.key),
+  })}
+</div>
 
-        {/* Option 2: My contacts except... */}
-        <div 
-          className="d-flex align-items-center justify-content-between mb-4 p-3 rounded-3"
-          style={{ 
-            backgroundColor: selectedOption === 'contactsExcept' ? 'rgba(40, 167, 69, 0.1)' : 'transparent',
-            border: selectedOption === 'contactsExcept' ? '1px solid rgba(40, 167, 69, 0.3)' : '1px solid rgba(255,255,255,0.1)',
-            cursor: 'pointer'
-          }}
-          onClick={() => setSelectedOption('contactsExcept')}
-        >
-          <div className="d-flex align-items-center">
-            <div className="bg-primary bg-opacity-10 p-2 rounded-circle me-3">
-              <UserX size={18} color={selectedOption === 'contactsExcept' ? '#28a745' : 'rgba(255,255,255,0.6)'} />
+              <div className="fw-medium">{option.label}</div>
             </div>
-            <div>
-              <div className="fw-medium">My contacts except...</div>
-              <div className="text-success small mt-1">0 excluded</div>
-            </div>
-          </div>
-          {selectedOption === 'contactsExcept' && <Check size={18} color="#28a745" />}
-        </div>
 
-        {/* Option 3: Only share with... */}
-        <div 
-          className="d-flex align-items-center justify-content-between mb-4 p-3 rounded-3"
-          style={{ 
-            backgroundColor: selectedOption === 'onlyShareWith' ? 'rgba(40, 167, 69, 0.1)' : 'transparent',
-            border: selectedOption === 'onlyShareWith' ? '1px solid rgba(40, 167, 69, 0.3)' : '1px solid rgba(255,255,255,0.1)',
-            cursor: 'pointer'
-          }}
-          onClick={() => setSelectedOption('onlyShareWith')}
-        >
-          <div className="d-flex align-items-center">
-            <div className="bg-primary bg-opacity-10 p-2 rounded-circle me-3">
-              <Users size={18} color={selectedOption === 'onlyShareWith' ? '#28a745' : 'rgba(255,255,255,0.6)'} />
-            </div>
-            <div>
-              <div className="fw-medium">Only share with...</div>
-              <div className="text-success small mt-1">0 included</div>
-            </div>
+            {/* Note Click Handler (Triggers Parent) */}
+            {option.note && (
+              <div
+                className="text-success small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  console.log(`"${option.label}" clicked — Note: ${option.note}`);
+                  if (option.onNoteClick) {
+                    option.onNoteClick(); // ✅ Trigger the appropriate callback
+                  }
+                }}
+              >
+                {option.note}
+              </div>
+            )}
           </div>
-          {selectedOption === 'onlyShareWith' && <Check size={18} color="#28a745" />}
-        </div>
+        ))}
 
-        {/* Footer note */}
-        <div 
-          className="text-secondary small pt-2 pb-5 px-2"
+        {/* Footer Note */}
+        <div
+          className="text-secondary small pt-2 pb-5"
           style={{
             color: 'rgba(255,255,255,0.5)',
             fontSize: '0.8rem',
-            lineHeight: '1.4'
+            lineHeight: '1.4',
           }}
         >
-          Changes to your privacy settings won't affect status updates that you've sent already
+          Changes to your privacy settings won't affect status updates that you've sent already.
         </div>
       </div>
     </div>

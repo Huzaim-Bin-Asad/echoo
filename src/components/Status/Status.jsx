@@ -9,6 +9,8 @@ import StatusArchiveSettings from "./StatusArchiveSettings";
 import MediaEditor from "./MediaEditor";
 import MyStatusView from "./MyStatusView/MyStatusView";
 import StatusView from "./MainStatusView/MainStatusView";
+import AllContacts from "./ContactsAllowed/ContactsAllowed";
+import ContactsNotAllowed from "./ContactsNotAllowed/index";
 
 import {
   startPollingStatuses,
@@ -19,8 +21,12 @@ const CACHE_KEY = "contactsStatusCache";
 
 const Status = () => {
   const [showPopup, setShowPopup] = useState(false);
-  const [showPrivacyPage] = useState(false);
+  const [showPrivacyPage, setShowPrivacyPage] = useState(false);
   const [showArchiveSettings, setShowArchiveSettings] = useState(false);
+  const [showContactsAllowed, setShowContactsAllowed] = useState(false);
+  const [showContactsNotAllowed, setShowContactsNotAllowed] = useState(false);
+
+  const [excludedContacts, setExcludedContacts] = useState([]); // ✅ for "My contacts except..."
   const [selectedMedia, setSelectedMedia] = useState(null);
   const [showMyStatusView, setShowMyStatusView] = useState(false);
   const [showStatusView, setShowStatusView] = useState(false);
@@ -32,8 +38,15 @@ const Status = () => {
   const [fromMyStatusView, setFromMyStatusView] = useState(false);
 
   const togglePopup = () => setShowPopup((prev) => !prev);
+
   const handleArchiveSettingsClick = () => setShowArchiveSettings(true);
-  const handleBackClick = () => setShowArchiveSettings(false);
+
+  const handleBackClick = () => {
+    setShowPrivacyPage(false);
+    setShowArchiveSettings(false);
+    setShowContactsAllowed(false);
+    setShowContactsNotAllowed(false);
+  };
 
   const handleFileSelected = (fileUrl, fileType) => {
     setShowMyStatusView(false);
@@ -65,7 +78,6 @@ const Status = () => {
 
   useEffect(() => {
     setLoadingStatuses(true);
-
     const initialStatuses = loadCachedStatuses();
     setStatuses(initialStatuses);
 
@@ -88,12 +100,49 @@ const Status = () => {
     };
   }, []);
 
-  if (showPrivacyPage) {
-    return <StatusPrivacy handleBackClick={handleBackClick} />;
+  // ✅ Route: Contacts Not Allowed
+  if (showContactsNotAllowed) {
+    console.log("🔔 Navigating to ContactsNotAllowed with excludedContacts:", excludedContacts);
+    if (excludedContacts.length === 0) {
+      console.log("⚠️ 0 contacts are currently excluded.");
+    }
+    return (
+      <ContactsNotAllowed
+        handleBackClick={handleBackClick}
+        excludedContacts={excludedContacts}
+      />
+    );
   }
 
-  if (showStatusView) {
+  // ✅ Route: Contacts Allowed
+  if (showContactsAllowed) {
+    return <AllContacts handleBackClick={handleBackClick} />;
+  }
 
+  // ✅ Route: Status Privacy
+  if (showPrivacyPage) {
+    return (
+      <StatusPrivacy
+        handleBackClick={handleBackClick}
+        onOnlyShareWithClick={() => {
+          console.log("✅ Triggered ContactsAllowed screen");
+          setShowContactsAllowed(true);
+        }}
+        onContactsExceptClick={() => {
+          // 🔽 Simulate fetching excluded contacts from storage or context
+          const stored = localStorage.getItem("excludedContacts");
+          const excluded = stored ? JSON.parse(stored) : [];
+          console.log("✅ Triggered ContactsNotAllowed screen with", excluded.length, "excluded");
+
+          setExcludedContacts(excluded); // <- store for use in route
+          setShowContactsNotAllowed(true);
+        }}
+      />
+    );
+  }
+
+  // ✅ Route: Status View
+  if (showStatusView) {
     return (
       <StatusView
         userId={userId}
@@ -103,7 +152,7 @@ const Status = () => {
         latestStatus={currentStatus?.latestStatus}
         mediaItems={currentStatus?.mediaItems}
         statusIds={currentStatus?.statusIds}
-        statusId={currentStatus?.statusId} // ✅ pass it here
+        statusId={currentStatus?.statusId}
         onBack={() => {
           setShowStatusView(false);
           setCurrentStatus(null);
@@ -115,6 +164,7 @@ const Status = () => {
     );
   }
 
+  // ✅ Route: My Status View
   if (showMyStatusView) {
     return (
       <MyStatusView
@@ -142,14 +192,12 @@ const Status = () => {
             userId,
             duration,
             statusId,
-            // Normalize missing fields here or later
-            contactName: "Me",       // Default or fetch if available
-            statuses: [],            // Empty or real statuses array if available
-            latestStatus: null,      // Or real latestStatus object
-            mediaItems: [],          // Or real media items array
-            statusIds: statusId ? [statusId] : [], // Wrap single statusId into array
+            contactName: "Me",
+            statuses: [],
+            latestStatus: null,
+            mediaItems: [],
+            statusIds: statusId ? [statusId] : [],
           };
-
 
           setCurrentStatus(payloadFromMyStatusView);
           setUserId(userId);
@@ -161,6 +209,7 @@ const Status = () => {
     );
   }
 
+  // ✅ Default Status Home View
   return (
     <div className="bg-light vh-100 d-flex flex-column position-relative">
       {selectedMedia ? (
@@ -187,6 +236,7 @@ const Status = () => {
                 togglePopup={togglePopup}
                 onPrivacyClick={() => {
                   setShowPopup(false);
+                  setShowPrivacyPage(true);
                 }}
                 onArchiveSettingsClick={handleArchiveSettingsClick}
               />

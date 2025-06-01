@@ -4,7 +4,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 
 const blobUrlCache = new Map(); // In-memory cache for object URLs
 
-// New function to fetch readers of this status from server (without cache check)
+// New function to fetch readers and likers of this status from server (without cache check)
 const fetchReadersFromServer = async (statusId) => {
   try {
     const response = await fetch("http://localhost:5000/api/readers", {
@@ -15,35 +15,44 @@ const fetchReadersFromServer = async (statusId) => {
       body: JSON.stringify({ statusId }),
     });
 
-    if (!response.ok) throw new Error("Failed to fetch readers");
+    if (!response.ok) throw new Error("Failed to fetch readers/likers");
 
     const data = await response.json();
-    return data.readers || [];
+
+    // Log the full data received
+    console.log("📥 Fetched from server:", data);
+
+    return {
+      readers: data.readers || [],
+      likers: data.likers || [],
+    };
   } catch (err) {
-    console.error("❌ Error fetching readers:", err);
-    return [];
+    console.error("❌ Error fetching readers/likers:", err);
+    return { readers: [], likers: [] };
   }
 };
 
-// Function to update cached readers for a statusId only if new data arrived
-const updateReadersCacheIfNew = (statusId, newReaders) => {
+// Function to update cached readers/likers for a statusId only if new data arrived
+const updateReadersCacheIfNew = (statusId, newReaders, newLikers) => {
   const cacheKey = "StatusViewers";
   const rawCache = localStorage.getItem(cacheKey);
   const cache = rawCache ? JSON.parse(rawCache) : {};
 
-  const existingReaders = cache[statusId] || [];
+  const existing = cache[statusId] || { readers: [], likers: [] };
 
-  // Simple deep compare by JSON string (could improve with IDs)
-  const existingStr = JSON.stringify(existingReaders);
-  const newStr = JSON.stringify(newReaders);
+  const existingStr = JSON.stringify(existing);
+  const newStr = JSON.stringify({ readers: newReaders, likers: newLikers });
 
   if (existingStr !== newStr) {
-    cache[statusId] = newReaders;
+    cache[statusId] = { readers: newReaders, likers: newLikers };
     localStorage.setItem(cacheKey, JSON.stringify(cache));
-    console.log("🔄 Updated readers cache for statusId:", statusId);
-    return true; // indicates cache updated
+    console.log("🔄 Updated cache for statusId:", statusId);
+    console.log("👁️ Readers:", newReaders);
+    console.log("❤️ Likers:", newLikers);
+    return true;
   }
-  return false; // no update needed
+
+  return false;
 };
 
 // New function to mark status as read on backend

@@ -6,17 +6,14 @@ const ViewerWrapper = ({ onHeaderClick, statusId, statusIds }) => {
   const [viewers, setViewers] = useState([]);
 
   useEffect(() => {
-    console.log("👁️ ViewerWrapper received statusId:", statusId);
-    console.log("📦 ViewerWrapper received statusIds:", statusIds);
-
     if (!statusId) {
       setViewers([]);
       return;
     }
 
-    // Get current user from localStorage
     const userJSON = localStorage.getItem("user");
     let currentUserId = null;
+
     if (userJSON) {
       try {
         const user = JSON.parse(userJSON);
@@ -26,7 +23,6 @@ const ViewerWrapper = ({ onHeaderClick, statusId, statusIds }) => {
       }
     }
 
-    // Read cache from localStorage
     const cachedViewersJSON = localStorage.getItem("StatusViewers");
     if (!cachedViewersJSON) {
       setViewers([]);
@@ -35,20 +31,43 @@ const ViewerWrapper = ({ onHeaderClick, statusId, statusIds }) => {
 
     try {
       const cachedViewers = JSON.parse(cachedViewersJSON);
-      // Get viewers for the current statusId
-      const viewersForStatus = cachedViewers[statusId] || [];
+      const entry = cachedViewers[statusId];
 
-      // Filter out current user
-      const filteredViewers = viewersForStatus.filter(
-        ({ userId }) => userId !== currentUserId
-      );
+      if (!entry) {
+        setViewers([]);
+        return;
+      }
 
-      // Map to shape required by ViewerList
-      const mappedViewers = filteredViewers.map(({ contactName, profilePicture }) => ({
-        name: contactName || "Unknown",
-        avatar: profilePicture || "https://via.placeholder.com/32",
-        // no time property included
-      }));
+      let readers = [];
+      let likers = [];
+
+      // 🔄 Handle nested structure: { readers: [], likers: [] }
+      if (typeof entry === "object" && !Array.isArray(entry)) {
+        if (entry.readers && entry.readers.readers) {
+          readers = Array.isArray(entry.readers.readers) ? entry.readers.readers : [];
+          likers = Array.isArray(entry.readers.likers) ? entry.readers.likers : [];
+        } else {
+          readers = Array.isArray(entry.readers) ? entry.readers : [];
+          likers = Array.isArray(entry.likers) ? entry.likers : [];
+        }
+      }
+
+      // 🧹 Fallback for flat array structure (legacy)
+      if (Array.isArray(entry)) {
+        readers = entry;
+        likers = [];
+      }
+
+      const filteredViewers = readers.filter(({ userId }) => userId !== currentUserId);
+
+      const mappedViewers = filteredViewers.map(({ userId, contactName, profilePicture }) => {
+        const liked = likers.some((liker) => liker.userId === userId);
+        return {
+          name: contactName || "Unknown",
+          avatar: profilePicture || "https://via.placeholder.com/32",
+          liked,
+        };
+      });
 
       setViewers(mappedViewers);
     } catch (error) {
