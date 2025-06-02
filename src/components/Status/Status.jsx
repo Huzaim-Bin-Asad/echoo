@@ -11,6 +11,8 @@ import MyStatusView from "./MyStatusView/MyStatusView";
 import StatusView from "./MainStatusView/MainStatusView";
 import AllContacts from "./ContactsAllowed/ContactsAllowed";
 import ContactsNotAllowed from "./ContactsNotAllowed/index";
+import ContactListCache from "./ContactsNotAllowed/contactListCache";
+import RecentlyContactListCache from "./ContactsAllowed/recentlyContactedCache";
 
 import {
   startPollingStatuses,
@@ -164,6 +166,7 @@ const Status = () => {
     );
   }
 
+
   // ✅ Route: My Status View
   if (showMyStatusView) {
     return (
@@ -212,6 +215,8 @@ const Status = () => {
   // ✅ Default Status Home View
   return (
     <div className="bg-light vh-100 d-flex flex-column position-relative">
+          <ContactListCache />
+          <RecentlyContactListCache/>
       {selectedMedia ? (
         <MediaEditor
           fileUrl={selectedMedia.fileUrl}

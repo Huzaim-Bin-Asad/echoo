@@ -31,11 +31,14 @@ const ContactsNotAllowed = ({ handleBackClick, initialExcludedContacts = [] }) =
   };
 
   return (
-    <div className="container-fluid py-3">
+    <div 
+      className="container-fluid py-3" 
+      style={{ backgroundColor: "white" }} // Add your desired background color here
+    >
       <Header 
         selectedCount={selected.length}
         onSelectAll={toggleSelectAll}
-        onBackClick={handleBackClick} // ✅ Correct prop name expected by Header
+        onBackClick={handleBackClick} 
       />
       <ContactList 
         contacts={contacts} 

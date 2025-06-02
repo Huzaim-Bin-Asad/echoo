@@ -31,26 +31,37 @@ const StatusPrivacy = ({
     },
   ];
 
+  const mauve = {
+    background: '#F5F0F6',
+    card: '#FFFFFF',
+    primary: '#B784B7',
+    border: '#E0CFE2',
+    noteText: '#9D76C1',
+    iconInactive: '#AAA',
+    text: '#333',
+  };
+
   const getItemStyle = (optionKey) => ({
-    backgroundColor: selectedOption === optionKey ? 'rgba(40, 167, 69, 0.1)' : 'transparent',
-    border: selectedOption === optionKey ? '1px solid rgba(40, 167, 69, 0.3)' : '1px solid rgba(255,255,255,0.1)',
+    backgroundColor: selectedOption === optionKey ? `${mauve.primary}20` : mauve.card,
+    border: selectedOption === optionKey ? `1px solid ${mauve.primary}70` : `1px solid ${mauve.border}`,
     cursor: 'pointer',
     transition: 'all 0.2s ease',
     borderRadius: '1rem',
     padding: '1rem',
     marginBottom: '1rem',
+    color: mauve.text,
   });
 
   const getIconColor = (optionKey) =>
-    selectedOption === optionKey ? '#28a745' : 'rgba(255,255,255,0.6)';
+    selectedOption === optionKey ? mauve.primary : mauve.iconInactive;
 
   return (
     <div
       className="container-fluid"
       style={{
-        backgroundColor: '#121212',
+        backgroundColor: mauve.background,
         minHeight: '100vh',
-        color: 'white',
+        color: mauve.text,
         fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
         padding: '1rem',
       }}
@@ -58,7 +69,10 @@ const StatusPrivacy = ({
       {/* Header */}
       <div
         className="d-flex align-items-center mb-4"
-        style={{ borderBottom: '1px solid rgba(255,255,255,0.2)', paddingBottom: '1rem' }}
+        style={{
+          borderBottom: `1px solid ${mauve.border}`,
+          paddingBottom: '1rem',
+        }}
       >
         <ChevronLeft
           onClick={handleBackClick}
@@ -67,6 +81,7 @@ const StatusPrivacy = ({
             width: '24px',
             height: '24px',
             marginRight: '0.5rem',
+            color: mauve.primary,
           }}
         />
         <h5 className="mb-0 fw-semibold" style={{ fontSize: '1.1rem' }}>
@@ -76,7 +91,7 @@ const StatusPrivacy = ({
 
       {/* Body */}
       <div>
-        <div className="mb-3 text-secondary" style={{ fontSize: '0.9rem' }}>
+        <div className="mb-3 text-muted" style={{ fontSize: '0.9rem' }}>
           Who can see my status updates
         </div>
 
@@ -88,32 +103,29 @@ const StatusPrivacy = ({
             onClick={() => setSelectedOption(option.key)}
           >
             <div className="d-flex align-items-center">
-            <div
-  className="d-flex justify-content-center align-items-center rounded-circle me-3"
-  style={{
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    width: '40px',
-    height: '40px',
-  }}
->
-  {React.cloneElement(option.icon, {
-    color: getIconColor(option.key),
-  })}
-</div>
+              <div
+                className="d-flex justify-content-center align-items-center rounded-circle me-3"
+                style={{
+                  backgroundColor: `${mauve.primary}10`,
+                  width: '40px',
+                  height: '40px',
+                }}
+              >
+                {React.cloneElement(option.icon, {
+                  color: getIconColor(option.key),
+                })}
+              </div>
 
               <div className="fw-medium">{option.label}</div>
             </div>
 
-            {/* Note Click Handler (Triggers Parent) */}
             {option.note && (
               <div
-                className="text-success small"
+                className="small"
+                style={{ color: mauve.noteText }}
                 onClick={(e) => {
                   e.stopPropagation();
-                  console.log(`"${option.label}" clicked — Note: ${option.note}`);
-                  if (option.onNoteClick) {
-                    option.onNoteClick(); // ✅ Trigger the appropriate callback
-                  }
+                  if (option.onNoteClick) option.onNoteClick();
                 }}
               >
                 {option.note}
@@ -124,9 +136,9 @@ const StatusPrivacy = ({
 
         {/* Footer Note */}
         <div
-          className="text-secondary small pt-2 pb-5"
+          className="text-muted small pt-2 pb-5"
           style={{
-            color: 'rgba(255,255,255,0.5)',
+            color: '#7C6A8B',
             fontSize: '0.8rem',
             lineHeight: '1.4',
           }}
