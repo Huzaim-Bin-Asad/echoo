@@ -1,19 +1,24 @@
 import React, { useEffect } from "react";
-import { CheckCircle, Circle, Check } from "lucide-react";
+import { CheckCircle, Circle } from "lucide-react";
 
-const ContactList = ({ contacts = [], selected = [], onToggle, onSelectedCountChange }) => {
+const ContactList = ({
+  contacts = [],
+  selected = [], // array of receiverIds now
+  onToggle,
+  onSelectedCountChange,
+  onSelectedReceiverIdsChange,
+}) => {
   useEffect(() => {
-    const selectedReceiverIds = contacts
-      .filter(contact => selected.includes(contact.id))
-      .map(contact => contact.receiverId);
+    // selected already contains receiverIds, so length is count
+    console.log("✅ Selected receiver_id(s):", selected);
 
-    console.log("✅ Selected receiver_id(s):", selectedReceiverIds);
-
-    // Notify parent of how many are selected
     if (typeof onSelectedCountChange === "function") {
-      onSelectedCountChange(selectedReceiverIds.length);
+      onSelectedCountChange(selected.length);
     }
-  }, [selected, contacts, onSelectedCountChange]);
+    if (typeof onSelectedReceiverIdsChange === "function") {
+      onSelectedReceiverIdsChange(selected);
+    }
+  }, [selected, onSelectedCountChange, onSelectedReceiverIdsChange]);
 
   if (!Array.isArray(contacts) || contacts.length === 0) {
     return <div>No contacts found</div>;
@@ -23,14 +28,15 @@ const ContactList = ({ contacts = [], selected = [], onToggle, onSelectedCountCh
     <div className="position-relative">
       <div className="list-group">
         {contacts.map((contact) => {
-          const isSelected = selected.includes(contact.id);
+          // check if contact.receiverId is in selected array
+          const isSelected = selected.includes(contact.receiverId);
 
           return (
             <div
               key={contact.id}
               data-receiver-id={contact.receiverId}
               className="list-group-item d-flex align-items-center justify-content-between"
-              onClick={() => onToggle && onToggle(contact.id)}
+              onClick={() => onToggle && onToggle(contact.receiverId)} // toggle by receiverId now
               style={{
                 cursor: "pointer",
                 borderTop: "none",
@@ -63,23 +69,6 @@ const ContactList = ({ contacts = [], selected = [], onToggle, onSelectedCountCh
             </div>
           );
         })}
-      </div>
-
-      {/* Sticky square with check icon */}
-      <div
-        className="position-fixed d-flex align-items-center justify-content-center"
-        style={{
-          bottom: "20px",
-          right: "10px",
-          width: "35px",
-          height: "35px",
-          borderRadius: "6px",
-          backgroundColor: "#D3D3D3",
-          border: "1px solid #B784B7",
-          zIndex: 9999,
-        }}
-      >
-        <Check size={28} color="#B784B7" />
       </div>
     </div>
   );

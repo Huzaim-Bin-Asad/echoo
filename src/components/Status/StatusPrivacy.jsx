@@ -1,6 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronLeft, User, ShieldBan, HandCoins } from 'lucide-react';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import fetchStatusPrivacy from './getStatusPrivacy';
+
+// Example: import or access your ContactsExcludedMemory here
+// For demo, I'll assume it's in localStorage as a JSON array of excluded contacts
+// You can replace this with your actual ContactsExcludedMemory source
+const getContactsExcludedMemory = () => {
+  try {
+    const stored = localStorage.getItem('ContactsExcludedMemory');
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+};
 
 const StatusPrivacy = ({
   handleBackClick,
@@ -8,28 +21,73 @@ const StatusPrivacy = ({
   onContactsExceptClick,
 }) => {
   const [selectedOption, setSelectedOption] = useState('contacts');
+  const [excludedCount, setExcludedCount] = useState(0);
+  const [includedCount, setIncludedCount] = useState(0); // for completeness, you can do similar for included if needed
 
-  const options = [
-    {
-      key: 'contacts',
-      label: 'My contacts',
-      icon: <User size={18} />,
-    },
-    {
-      key: 'contactsExcept',
-      label: 'My contacts except...',
-      icon: <ShieldBan size={18} />,
-      note: '0 excluded',
-      onNoteClick: onContactsExceptClick,
-    },
-    {
-      key: 'onlyShareWith',
-      label: 'Only share with...',
-      icon: <HandCoins size={18} />,
-      note: '0 included',
-      onNoteClick: onOnlyShareWithClick,
-    },
-  ];
+  useEffect(() => {
+    const storedOption = localStorage.getItem('StatusOptionSelected');
+
+    if (storedOption) {
+      setSelectedOption(storedOption);
+    } else {
+      // Fallback: fetch from backend and cache if not in localStorage
+      fetchStatusPrivacy().then((data) => {
+        const type = data?.type_selected || 'contacts';
+
+        if (type === 'all') setSelectedOption('contacts');
+        else if (type === 'except') setSelectedOption('contactsExcept');
+        else if (type === 'included') setSelectedOption('onlyShareWith');
+      });
+    }
+  }, []);
+
+  // Update excluded count whenever component mounts or excluded memory changes
+  useEffect(() => {
+    const updateExcluded = () => {
+      const excluded = getContactsExcludedMemory();
+      setExcludedCount(Array.isArray(excluded) ? excluded.length : 0);
+    };
+
+    updateExcluded();
+
+    // Optionally, set up an event or interval to update excludedCount if ContactsExcludedMemory changes dynamically
+    // Example with interval (poll every 3 seconds):
+    const interval = setInterval(updateExcluded, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Similarly, you could update includedCount if you track included contacts elsewhere
+
+  const sendPrivacySelection = async (selectionType) => {
+    try {
+      const user = JSON.parse(localStorage.getItem('user'));
+      const user_id = user?.user_id;
+
+      if (!user_id) {
+        console.error('User ID not found in localStorage');
+        return;
+      }
+
+      const response = await fetch('http://localhost:5000/api/status-privacy-update', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id,
+          type_selected: selectionType,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update status privacy');
+      }
+
+      console.log('Privacy setting updated:', selectionType);
+    } catch (error) {
+      console.error('Error sending privacy selection:', error);
+    }
+  };
 
   const mauve = {
     background: '#F5F0F6',
@@ -40,6 +98,29 @@ const StatusPrivacy = ({
     iconInactive: '#AAA',
     text: '#333',
   };
+
+  // Build options dynamically using excludedCount and includedCount
+  const options = [
+    {
+      key: 'contacts',
+      label: 'My contacts',
+      icon: <User size={18} />,
+    },
+    {
+      key: 'contactsExcept',
+      label: 'My contacts except...',
+      icon: <ShieldBan size={18} />,
+      note: `${excludedCount} excluded`,
+      onNoteClick: onContactsExceptClick,
+    },
+    {
+      key: 'onlyShareWith',
+      label: 'Only share with...',
+      icon: <HandCoins size={18} />,
+      note: `${includedCount} included`,
+      onNoteClick: onOnlyShareWithClick,
+    },
+  ];
 
   const getItemStyle = (optionKey) => ({
     backgroundColor: selectedOption === optionKey ? `${mauve.primary}20` : mauve.card,
@@ -54,6 +135,15 @@ const StatusPrivacy = ({
 
   const getIconColor = (optionKey) =>
     selectedOption === optionKey ? mauve.primary : mauve.iconInactive;
+
+  const handleOptionClick = (key) => {
+    setSelectedOption(key);
+    localStorage.setItem('StatusOptionSelected', key);
+
+    if (key === 'contacts') sendPrivacySelection('all');
+    else if (key === 'contactsExcept') sendPrivacySelection('except');
+    else if (key === 'onlyShareWith') sendPrivacySelection('included');
+  };
 
   return (
     <div
@@ -100,7 +190,7 @@ const StatusPrivacy = ({
             key={option.key}
             className="d-flex align-items-center justify-content-between"
             style={getItemStyle(option.key)}
-            onClick={() => setSelectedOption(option.key)}
+            onClick={() => handleOptionClick(option.key)}
           >
             <div className="d-flex align-items-center">
               <div
@@ -122,7 +212,7 @@ const StatusPrivacy = ({
             {option.note && (
               <div
                 className="small"
-                style={{ color: mauve.noteText }}
+                style={{ color: mauve.noteText, cursor: 'pointer' }}
                 onClick={(e) => {
                   e.stopPropagation();
                   if (option.onNoteClick) option.onNoteClick();

@@ -104,9 +104,7 @@ const Status = () => {
 
   // ✅ Route: Contacts Not Allowed
   if (showContactsNotAllowed) {
-    console.log("🔔 Navigating to ContactsNotAllowed with excludedContacts:", excludedContacts);
     if (excludedContacts.length === 0) {
-      console.log("⚠️ 0 contacts are currently excluded.");
     }
     return (
       <ContactsNotAllowed
