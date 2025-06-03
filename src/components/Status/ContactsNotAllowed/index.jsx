@@ -2,10 +2,13 @@ import React, { useEffect, useState } from "react";
 import Header from "./Header";
 import ContactList from "./ContactList";
 import contacts from "./contactData";
-import 'bootstrap/dist/css/bootstrap.min.css';
-import './styles.css';
+import "bootstrap/dist/css/bootstrap.min.css";
+import "./styles.css";
 
-const ContactsNotAllowed = ({ handleBackClick, initialExcludedContacts = [] }) => {
+const ContactsNotAllowed = ({
+  handleBackClick,
+  initialExcludedContacts = [],
+}) => {
   // Use selectedReceiverIds as main selection state (array of receiverIds)
   const [selectedReceiverIds, setSelectedReceiverIds] = useState([]);
   const [excludedMemory, setExcludedMemory] = useState([]);
@@ -29,103 +32,117 @@ const ContactsNotAllowed = ({ handleBackClick, initialExcludedContacts = [] }) =
           setSelectedReceiverIds(parsed);
         }
       } catch (err) {
-        console.error("Failed to parse ContactsExcludedMemory from localStorage", err);
+        console.error(
+          "Failed to parse ContactsExcludedMemory from localStorage",
+          err
+        );
       }
     }
   }, []);
 
   // Check if all contacts' receiverIds are selected
-  const allSelected = contacts.length > 0 && contacts.every(c => selectedReceiverIds.includes(c.receiverId));
+  const allSelected =
+    contacts.length > 0 &&
+    contacts.every((c) => selectedReceiverIds.includes(c.receiverId));
 
   // Toggle all: select all receiverIds or clear all
   const toggleSelectAll = () => {
     if (allSelected) {
       setSelectedReceiverIds([]);
     } else {
-      setSelectedReceiverIds(contacts.map(c => c.receiverId));
+      setSelectedReceiverIds(contacts.map((c) => c.receiverId));
     }
   };
 
   // Toggle individual contact by receiverId
   const toggleContact = (receiverId) => {
-    setSelectedReceiverIds(prev =>
+    setSelectedReceiverIds((prev) =>
       prev.includes(receiverId)
-        ? prev.filter(id => id !== receiverId)
+        ? prev.filter((id) => id !== receiverId)
         : [...prev, receiverId]
     );
   };
 
-const handleCheckClick = async () => {
-  console.log("✅ Sticky check button clicked");
-  console.log("Selected receiver IDs:", selectedReceiverIds);
+  const handleCheckClick = async () => {
+    console.log("✅ Sticky check button clicked");
+    console.log("Selected receiver IDs:", selectedReceiverIds);
 
-  localStorage.setItem("ContactsExcludedMemory", JSON.stringify(selectedReceiverIds));
+    localStorage.setItem(
+      "ContactsExcludedMemory",
+      JSON.stringify(selectedReceiverIds)
+    );
 
-  const userStr = localStorage.getItem("user");
-  if (!userStr) {
-    console.error("User not found in localStorage");
-    return;
-  }
-
-  let user;
-  try {
-    user = JSON.parse(userStr);
-  } catch (err) {
-    console.error("Failed to parse user JSON from localStorage", err);
-    return;
-  }
-
-  const user_id = user.user_id;
-  if (!user_id) {
-    console.error("user_id missing in user object");
-    return;
-  }
-
-  const payload = {
-    user_id,
-    contacts_except: selectedReceiverIds,
-  };
-
-  try {
-    const response = await fetch("http://localhost:5000/api/update-except", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error("Failed to update status privacy:", errorData.message);
+    const userStr = localStorage.getItem("user");
+    if (!userStr) {
+      console.error("User not found in localStorage");
       return;
     }
 
-    const data = await response.json();
-    console.log("Status privacy updated:", data.message);
+    let user;
+    try {
+      user = JSON.parse(userStr);
+    } catch (err) {
+      console.error("Failed to parse user JSON from localStorage", err);
+      return;
+    }
 
-    // ✅ Go back after success
-    handleBackClick();
-  } catch (error) {
-    console.error("Error sending update-except request:", error);
-  }
-};
+    const user_id = user.user_id;
+    if (!user_id) {
+      console.error("user_id missing in user object");
+      return;
+    }
 
+    const payload = {
+      user_id,
+      contacts_except: selectedReceiverIds,
+    };
+
+    try {
+      const response = await fetch(
+        "https://echoo-backend.vercel.app/api/update-except",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Failed to update status privacy:", errorData.message);
+        return;
+      }
+
+      const data = await response.json();
+      console.log("Status privacy updated:", data.message);
+
+      // ✅ Go back after success
+      handleBackClick();
+    } catch (error) {
+      console.error("Error sending update-except request:", error);
+    }
+  };
 
   return (
-    <div 
-      className="container-fluid py-3" 
-      style={{ backgroundColor: "white", position: "relative", minHeight: "100vh" }} 
+    <div
+      className="container-fluid py-3"
+      style={{
+        backgroundColor: "white",
+        position: "relative",
+        minHeight: "100vh",
+      }}
     >
-      <Header 
+      <Header
         selectedCount={selectedReceiverIds.length}
         onSelectAll={toggleSelectAll}
-        onBackClick={handleBackClick} 
+        onBackClick={handleBackClick}
       />
-      <ContactList 
-        contacts={contacts} 
-        selected={selectedReceiverIds} 
+      <ContactList
+        contacts={contacts}
+        selected={selectedReceiverIds}
         onToggle={toggleContact}
         onSelectedReceiverIdsChange={setSelectedReceiverIds}
-        excludedMemory={excludedMemory}  // optional
+        excludedMemory={excludedMemory} // optional
       />
 
       {/* Sticky check button */}
@@ -135,7 +152,7 @@ const handleCheckClick = async () => {
         aria-label="Confirm selection"
         onClick={handleCheckClick}
         onKeyPress={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') handleCheckClick();
+          if (e.key === "Enter" || e.key === " ") handleCheckClick();
         }}
         style={{
           position: "fixed",
@@ -150,18 +167,18 @@ const handleCheckClick = async () => {
           cursor: "pointer",
           display: "flex",
           alignItems: "center",
-          justifyContent: "center"
+          justifyContent: "center",
         }}
       >
-        <svg 
-          xmlns="http://www.w3.org/2000/svg" 
-          width="28" 
-          height="28" 
-          fill="none" 
-          stroke="#B784B7" 
-          strokeWidth="2" 
-          strokeLinecap="round" 
-          strokeLinejoin="round" 
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="28"
+          height="28"
+          fill="none"
+          stroke="#B784B7"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
           className="feather feather-check"
           viewBox="0 0 24 24"
         >

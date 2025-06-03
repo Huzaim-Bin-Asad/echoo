@@ -31,11 +31,14 @@ const StatusView = ({
 
     const fetchProfilePicture = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/profile-picture", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId }),
-        });
+        const response = await fetch(
+          "https://echoo-backend.vercel.app/api/profile-picture",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userId }),
+          }
+        );
 
         if (!response.ok) throw new Error("Failed to fetch profile picture");
 
@@ -74,7 +77,11 @@ const StatusView = ({
       return;
     }
 
-    if ((!blobUrl || blobUrl === "") && mediaItems?.length && statuses?.length) {
+    if (
+      (!blobUrl || blobUrl === "") &&
+      mediaItems?.length &&
+      statuses?.length
+    ) {
       const sortedStatuses = [...statuses].sort(
         (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
       );
@@ -132,7 +139,15 @@ const StatusView = ({
       setMediaDuration(8000);
       setVideoStarted(false);
     }
-  }, [userId, blobUrl, contactName, statuses, latestStatus, mediaItems, statusIds]);
+  }, [
+    userId,
+    blobUrl,
+    contactName,
+    statuses,
+    latestStatus,
+    mediaItems,
+    statusIds,
+  ]);
 
   // Optional logging
   useEffect(() => {
@@ -222,19 +237,18 @@ const StatusView = ({
         />
       </div>
 
-{statusObject?.contactName === "Me" && !showViewer ? (
-  <StatusViewsInfo onEyeClick={() => setShowViewer(true)} />
-) : (
-  !showViewer && <Footer statusId={currentMedia?.statusId} />
-)}
-
+      {statusObject?.contactName === "Me" && !showViewer ? (
+        <StatusViewsInfo onEyeClick={() => setShowViewer(true)} />
+      ) : (
+        !showViewer && <Footer statusId={currentMedia?.statusId} />
+      )}
 
       {showViewer && (
         <div className="absolute top-0 left-0 w-full max-w-md z-50">
           <ViewerWrapper
             onHeaderClick={() => setShowViewer(false)}
-            statusId={currentMedia?.statusId}  // <-- Pass current statusId
-            statusIds={statusIds}              // <-- Pass full statusIds array
+            statusId={currentMedia?.statusId} // <-- Pass current statusId
+            statusIds={statusIds} // <-- Pass full statusIds array
           />
         </div>
       )}

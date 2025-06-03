@@ -1,26 +1,41 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { throttle } from 'lodash';
-import TopBar from './editor/TopBar';
-import MediaArea from './editor/MediaArea';
-import Controls from './editor/Controls';
-import DrawingTools from './editor/DrawingTools';
-import ThumbnailStrip from './editor/ThumbnailStrip';
-import FontSelector from './editor/FontSelector';
-import CaptionArea from './editor/CaptionArea';
-import TextManager from './editor/TextManager';
-import VideoManager from './editor/VideoManager';
-import styles from './editor/styles';
-import { Storage } from 'megajs';
+import React, { useState, useRef, useEffect, useCallback } from "react";
+import { throttle } from "lodash";
+import TopBar from "./editor/TopBar";
+import MediaArea from "./editor/MediaArea";
+import Controls from "./editor/Controls";
+import DrawingTools from "./editor/DrawingTools";
+import ThumbnailStrip from "./editor/ThumbnailStrip";
+import FontSelector from "./editor/FontSelector";
+import CaptionArea from "./editor/CaptionArea";
+import TextManager from "./editor/TextManager";
+import VideoManager from "./editor/VideoManager";
+import styles from "./editor/styles";
+import { Storage } from "megajs";
 
 const COLORS = [
-  '#ffffff', '#000000', '#ff4c4c', '#4cff4c', '#4c4cff', '#ffff4c',
-  '#ff4cff', '#4cffff', '#ff8c00', '#8b008b', '#00ff00', '#ff0000',
-  '#00ced1', '#ffd700', '#ff69b4', '#4682b4', '#9acd32', '#20b2aa'
+  "#ffffff",
+  "#000000",
+  "#ff4c4c",
+  "#4cff4c",
+  "#4c4cff",
+  "#ffff4c",
+  "#ff4cff",
+  "#4cffff",
+  "#ff8c00",
+  "#8b008b",
+  "#00ff00",
+  "#ff0000",
+  "#00ced1",
+  "#ffd700",
+  "#ff69b4",
+  "#4682b4",
+  "#9acd32",
+  "#20b2aa",
 ];
 const THICKNESS = [2, 4, 6];
 
 const MediaEditor = ({ fileUrl, fileType, onClose }) => {
-  const isVideo = fileType?.startsWith('video/');
+  const isVideo = fileType?.startsWith("video/");
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const drawingRef = useRef(null);
@@ -41,26 +56,26 @@ const MediaEditor = ({ fileUrl, fileType, onClose }) => {
   const [currentPath, setCurrentPath] = useState([]);
   const [captionMode, setCaptionMode] = useState(false);
   const [showCaptionBg, setShowCaptionBg] = useState(true);
-  const [textContent, setTextContent] = useState('');
-  const [textColor, setTextColor] = useState('#ffffff');
-  const [selectedFont, setSelectedFont] = useState('Arial');
-  const [textAlign, setTextAlign] = useState('center');
+  const [textContent, setTextContent] = useState("");
+  const [textColor, setTextColor] = useState("#ffffff");
+  const [selectedFont, setSelectedFont] = useState("Arial");
+  const [textAlign, setTextAlign] = useState("center");
   const [savedTexts, setSavedTexts] = useState([]);
   const [editingTextIndex, setEditingTextIndex] = useState(null);
   const [draggingTextIndex, setDraggingTextIndex] = useState(null);
-  const [caption, setCaption] = useState('');
+  const [caption, setCaption] = useState("");
 
-const mediaStyle = {
-  ...styles.video,
-  width: '100%',
-  height: '100%',
-  maxWidth: '100%',
-  maxHeight: '88%', // or remove this line if not needed
-  objectFit: 'cover', // fills the container, cropping if needed
-  position: 'absolute',
-  top: 40, // align to top edge
-  left: 0,
-};
+  const mediaStyle = {
+    ...styles.video,
+    width: "100%",
+    height: "100%",
+    maxWidth: "100%",
+    maxHeight: "88%", // or remove this line if not needed
+    objectFit: "cover", // fills the container, cropping if needed
+    position: "absolute",
+    top: 40, // align to top edge
+    left: 0,
+  };
 
   const { isPlaying, togglePlay, startScrub, scrub } = VideoManager({
     isVideo,
@@ -90,52 +105,63 @@ const mediaStyle = {
     return { x, y };
   }, []);
 
-  const handleStart = useCallback((e) => {
-    if (!drawingMode) return;
-    try {
-      e.preventDefault();
-      const svg = drawingRef.current;
-      if (!svg) return;
-      const { x, y } = getSvgCoordinates(e, svg);
-      currentDrawingPoints.current = [{ x, y }];
-      setCurrentPath([...currentDrawingPoints.current]);
-    } catch (error) {
-      console.error('handleStart error:', error);
-    }
-  }, [drawingMode, getSvgCoordinates]);
+  const handleStart = useCallback(
+    (e) => {
+      if (!drawingMode) return;
+      try {
+        e.preventDefault();
+        const svg = drawingRef.current;
+        if (!svg) return;
+        const { x, y } = getSvgCoordinates(e, svg);
+        currentDrawingPoints.current = [{ x, y }];
+        setCurrentPath([...currentDrawingPoints.current]);
+      } catch (error) {
+        console.error("handleStart error:", error);
+      }
+    },
+    [drawingMode, getSvgCoordinates]
+  );
 
-  const handleEnd = useCallback((e) => {
-    if (!drawingMode || currentDrawingPoints.current.length === 0) return;
-    try {
-      e.preventDefault();
-      const newPath = { 
-        points: [...currentDrawingPoints.current], 
-        color: drawingColor, 
-        thickness: drawingThickness 
-      };
-      setPaths((prev) => [...prev, newPath]);
-      currentDrawingPoints.current = [];
-      setCurrentPath([]);
-    } catch (error) {
-      console.error('handleEnd error:', error);
-    }
-  }, [drawingMode, drawingColor, drawingThickness]);
+  const handleEnd = useCallback(
+    (e) => {
+      if (!drawingMode || currentDrawingPoints.current.length === 0) return;
+      try {
+        e.preventDefault();
+        const newPath = {
+          points: [...currentDrawingPoints.current],
+          color: drawingColor,
+          thickness: drawingThickness,
+        };
+        setPaths((prev) => [...prev, newPath]);
+        currentDrawingPoints.current = [];
+        setCurrentPath([]);
+      } catch (error) {
+        console.error("handleEnd error:", error);
+      }
+    },
+    [drawingMode, drawingColor, drawingThickness]
+  );
 
-  const handleMove = useCallback((e) => {
-    if (!drawingMode || currentDrawingPoints.current.length === 0) return;
-    try {
-      e.preventDefault();
-      const svg = drawingRef.current;
-      if (!svg) return;
-      const { x, y } = getSvgCoordinates(e, svg);
-      currentDrawingPoints.current.push({ x, y });
-      setCurrentPath([...currentDrawingPoints.current]);
-    } catch (error) {
-      console.error('handleMove error:', error);
-    }
-  }, [drawingMode, getSvgCoordinates]);
+  const handleMove = useCallback(
+    (e) => {
+      if (!drawingMode || currentDrawingPoints.current.length === 0) return;
+      try {
+        e.preventDefault();
+        const svg = drawingRef.current;
+        if (!svg) return;
+        const { x, y } = getSvgCoordinates(e, svg);
+        currentDrawingPoints.current.push({ x, y });
+        setCurrentPath([...currentDrawingPoints.current]);
+      } catch (error) {
+        console.error("handleMove error:", error);
+      }
+    },
+    [drawingMode, getSvgCoordinates]
+  );
 
-  const throttledHandleMove = useCallback(throttle(handleMove, 16), [handleMove]);
+  const throttledHandleMove = useCallback(throttle(handleMove, 16), [
+    handleMove,
+  ]);
 
   const undo = useCallback(() => {
     setPaths((prev) => prev.slice(0, -1));
@@ -145,7 +171,7 @@ const mediaStyle = {
     const svg = drawingRef.current;
     if (!svg) return;
 
-    const canvas = document.createElement('canvas');
+    const canvas = document.createElement("canvas");
     let naturalWidth, naturalHeight;
 
     if (isVideo && videoRef.current && videoRef.current.videoWidth) {
@@ -164,7 +190,7 @@ const mediaStyle = {
 
     canvas.width = naturalWidth;
     canvas.height = naturalHeight;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     if (isVideo && videoRef.current) {
@@ -189,8 +215,8 @@ const mediaStyle = {
       if (points.length === 0) return;
       ctx.strokeStyle = color;
       ctx.lineWidth = thickness * Math.min(scaleX, scaleY);
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
       ctx.beginPath();
       points.forEach((pt, i) => {
         const x = pt.x * scaleX;
@@ -210,33 +236,38 @@ const mediaStyle = {
 
     savedTexts.forEach((text) => {
       if (!text.content) return;
-      ctx.fillStyle = text.color || '#ffffff';
+      ctx.fillStyle = text.color || "#ffffff";
       const fontSize = (text.fontSize || 20) * Math.min(scaleX, scaleY);
-      ctx.font = `${fontSize}px "${text.font || 'Arial'}"`;
-      ctx.textAlign = text.align || 'center';
-      ctx.textBaseline = 'middle';
-      const lines = text.content.split('\n');
+      ctx.font = `${fontSize}px "${text.font || "Arial"}"`;
+      ctx.textAlign = text.align || "center";
+      ctx.textBaseline = "middle";
+      const lines = text.content.split("\n");
       const lineHeight = fontSize * 1.2;
       const xPos = (text.x || svgRect.width / 2) * scaleX;
       const yPos = (text.y || svgRect.height / 2) * scaleY;
       lines.forEach((line, lineIndex) => {
-        const x = text.align === 'center' ? xPos : text.align === 'end' ? xPos - ctx.measureText(line).width : xPos;
+        const x =
+          text.align === "center"
+            ? xPos
+            : text.align === "end"
+            ? xPos - ctx.measureText(line).width
+            : xPos;
         const y = yPos + lineIndex * lineHeight;
         ctx.fillText(line, x, y);
       });
     });
 
     if (caption) {
-      ctx.fillStyle = '#ffffff';
+      ctx.fillStyle = "#ffffff";
       const fontSize = 16 * Math.min(scaleX, scaleY);
       ctx.font = `${fontSize}px Arial`;
-      ctx.textAlign = 'start';
-      ctx.textBaseline = 'bottom';
+      ctx.textAlign = "start";
+      ctx.textBaseline = "bottom";
       const padding = 10 * Math.min(scaleX, scaleY);
       ctx.fillText(caption, padding, naturalHeight - padding);
     }
 
-    return canvas.toDataURL('image/png');
+    return canvas.toDataURL("image/png");
   }, [
     isVideo,
     videoRef,
@@ -249,127 +280,139 @@ const mediaStyle = {
     caption,
   ]);
 
-  
-const handleSend = useCallback(async (caption) => {
-  try {
-    const user = JSON.parse(localStorage.getItem("user"));
-    const userId = user?.user_id;
-    if (!userId) throw new Error("User not found");
-
-    const storage = new Storage({
-      email: process.env.MEGA_EMAIL || 'huzaimbinasad@gmail.com',
-      password: process.env.MEGA_PASSWORD || 'Aenduanaael@35793579'
-    });
-
-    await storage.ready; // Wait for storage to be ready
-
-    let mediaUrl;
-    let file;
-
-    if (isVideo) {
-      // Video upload logic
+  const handleSend = useCallback(
+    async (caption) => {
       try {
-        // Fetch the video file from fileUrl
-        const response = await fetch(fileUrl);
-        if (!response.ok) throw new Error('Failed to fetch video file');
-        const videoBlob = await response.blob();
-        file = new File([videoBlob], `video_${Date.now()}.mp4`, { type: videoBlob.type || 'video/mp4' });
+        const user = JSON.parse(localStorage.getItem("user"));
+        const userId = user?.user_id;
+        if (!userId) throw new Error("User not found");
 
-        // Log file size for debugging
-        console.log('Video file size:', file.size);
-        if (file.size === 0) throw new Error('Video file is empty');
-
-        // Create a new upload instance for video
-        const upload = storage.upload({
-          name: file.name,
-          size: file.size
+        const storage = new Storage({
+          email: process.env.MEGA_EMAIL || "huzaimbinasad@gmail.com",
+          password: process.env.MEGA_PASSWORD || "Aenduanaael@35793579",
         });
 
-        // Convert blob to buffer and upload
-        const arrayBuffer = await file.arrayBuffer();
-        const buffer = new Uint8Array(arrayBuffer);
-        upload.write(buffer);
-        upload.end();
+        await storage.ready; // Wait for storage to be ready
 
-        // Wait for the upload to complete
-        const uploadedFile = await upload.complete;
-        if (!uploadedFile || typeof uploadedFile.link !== 'function') {
-          throw new Error('Failed to upload video to Mega or link function is missing');
+        let mediaUrl;
+        let file;
+
+        if (isVideo) {
+          // Video upload logic
+          try {
+            // Fetch the video file from fileUrl
+            const response = await fetch(fileUrl);
+            if (!response.ok) throw new Error("Failed to fetch video file");
+            const videoBlob = await response.blob();
+            file = new File([videoBlob], `video_${Date.now()}.mp4`, {
+              type: videoBlob.type || "video/mp4",
+            });
+
+            // Log file size for debugging
+            console.log("Video file size:", file.size);
+            if (file.size === 0) throw new Error("Video file is empty");
+
+            // Create a new upload instance for video
+            const upload = storage.upload({
+              name: file.name,
+              size: file.size,
+            });
+
+            // Convert blob to buffer and upload
+            const arrayBuffer = await file.arrayBuffer();
+            const buffer = new Uint8Array(arrayBuffer);
+            upload.write(buffer);
+            upload.end();
+
+            // Wait for the upload to complete
+            const uploadedFile = await upload.complete;
+            if (!uploadedFile || typeof uploadedFile.link !== "function") {
+              throw new Error(
+                "Failed to upload video to Mega or link function is missing"
+              );
+            }
+
+            mediaUrl = await uploadedFile.link();
+            console.log("Video Media URL:", mediaUrl);
+          } catch (error) {
+            console.error("Video upload failed:", error);
+            throw error;
+          }
+        } else {
+          // Existing image upload logic (or video frame as image)
+          const mediaFile = await saveImage();
+          if (!mediaFile) throw new Error("No media file to upload");
+
+          // Extract base64 content from data URL
+          const base64 = mediaFile.split(",")[1];
+          const binary = atob(base64);
+          const len = binary.length;
+          const bytes = new Uint8Array(len);
+          for (let i = 0; i < len; i++) {
+            bytes[i] = binary.charCodeAt(i);
+          }
+          file = new File([bytes], `media_${Date.now()}.png`, {
+            type: "image/png",
+          });
+
+          // Log file size for debugging
+          console.log("Image file size:", file.size);
+          if (file.size === 0) throw new Error("Image file is empty");
+
+          // Create a new upload instance for image
+          const upload = storage.upload({
+            name: file.name,
+            size: file.size,
+          });
+
+          // Write the file buffer to the upload stream
+          const arrayBuffer = await file.arrayBuffer();
+          const buffer = new Uint8Array(arrayBuffer);
+          upload.write(buffer);
+          upload.end();
+
+          // Wait for the upload to complete
+          const uploadedFile = await upload.complete;
+          if (!uploadedFile || typeof uploadedFile.link !== "function") {
+            throw new Error(
+              "Failed to upload image to Mega or link function is missing"
+            );
+          }
+
+          mediaUrl = await uploadedFile.link();
+          console.log("Image Media URL:", mediaUrl);
         }
 
-        mediaUrl = await uploadedFile.link();
-        console.log('Video Media URL:', mediaUrl);
+        if (!mediaUrl) throw new Error("Media URL is empty");
+
+        // Send the status to the server
+        const response = await fetch(
+          "https://echoo-backend.vercel.app/api/status",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              userId,
+              mediaUrl,
+              caption,
+              notAllowId: [],
+              readId: [],
+              timestamp: Date.now(),
+            }),
+          }
+        );
+
+        if (!response.ok) throw new Error("Failed to save status");
+        const result = await response.json();
+        return result;
       } catch (error) {
-        console.error('Video upload failed:', error);
+        console.error("Upload failed:", error);
+        alert("An error occurred while uploading the file. Please try again.");
         throw error;
       }
-    } else {
-      // Existing image upload logic (or video frame as image)
-      const mediaFile = await saveImage();
-      if (!mediaFile) throw new Error("No media file to upload");
-
-      // Extract base64 content from data URL
-      const base64 = mediaFile.split(',')[1];
-      const binary = atob(base64);
-      const len = binary.length;
-      const bytes = new Uint8Array(len);
-      for (let i = 0; i < len; i++) {
-        bytes[i] = binary.charCodeAt(i);
-      }
-      file = new File([bytes], `media_${Date.now()}.png`, { type: 'image/png' });
-
-      // Log file size for debugging
-      console.log('Image file size:', file.size);
-      if (file.size === 0) throw new Error('Image file is empty');
-
-      // Create a new upload instance for image
-      const upload = storage.upload({
-        name: file.name,
-        size: file.size
-      });
-
-      // Write the file buffer to the upload stream
-      const arrayBuffer = await file.arrayBuffer();
-      const buffer = new Uint8Array(arrayBuffer);
-      upload.write(buffer);
-      upload.end();
-
-      // Wait for the upload to complete
-      const uploadedFile = await upload.complete;
-      if (!uploadedFile || typeof uploadedFile.link !== 'function') {
-        throw new Error('Failed to upload image to Mega or link function is missing');
-      }
-
-      mediaUrl = await uploadedFile.link();
-      console.log('Image Media URL:', mediaUrl);
-    }
-
-    if (!mediaUrl) throw new Error('Media URL is empty');
-
-    // Send the status to the server
-    const response = await fetch('http://localhost:5000/api/status', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        userId,
-        mediaUrl,
-        caption,
-        notAllowId: [],
-        readId: [],
-        timestamp: Date.now(),
-      }),
-    });
-
-    if (!response.ok) throw new Error('Failed to save status');
-    const result = await response.json();
-    return result;
-
-  } catch (error) {
-    console.error('Upload failed:', error);
-    alert('An error occurred while uploading the file. Please try again.');
-    throw error;
-  }
-}, [saveImage, isVideo, fileUrl]);
+    },
+    [saveImage, isVideo, fileUrl]
+  );
 
   const exitDrawingMode = useCallback(() => {
     setDrawingMode(false);
@@ -382,7 +425,9 @@ const handleSend = useCallback(async (caption) => {
   const exitCaptionMode = useCallback(() => {
     if (textContent.trim()) {
       const svg = drawingRef.current;
-      const svgRect = svg ? svg.getBoundingClientRect() : { width: window.innerWidth, height: window.innerHeight };
+      const svgRect = svg
+        ? svg.getBoundingClientRect()
+        : { width: window.innerWidth, height: window.innerHeight };
       const newText = {
         content: textContent.trim(),
         color: textColor,
@@ -394,26 +439,51 @@ const handleSend = useCallback(async (caption) => {
       };
       if (editingTextIndex !== null) {
         setSavedTexts((prev) => {
-          const updated = prev.map((text, index) => (index === editingTextIndex ? newText : text));
-          console.log(`exitCaptionMode: Updated text at index ${editingTextIndex}, savedTexts.length=${updated.length}, content="${newText.content}", x=${newText.x.toFixed(2)}, y=${newText.y.toFixed(2)}, savedTexts=${JSON.stringify(updated)}`);
+          const updated = prev.map((text, index) =>
+            index === editingTextIndex ? newText : text
+          );
+          console.log(
+            `exitCaptionMode: Updated text at index ${editingTextIndex}, savedTexts.length=${
+              updated.length
+            }, content="${newText.content}", x=${newText.x.toFixed(
+              2
+            )}, y=${newText.y.toFixed(2)}, savedTexts=${JSON.stringify(
+              updated
+            )}`
+          );
           return updated;
         });
       } else {
         setSavedTexts((prev) => {
           const updated = [...prev, newText];
-          console.log(`exitCaptionMode: Added new text, savedTexts.length=${updated.length}, content="${newText.content}", x=${newText.x.toFixed(2)}, y=${newText.y.toFixed(2)}, savedTexts=${JSON.stringify(updated)}`);
+          console.log(
+            `exitCaptionMode: Added new text, savedTexts.length=${
+              updated.length
+            }, content="${newText.content}", x=${newText.x.toFixed(
+              2
+            )}, y=${newText.y.toFixed(2)}, savedTexts=${JSON.stringify(
+              updated
+            )}`
+          );
           return updated;
         });
       }
     } else {
-      console.log('exitCaptionMode: No textContent to save');
+      console.log("exitCaptionMode: No textContent to save");
     }
     setCaptionMode(false);
     setShowCaptionBg(true);
-    setTextContent('');
+    setTextContent("");
     setEditingTextIndex(null);
-    console.log('exitCaptionMode: Exited caption mode');
-  }, [textContent, textColor, selectedFont, textAlign, savedTexts, editingTextIndex]);
+    console.log("exitCaptionMode: Exited caption mode");
+  }, [
+    textContent,
+    textColor,
+    selectedFont,
+    textAlign,
+    savedTexts,
+    editingTextIndex,
+  ]);
 
   const toggleCaptionMode = useCallback(() => {
     setCaptionMode((prev) => {
@@ -422,10 +492,10 @@ const handleSend = useCallback(async (caption) => {
         setDrawingMode(false);
         setShowCaptionBg(true);
         setTextColor(drawingColor);
-        setSelectedFont('Arial');
-        setTextAlign('center');
+        setSelectedFont("Arial");
+        setTextAlign("center");
         setEditingTextIndex(null);
-        setTextContent('');
+        setTextContent("");
       }
       return newMode;
     });
@@ -436,7 +506,9 @@ const handleSend = useCallback(async (caption) => {
   }, []);
 
   const cycleTextAlign = useCallback(() => {
-    setTextAlign((prev) => prev === 'center' ? 'end' : prev === 'end' ? 'start' : 'center');
+    setTextAlign((prev) =>
+      prev === "center" ? "end" : prev === "end" ? "start" : "center"
+    );
   }, []);
 
   const closeEditor = useCallback(() => {
@@ -447,11 +519,11 @@ const handleSend = useCallback(async (caption) => {
     setDrawingThickness(THICKNESS[1]);
     setPaths([]);
     setCurrentPath([]);
-    setTextContent('');
+    setTextContent("");
     setSavedTexts([]);
     setEditingTextIndex(null);
     setDraggingTextIndex(null);
-    setCaption('');
+    setCaption("");
     if (isVideo) {
       setCurrentTime(0);
       if (videoRef.current) videoRef.current.currentTime = 0;
@@ -476,27 +548,27 @@ const handleSend = useCallback(async (caption) => {
       if (drawingMode) handleEnd(e);
     };
 
-    svg.addEventListener('mousedown', onMouseDown);
-    svg.addEventListener('mousemove', onMouseMove);
-    svg.addEventListener('mouseup', onMouseUp);
-    svg.addEventListener('touchstart', onTouchStart, { passive: false });
-    svg.addEventListener('touchmove', onTouchMove, { passive: false });
-    svg.addEventListener('touchend', onTouchEnd, { passive: false });
+    svg.addEventListener("mousedown", onMouseDown);
+    svg.addEventListener("mousemove", onMouseMove);
+    svg.addEventListener("mouseup", onMouseUp);
+    svg.addEventListener("touchstart", onTouchStart, { passive: false });
+    svg.addEventListener("touchmove", onTouchMove, { passive: false });
+    svg.addEventListener("touchend", onTouchEnd, { passive: false });
 
     return () => {
-      svg.removeEventListener('mousedown', onMouseDown);
-      svg.removeEventListener('mousemove', onMouseMove);
-      svg.removeEventListener('mouseup', onMouseUp);
-      svg.removeEventListener('touchstart', onTouchStart);
-      svg.removeEventListener('touchmove', onTouchMove);
-      svg.removeEventListener('touchend', onTouchEnd);
+      svg.removeEventListener("mousedown", onMouseDown);
+      svg.removeEventListener("mousemove", onMouseMove);
+      svg.removeEventListener("mouseup", onMouseUp);
+      svg.removeEventListener("touchstart", onTouchStart);
+      svg.removeEventListener("touchmove", onTouchMove);
+      svg.removeEventListener("touchend", onTouchEnd);
     };
   }, [drawingMode, handleStart, throttledHandleMove, handleEnd]);
 
   useEffect(() => {
     if (caption || savedTexts.length > 0) {
       const timeout = setTimeout(() => {
-        saveImage().catch((error) => console.error('Auto-save failed:', error));
+        saveImage().catch((error) => console.error("Auto-save failed:", error));
       }, 1000);
       return () => clearTimeout(timeout);
     }
@@ -513,7 +585,11 @@ const handleSend = useCallback(async (caption) => {
   }, [paths]);
 
   useEffect(() => {
-    console.log(`useEffect: savedTexts updated, savedTexts.length=${savedTexts.length}, savedTexts=${JSON.stringify(savedTexts)}`);
+    console.log(
+      `useEffect: savedTexts updated, savedTexts.length=${
+        savedTexts.length
+      }, savedTexts=${JSON.stringify(savedTexts)}`
+    );
   }, [savedTexts]);
 
   return (
@@ -572,17 +648,22 @@ const handleSend = useCallback(async (caption) => {
         <div
           key={index}
           style={{
-            position: 'absolute',
+            position: "absolute",
             left: `${text.x}px`,
             top: `${text.y}px`,
-            color: text.color || 'transparent',
-            fontFamily: text.font || 'Arial',
+            color: text.color || "transparent",
+            fontFamily: text.font || "Arial",
             fontSize: `${text.fontSize || 20}px`,
-            textAlign: text.align || 'center',
-            transform: text.align === 'center' ? 'translateX(-50%)' : text.align === 'end' ? 'translateX(-100%)' : 'none',
+            textAlign: text.align || "center",
+            transform:
+              text.align === "center"
+                ? "translateX(-50%)"
+                : text.align === "end"
+                ? "translateX(-100%)"
+                : "none",
             zIndex: 10,
-            pointerEvents: 'none',
-            whiteSpace: 'pre-wrap',
+            pointerEvents: "none",
+            whiteSpace: "pre-wrap",
           }}
         >
           {text.content}
@@ -591,15 +672,15 @@ const handleSend = useCallback(async (caption) => {
       {caption && !captionMode && !drawingMode && (
         <div
           style={{
-            position: 'absolute',
-            left: '10px',
-            bottom: '10px',
-            color: '#ffffff',
-            fontFamily: 'Arial',
-            fontSize: '16px',
-            textAlign: 'start',
+            position: "absolute",
+            left: "10px",
+            bottom: "10px",
+            color: "#ffffff",
+            fontFamily: "Arial",
+            fontSize: "16px",
+            textAlign: "start",
             zIndex: 10,
-            pointerEvents: 'none',
+            pointerEvents: "none",
           }}
         >
           {caption}
@@ -620,24 +701,24 @@ const handleSend = useCallback(async (caption) => {
       {(drawingMode || captionMode) && (
         <div
           style={{
-            position: 'absolute',
-            right: '24px',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '5px',
+            position: "absolute",
+            right: "24px",
+            top: "50%",
+            transform: "translateY(-50%)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "5px",
             zIndex: 10,
           }}
         >
           <div
             style={{
-              width: '24px',
-              height: '24px',
-              borderRadius: '50%',
+              width: "24px",
+              height: "24px",
+              borderRadius: "50%",
               backgroundColor: drawingColor,
-              border: '2px solid #fff',
-              cursor: 'pointer',
+              border: "2px solid #fff",
+              cursor: "pointer",
             }}
           />
           {COLORS.filter((c) => c !== drawingColor).map((c) => (
@@ -645,12 +726,12 @@ const handleSend = useCallback(async (caption) => {
               key={c}
               onClick={() => setDrawingColor(c)}
               style={{
-                width: '24px',
-                height: '24px',
-                borderRadius: '50%',
+                width: "24px",
+                height: "24px",
+                borderRadius: "50%",
                 backgroundColor: c,
-                border: '2px solid transparent',
-                cursor: 'pointer',
+                border: "2px solid transparent",
+                cursor: "pointer",
               }}
             />
           ))}
@@ -659,21 +740,23 @@ const handleSend = useCallback(async (caption) => {
       {captionMode && (
         <div
           style={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: '50%',
-            height: '10%',
-            minHeight: '40px',
-            backgroundColor: showCaptionBg ? 'rgba(70, 70, 70, 0.8)' : 'transparent',
-            border: '1px solid #fff',
-            borderRadius: '10px',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            padding: '10px',
-            boxSizing: 'border-box',
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: "50%",
+            height: "10%",
+            minHeight: "40px",
+            backgroundColor: showCaptionBg
+              ? "rgba(70, 70, 70, 0.8)"
+              : "transparent",
+            border: "1px solid #fff",
+            borderRadius: "10px",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            padding: "10px",
+            boxSizing: "border-box",
             zIndex: 10,
           }}
         >
@@ -683,16 +766,16 @@ const handleSend = useCallback(async (caption) => {
             onChange={(e) => setTextContent(e.target.value)}
             placeholder="Add subtitle..."
             style={{
-              width: '100%',
-              height: '100%',
-              background: 'transparent',
-              border: 'none',
+              width: "100%",
+              height: "100%",
+              background: "transparent",
+              border: "none",
               color: textColor,
               fontFamily: selectedFont,
-              fontSize: '20px',
+              fontSize: "20px",
               textAlign: textAlign,
-              resize: 'none',
-              outline: 'none',
+              resize: "none",
+              outline: "none",
             }}
           />
         </div>
@@ -707,11 +790,7 @@ const handleSend = useCallback(async (caption) => {
           THICKNESS={THICKNESS}
         />
       )}
-      {captionMode && (
-        <FontSelector
-          onFontSelect={setSelectedFont}
-        />
-      )}
+      {captionMode && <FontSelector onFontSelect={setSelectedFont} />}
       {!drawingMode && !captionMode && (
         <CaptionArea
           caption={caption}
@@ -723,7 +802,12 @@ const handleSend = useCallback(async (caption) => {
       {!drawingMode && !captionMode && (
         <div style={styles.footer}>
           <span>Status (Contacts)</span>
-          <span>{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+          <span>
+            {new Date().toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </span>
         </div>
       )}
     </div>

@@ -17,14 +17,14 @@ const getAllContactsFromStorage = () => {
 
   const parsed = safeParseJSON(raw);
   return parsed
-    .map(contact => ({
+    .map((contact) => ({
       id: contact.contact_id || "",
       name: contact.contact_name || "Unnamed",
       avatar: contact.receiver_profile_picture,
       type: "all",
-      receiver_id: contact.receiver_id || ""
+      receiver_id: contact.receiver_id || "",
     }))
-    .filter(c => c.id && c.name)
+    .filter((c) => c.id && c.name)
     .sort((a, b) => a.name.localeCompare(b.name));
 };
 
@@ -34,14 +34,14 @@ const getFrequentContactsFromStorage = () => {
 
   const parsed = safeParseJSON(raw);
   return parsed
-    .map(contact => ({
+    .map((contact) => ({
       id: contact.other_user_id || "",
       name: contact.contact_name || "Unnamed",
       avatar: contact.profile_picture,
       type: "frequent",
-      other_user_id: contact.other_user_id || ""
+      other_user_id: contact.other_user_id || "",
     }))
-    .filter(c => c.id && c.name)
+    .filter((c) => c.id && c.name)
     .sort((a, b) => a.name.localeCompare(b.name));
 };
 
@@ -51,19 +51,22 @@ const ContactsAllowed = ({ handleBackClick }) => {
     return saved ? safeParseJSON(saved) : [];
   });
 
-  const frequentlyContacted = useMemo(() => getFrequentContactsFromStorage(), []);
+  const frequentlyContacted = useMemo(
+    () => getFrequentContactsFromStorage(),
+    []
+  );
   const allContactsRaw = useMemo(() => getAllContactsFromStorage(), []);
 
   const idMap = useMemo(() => {
     const map = new Map();
 
-    frequentlyContacted.forEach(fc => {
+    frequentlyContacted.forEach((fc) => {
       if (fc.other_user_id) {
         map.set(fc.other_user_id, fc.id);
       }
     });
 
-    allContactsRaw.forEach(ac => {
+    allContactsRaw.forEach((ac) => {
       if (ac.receiver_id) {
         map.set(ac.receiver_id, ac.id);
       }
@@ -72,8 +75,10 @@ const ContactsAllowed = ({ handleBackClick }) => {
     return map;
   }, [frequentlyContacted, allContactsRaw]);
 
-  const frequentlyContactedIds = new Set(frequentlyContacted.map(c => c.id));
-  const allContacts = allContactsRaw.filter(c => !frequentlyContactedIds.has(c.id));
+  const frequentlyContactedIds = new Set(frequentlyContacted.map((c) => c.id));
+  const allContacts = allContactsRaw.filter(
+    (c) => !frequentlyContactedIds.has(c.id)
+  );
 
   useEffect(() => {
     localStorage.setItem("ContactsIncludedMemory", JSON.stringify(selectedIds));
@@ -81,10 +86,12 @@ const ContactsAllowed = ({ handleBackClick }) => {
 
   const toggleSelectAll = () => {
     const combinedIds = new Set([
-      ...frequentlyContacted.map(c => c.id),
-      ...allContacts.map(c => c.id)
+      ...frequentlyContacted.map((c) => c.id),
+      ...allContacts.map((c) => c.id),
     ]);
-    setSelectedIds(selectedIds.length === combinedIds.size ? [] : Array.from(combinedIds));
+    setSelectedIds(
+      selectedIds.length === combinedIds.size ? [] : Array.from(combinedIds)
+    );
   };
 
   const toggleContact = (id) => {
@@ -92,11 +99,11 @@ const ContactsAllowed = ({ handleBackClick }) => {
       .filter(([_, value]) => value === id || _ === id)
       .map(([key, value]) => (value === id ? key : value));
 
-    setSelectedIds(prev => {
+    setSelectedIds((prev) => {
       const idsToRemove = [id, ...matchId];
       const isSelected = prev.includes(id);
       if (isSelected) {
-        return prev.filter(cid => !idsToRemove.includes(cid));
+        return prev.filter((cid) => !idsToRemove.includes(cid));
       } else {
         return [...new Set([...prev, id, ...matchId])];
       }
@@ -168,42 +175,45 @@ const ContactsAllowed = ({ handleBackClick }) => {
   };
 
   const handleCheckClick = async () => {
-  try {
-    const userStr = localStorage.getItem("user");
-    if (!userStr) {
-      console.error("User not found in localStorage");
-      return;
+    try {
+      const userStr = localStorage.getItem("user");
+      if (!userStr) {
+        console.error("User not found in localStorage");
+        return;
+      }
+
+      const userObj = JSON.parse(userStr);
+      const userId = userObj.user_id;
+
+      console.log("Selected contact IDs:", selectedIds);
+
+      const response = await fetch(
+        "https://echoo-backend.vercel.app/api/update-included",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            user_id: userId,
+            contacts_included: selectedIds,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to update status privacy");
+      }
+
+      const data = await response.json();
+      console.log("Update success:", data);
+
+      // 👇 Trigger the same back behavior after successful update
+      handleBackClick();
+    } catch (error) {
+      console.error("Error updating status privacy:", error);
     }
-
-    const userObj = JSON.parse(userStr);
-    const userId = userObj.user_id;
-
-    console.log("Selected contact IDs:", selectedIds);
-
-    const response = await fetch("http://localhost:5000/api/update-included", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        user_id: userId,
-        contacts_included: selectedIds,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error("Failed to update status privacy");
-    }
-
-    const data = await response.json();
-    console.log("Update success:", data);
-
-    // 👇 Trigger the same back behavior after successful update
-    handleBackClick();
-  } catch (error) {
-    console.error("Error updating status privacy:", error);
-  }
-};
+  };
 
   return (
     <div className="bg-light text-dark vh-100 d-flex flex-column">

@@ -3,7 +3,6 @@ import { useEffect } from "react";
 function ContactListCache() {
   useEffect(() => {
     const interval = setInterval(() => {
-
       const userString = localStorage.getItem("user");
       if (!userString) {
         return;
@@ -16,19 +15,15 @@ function ContactListCache() {
         return;
       }
 
-
-
-
-      fetch("http://localhost:5000/api/notAllowedContacts", {
+      fetch("https://echoo-backend.vercel.app/api/notAllowedContacts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: userData.user_id })
+        body: JSON.stringify({ user_id: userData.user_id }),
       })
-        .then(res => {
+        .then((res) => {
           return res.json();
         })
-        .then(data => {
-
+        .then((data) => {
           const cached = localStorage.getItem("HideStatusList");
           const cachedData = cached ? JSON.parse(cached) : null;
 
@@ -40,10 +35,8 @@ function ContactListCache() {
           } else {
           }
         })
-        .catch(err => {
-        });
+        .catch((err) => {});
     }, 2000); // every 2 seconds
-
 
     return () => {
       clearInterval(interval);

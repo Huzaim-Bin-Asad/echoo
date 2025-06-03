@@ -7,13 +7,16 @@ const blobUrlCache = new Map(); // In-memory cache for object URLs
 // New function to fetch readers and likers of this status from server (without cache check)
 const fetchReadersFromServer = async (statusId) => {
   try {
-    const response = await fetch("http://localhost:5000/api/readers", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ statusId }),
-    });
+    const response = await fetch(
+      "https://echoo-backend.vercel.app/api/readers",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ statusId }),
+      }
+    );
 
     if (!response.ok) throw new Error("Failed to fetch readers/likers");
 
@@ -58,7 +61,7 @@ const updateReadersCacheIfNew = (statusId, newReaders, newLikers) => {
 // New function to mark status as read on backend
 const markStatusAsRead = async (userId, statusId) => {
   try {
-    const response = await fetch("http://localhost:5000/api/read", {
+    const response = await fetch("https://echoo-backend.vercel.app/api/read", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -74,7 +77,13 @@ const markStatusAsRead = async (userId, statusId) => {
   }
 };
 
-const StatusImage = ({ media_url, statusId, onLoad, onDuration, onPlayStart }) => {
+const StatusImage = ({
+  media_url,
+  statusId,
+  onLoad,
+  onDuration,
+  onPlayStart,
+}) => {
   const [mediaSrc, setMediaSrc] = useState(null);
   const [mediaType, setMediaType] = useState(null);
   const [loaded, setLoaded] = useState(false);
@@ -124,7 +133,10 @@ const StatusImage = ({ media_url, statusId, onLoad, onDuration, onPlayStart }) =
         objectUrl = URL.createObjectURL(blob);
 
         const mime = blob.type;
-        const type = mime.startsWith("video") || mime === "application/mp4" ? "video" : "image";
+        const type =
+          mime.startsWith("video") || mime === "application/mp4"
+            ? "video"
+            : "image";
 
         blobUrlCache.set(media_url, { url: objectUrl, type });
         shouldRevoke = false;
@@ -321,7 +333,11 @@ const StatusImage = ({ media_url, statusId, onLoad, onDuration, onPlayStart }) =
                 zIndex: 10,
               }}
             >
-              {muted ? <VolumeX color="white" size={20} /> : <Volume2 color="white" size={20} />}
+              {muted ? (
+                <VolumeX color="white" size={20} />
+              ) : (
+                <Volume2 color="white" size={20} />
+              )}
             </button>
           )}
         </>

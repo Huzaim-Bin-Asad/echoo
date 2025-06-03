@@ -5,7 +5,7 @@ const CACHE_KEY = "contactedStatusesCache";
 const EXPIRY_MS = 10000;
 
 const ContactStatuses = ({ onStatusesUpdate }) => {
-    // eslint-disable-next-line no-unused-vars
+  // eslint-disable-next-line no-unused-vars
   const [statuses, setStatuses] = useState([]);
   // eslint-disable-next-line no-unused-vars
   const [loading, setLoading] = useState(true);
@@ -35,7 +35,10 @@ const ContactStatuses = ({ onStatusesUpdate }) => {
       objectUrlMap.current[status_id] = url;
       return url;
     } catch (e) {
-      console.warn(`[Blob] Failed to get blob from DB for status_id=${status_id}`, e);
+      console.warn(
+        `[Blob] Failed to get blob from DB for status_id=${status_id}`,
+        e
+      );
       return null;
     }
   };
@@ -64,20 +67,27 @@ const ContactStatuses = ({ onStatusesUpdate }) => {
           // Create blob URLs and generate thumbnails for cached statuses that have media
           const enrichedStatuses = await Promise.all(
             statusesMeta.map(async (status) => {
-              if (!status.status_id) return { ...status, media_url: null, thumbnail: null };
+              if (!status.status_id)
+                return { ...status, media_url: null, thumbnail: null };
 
               const blobUrl = await createBlobUrlFromDB(status.status_id);
-              if (!blobUrl) return { ...status, media_url: null, thumbnail: null };
+              if (!blobUrl)
+                return { ...status, media_url: null, thumbnail: null };
 
               // Detect contentType by HEAD request to original media_url
               let contentType = "unknown";
               try {
-                const headRes = await fetch(status.media_url_original, { method: "HEAD" });
+                const headRes = await fetch(status.media_url_original, {
+                  method: "HEAD",
+                });
                 if (headRes.ok) {
-                  contentType = headRes.headers.get("Content-Type") || "unknown";
+                  contentType =
+                    headRes.headers.get("Content-Type") || "unknown";
                 }
               } catch {
-                console.warn(`[HEAD] Failed to fetch content type for ${status.media_url_original}`);
+                console.warn(
+                  `[HEAD] Failed to fetch content type for ${status.media_url_original}`
+                );
               }
 
               const thumbnail = await generateThumbnail(blobUrl, contentType);
@@ -132,7 +142,10 @@ const ContactStatuses = ({ onStatusesUpdate }) => {
 
       return blobUrl;
     } catch (err) {
-      console.warn(`[Blob] Failed to fetch or cache blob for status_id=${status_id}:`, err.message);
+      console.warn(
+        `[Blob] Failed to fetch or cache blob for status_id=${status_id}:`,
+        err.message
+      );
       return null;
     }
   };
@@ -160,21 +173,30 @@ const ContactStatuses = ({ onStatusesUpdate }) => {
         Authorization: user.token ? `Bearer ${user.token}` : undefined,
       };
 
-      const response = await fetch("http://localhost:5000/api/get-contacts-statuses", {
-        method: "POST",
-        headers: requestHeaders,
-        body: requestBody,
-      });
+      const response = await fetch(
+        "https://echoo-backend.vercel.app/api/get-contacts-statuses",
+        {
+          method: "POST",
+          headers: requestHeaders,
+          body: requestBody,
+        }
+      );
 
       if (!response.ok) {
-        console.error("[API] Backend error:", response.status, response.statusText);
+        console.error(
+          "[API] Backend error:",
+          response.status,
+          response.statusText
+        );
         setLoading(false);
         return;
       }
 
       const data = await response.json();
       if (!Array.isArray(data.statuses)) {
-        console.error("[API] Invalid response format. Expected statuses array.");
+        console.error(
+          "[API] Invalid response format. Expected statuses array."
+        );
         setLoading(false);
         return;
       }
@@ -183,9 +205,14 @@ const ContactStatuses = ({ onStatusesUpdate }) => {
       const enrichedStatuses = await Promise.all(
         data.statuses.map(async (status) => {
           const { status_id, media_url } = status;
-          if (!media_url || !status_id) return { ...status, media_url: null, thumbnail: null };
+          if (!media_url || !status_id)
+            return { ...status, media_url: null, thumbnail: null };
 
-          const blobUrl = await fetchBlobAndCache(status_id, media_url, user.token);
+          const blobUrl = await fetchBlobAndCache(
+            status_id,
+            media_url,
+            user.token
+          );
           if (!blobUrl) return { ...status, media_url: null, thumbnail: null };
 
           let contentType = "unknown";
@@ -195,12 +222,19 @@ const ContactStatuses = ({ onStatusesUpdate }) => {
               contentType = headRes.headers.get("Content-Type") || "unknown";
             }
           } catch {
-            console.warn(`[HEAD] Failed to fetch content type for ${media_url}`);
+            console.warn(
+              `[HEAD] Failed to fetch content type for ${media_url}`
+            );
           }
 
           const thumbnail = await generateThumbnail(blobUrl, contentType);
 
-          return { ...status, media_url: blobUrl, thumbnail, media_url_original: media_url };
+          return {
+            ...status,
+            media_url: blobUrl,
+            thumbnail,
+            media_url_original: media_url,
+          };
         })
       );
 
@@ -298,7 +332,6 @@ function generateThumbnail(src, type) {
         console.error("[Thumbnail] Image load error:", e);
         resolve(null);
       };
-
     } else if (
       normalizedType.startsWith("video/") ||
       normalizedType === "application/mp4" ||
@@ -356,7 +389,6 @@ function generateThumbnail(src, type) {
           onSeeked();
         }
       }, 3000);
-
     } else {
       console.warn("[Thumbnail] Unsupported type:", type);
       resolve(null);

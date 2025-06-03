@@ -12,7 +12,9 @@ const Footer = ({ statusId }) => {
 
     console.log("📩 Checking if status is liked:", statusId);
 
-    const likedStatuses = JSON.parse(localStorage.getItem("likedStatuses") || "{}");
+    const likedStatuses = JSON.parse(
+      localStorage.getItem("likedStatuses") || "{}"
+    );
     setLiked(!!likedStatuses[statusId]); // Update liked state
   }, [statusId]);
 
@@ -23,18 +25,23 @@ const Footer = ({ statusId }) => {
     if (!userId || !statusId) return console.warn("Missing userId or statusId");
 
     try {
-      const response = await fetch("http://localhost:5000/api/like-status", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, statusId }),
-      });
+      const response = await fetch(
+        "https://echoo-backend.vercel.app/api/like-status",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId, statusId }),
+        }
+      );
 
       if (response.ok) {
         console.log("✅ Liked status");
 
         // Set state and update localStorage
         setLiked(true);
-        const likedStatuses = JSON.parse(localStorage.getItem("likedStatuses") || "{}");
+        const likedStatuses = JSON.parse(
+          localStorage.getItem("likedStatuses") || "{}"
+        );
         likedStatuses[statusId] = true;
         localStorage.setItem("likedStatuses", JSON.stringify(likedStatuses));
       } else {

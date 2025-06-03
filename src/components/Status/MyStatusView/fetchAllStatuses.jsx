@@ -1,4 +1,4 @@
-import { saveBlobToDB, getBlobFromDB } from './blobUrlDB';
+import { saveBlobToDB, getBlobFromDB } from "./blobUrlDB";
 
 const CACHE_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -12,7 +12,8 @@ const getFixedTime = () => new Date().toISOString();
 const ensureBlobUrl = async (status) => {
   if (status.blobUrl) return status; // already has blobUrl
 
-  if (!status.original_media_url) return { ...status, blobUrl: null, blobKey: null };
+  if (!status.original_media_url)
+    return { ...status, blobUrl: null, blobKey: null };
 
   try {
     const dbBlob = await getBlobFromDB(status.status_id);
@@ -23,14 +24,19 @@ const ensureBlobUrl = async (status) => {
     }
 
     // Fetch media from backend and save
-    const mediaRes = await fetch('http://localhost:5000/api/getMediaByUrl', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ media_url: status.original_media_url }),
-    });
+    const mediaRes = await fetch(
+      "https://echoo-backend.vercel.app/api/getMediaByUrl",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ media_url: status.original_media_url }),
+      }
+    );
 
     if (!mediaRes.ok) {
-      console.warn(`[Blob Check] Failed fetch media blob for status_id=${status.status_id}`);
+      console.warn(
+        `[Blob Check] Failed fetch media blob for status_id=${status.status_id}`
+      );
       return { ...status, blobUrl: null, blobKey: null };
     }
 
@@ -40,22 +46,27 @@ const ensureBlobUrl = async (status) => {
 
     // Update cache with blobKey, not blobUrl
     if (cachedStatuses) {
-      cachedStatuses = cachedStatuses.map(s =>
-        s.status_id === status.status_id ? { ...s, blobUrl, blobKey: status.status_id } : s
+      cachedStatuses = cachedStatuses.map((s) =>
+        s.status_id === status.status_id
+          ? { ...s, blobUrl, blobKey: status.status_id }
+          : s
       );
     }
 
     return { ...status, blobUrl, blobKey: status.status_id };
   } catch (err) {
-    console.error(`[Blob Check] Error processing blob for status_id=${status.status_id}`, err);
+    console.error(
+      `[Blob Check] Error processing blob for status_id=${status.status_id}`,
+      err
+    );
     return { ...status, blobUrl: null, blobKey: null };
   }
 };
 
 // Initialize cache from localStorage
 try {
-  const savedCache = localStorage.getItem('cachedStatuses');
-  const savedTimestamp = localStorage.getItem('cacheTimestamp');
+  const savedCache = localStorage.getItem("cachedStatuses");
+  const savedTimestamp = localStorage.getItem("cacheTimestamp");
 
   if (savedCache && savedTimestamp) {
     const parsedCache = JSON.parse(savedCache);
@@ -92,25 +103,34 @@ try {
 
       cachedStatuses = statusesWithBlobs;
       // eslint-disable-next-line no-unused-vars
-      const mediaUrls = cachedStatuses.map(s => s.media_url).filter(Boolean);
+      const mediaUrls = cachedStatuses.map((s) => s.media_url).filter(Boolean);
     })();
   }
 } catch (e) {
-  console.error(`[${getFixedTime()}][Cache Init] Failed to load cache from localStorage:`, e);
+  console.error(
+    `[${getFixedTime()}][Cache Init] Failed to load cache from localStorage:`,
+    e
+  );
 }
 
 const saveCacheToLocalStorage = () => {
   try {
     if (!cacheTimestamp) {
-      console.warn(`[${getFixedTime()}][Cache Save] No cache timestamp set, skipping save.`);
+      console.warn(
+        `[${getFixedTime()}][Cache Save] No cache timestamp set, skipping save.`
+      );
       return;
     }
     // Save cachedStatuses with blobKey, remove blobUrl to avoid saving session-only URLs
-    const cacheToSave = cachedStatuses?.map(({ blobUrl, ...rest }) => rest) || [];
-    localStorage.setItem('cachedStatuses', JSON.stringify(cacheToSave));
-    localStorage.setItem('cacheTimestamp', cacheTimestamp.toString());
+    const cacheToSave =
+      cachedStatuses?.map(({ blobUrl, ...rest }) => rest) || [];
+    localStorage.setItem("cachedStatuses", JSON.stringify(cacheToSave));
+    localStorage.setItem("cacheTimestamp", cacheTimestamp.toString());
   } catch (e) {
-    console.error(`[${getFixedTime()}][Cache Save] Failed to save cache to localStorage:`, e);
+    console.error(
+      `[${getFixedTime()}][Cache Save] Failed to save cache to localStorage:`,
+      e
+    );
   }
 };
 
@@ -123,14 +143,21 @@ const generateThumbnail = async (mediaUrl) => {
   if (!mediaUrl) return null;
 
   try {
-    const res = await fetch('http://localhost:5000/api/getMediaByUrl', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ media_url: mediaUrl }),
-    });
+    const res = await fetch(
+      "https://echoo-backend.vercel.app/api/getMediaByUrl",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ media_url: mediaUrl }),
+      }
+    );
 
     if (!res.ok) {
-      console.error(`[${getFixedTime()}][Thumbnail] Failed to fetch media for thumbnail. Status: ${res.status}`);
+      console.error(
+        `[${getFixedTime()}][Thumbnail] Failed to fetch media for thumbnail. Status: ${
+          res.status
+        }`
+      );
       return null;
     }
 
@@ -140,12 +167,12 @@ const generateThumbnail = async (mediaUrl) => {
     const maxSize = 64;
 
     return await new Promise((resolve, reject) => {
-      if (type.startsWith('image/')) {
+      if (type.startsWith("image/")) {
         const img = new Image();
         img.onload = () => {
           try {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
 
             let { width, height } = img;
             if (width > height && width > maxSize) {
@@ -159,7 +186,7 @@ const generateThumbnail = async (mediaUrl) => {
             canvas.width = width;
             canvas.height = height;
             ctx.drawImage(img, 0, 0, width, height);
-            resolve(canvas.toDataURL('image/jpeg', 0.7));
+            resolve(canvas.toDataURL("image/jpeg", 0.7));
             URL.revokeObjectURL(src);
           } catch (e) {
             reject(e);
@@ -171,19 +198,18 @@ const generateThumbnail = async (mediaUrl) => {
           reject(err);
         };
         img.src = src;
-
-      } else if (type.startsWith('video/')) {
-        const video = document.createElement('video');
+      } else if (type.startsWith("video/")) {
+        const video = document.createElement("video");
         video.muted = true;
-        video.preload = 'auto';
+        video.preload = "auto";
         video.src = src;
-        video.crossOrigin = 'anonymous';
+        video.crossOrigin = "anonymous";
 
         const cleanup = () => {
           URL.revokeObjectURL(src);
-          video.removeEventListener('loadeddata', onLoadedData);
-          video.removeEventListener('seeked', onSeeked);
-          video.removeEventListener('error', onError);
+          video.removeEventListener("loadeddata", onLoadedData);
+          video.removeEventListener("seeked", onSeeked);
+          video.removeEventListener("error", onError);
         };
 
         const onError = (e) => {
@@ -198,8 +224,8 @@ const generateThumbnail = async (mediaUrl) => {
 
         const onSeeked = () => {
           try {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
 
             let width = video.videoWidth;
             let height = video.videoHeight;
@@ -216,16 +242,16 @@ const generateThumbnail = async (mediaUrl) => {
             canvas.height = height;
             ctx.drawImage(video, 0, 0, width, height);
             cleanup();
-            resolve(canvas.toDataURL('image/jpeg', 0.7));
+            resolve(canvas.toDataURL("image/jpeg", 0.7));
           } catch (e) {
             cleanup();
             reject(e);
           }
         };
 
-        video.addEventListener('error', onError);
-        video.addEventListener('loadeddata', onLoadedData);
-        video.addEventListener('seeked', onSeeked);
+        video.addEventListener("error", onError);
+        video.addEventListener("loadeddata", onLoadedData);
+        video.addEventListener("seeked", onSeeked);
 
         // Fallback if seeked event doesn't fire within 3s
         setTimeout(() => {
@@ -233,24 +259,30 @@ const generateThumbnail = async (mediaUrl) => {
             onSeeked();
           }
         }, 3000);
-
       } else {
         resolve(null);
       }
     });
   } catch (e) {
-    console.error(`[${getFixedTime()}][Thumbnail] Failed to generate thumbnail:`, e);
+    console.error(
+      `[${getFixedTime()}][Thumbnail] Failed to generate thumbnail:`,
+      e
+    );
     return null;
   }
 };
-
 
 export const updateStatusMediaUrl = (statusId, newMediaUrl) => {
   if (!cachedStatuses) return;
 
   cachedStatuses = cachedStatuses.map((status) =>
     status.status_id === statusId
-      ? { ...status, original_media_url: newMediaUrl, blobUrl: null, blobKey: null }
+      ? {
+          ...status,
+          original_media_url: newMediaUrl,
+          blobUrl: null,
+          blobKey: null,
+        }
       : status
   );
 
@@ -260,7 +292,7 @@ export const updateStatusMediaUrl = (statusId, newMediaUrl) => {
 
 export const fetchAllStatuses = async () => {
   try {
-    const rawUser = localStorage.getItem('user');
+    const rawUser = localStorage.getItem("user");
     if (!rawUser) {
       if (cachedStatuses) {
         cachedStatuses = await Promise.all(cachedStatuses.map(ensureBlobUrl));
@@ -296,33 +328,49 @@ export const fetchAllStatuses = async () => {
 
 const refreshStatusesFromBackend = async (user_id) => {
   try {
-    const cachedToSend = (cachedStatuses || []).map(({ blobUrl, ...rest }) => rest);
+    const cachedToSend = (cachedStatuses || []).map(
+      ({ blobUrl, ...rest }) => rest
+    );
 
-    const res = await fetch('http://localhost:5000/api/getAllStatuses', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id, cached_statuses: cachedToSend }),
-    });
+    const res = await fetch(
+      "https://echoo-backend.vercel.app/api/getAllStatuses",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id, cached_statuses: cachedToSend }),
+      }
+    );
 
     if (!res.ok) {
-      console.error(`[${getFixedTime()}][refreshStatusesFromBackend] Failed to fetch statuses. Status: ${res.status}`);
+      console.error(
+        `[${getFixedTime()}][refreshStatusesFromBackend] Failed to fetch statuses. Status: ${
+          res.status
+        }`
+      );
       return cachedStatuses || [];
     }
 
     const data = await res.json();
 
     if (data.invalid_caches?.length > 0) {
-      const invalidIds = new Set(data.invalid_caches.map(s => s.status_id));
-      cachedStatuses = (cachedStatuses || []).filter(status => !invalidIds.has(status.status_id));
+      const invalidIds = new Set(data.invalid_caches.map((s) => s.status_id));
+      cachedStatuses = (cachedStatuses || []).filter(
+        (status) => !invalidIds.has(status.status_id)
+      );
       cacheTimestamp = Date.now();
       saveCacheToLocalStorage();
-      console.info(`[${getFixedTime()}][Cache Cleanup] Removed invalid caches:`, invalidIds);
+      console.info(
+        `[${getFixedTime()}][Cache Cleanup] Removed invalid caches:`,
+        invalidIds
+      );
     }
 
     const statusesWithThumbnailsAndBlobs = await Promise.all(
       data.statuses.map(async (status) => {
         if (status.is_cached) {
-          const cachedEntry = (cachedStatuses || []).find(s => s.status_id === status.status_id);
+          const cachedEntry = (cachedStatuses || []).find(
+            (s) => s.status_id === status.status_id
+          );
           if (cachedEntry) {
             const withBlobUrl = await ensureBlobUrl(cachedEntry);
             return {
@@ -336,7 +384,12 @@ const refreshStatusesFromBackend = async (user_id) => {
 
         const thumbnail = await generateThumbnail(status.original_media_url);
         const withBlob = await ensureBlobUrl(status);
-        return { ...status, thumbnail, blobUrl: withBlob.blobUrl, blobKey: withBlob.blobKey };
+        return {
+          ...status,
+          thumbnail,
+          blobUrl: withBlob.blobUrl,
+          blobKey: withBlob.blobKey,
+        };
       })
     );
 
@@ -346,7 +399,10 @@ const refreshStatusesFromBackend = async (user_id) => {
     if (pollingCallback) pollingCallback(cachedStatuses);
     return cachedStatuses;
   } catch (e) {
-    console.error(`[${getFixedTime()}][refreshStatusesFromBackend] Unexpected error:`, e);
+    console.error(
+      `[${getFixedTime()}][refreshStatusesFromBackend] Unexpected error:`,
+      e
+    );
     return cachedStatuses || [];
   }
 };
@@ -356,8 +412,8 @@ export const getCachedStatuses = () => cachedStatuses;
 export const clearStatusCache = () => {
   cachedStatuses = null;
   cacheTimestamp = null;
-  localStorage.removeItem('cachedStatuses');
-  localStorage.removeItem('cacheTimestamp');
+  localStorage.removeItem("cachedStatuses");
+  localStorage.removeItem("cacheTimestamp");
 };
 
 export const startPollingStatuses = (onUpdate) => {
@@ -370,7 +426,7 @@ export const startPollingStatuses = (onUpdate) => {
 
   pollingIntervalId = setInterval(async () => {
     try {
-      const rawUser = localStorage.getItem('user');
+      const rawUser = localStorage.getItem("user");
       if (!rawUser) return;
 
       let user;

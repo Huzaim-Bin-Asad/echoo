@@ -11,7 +11,10 @@ const RequentlyContacted = () => {
 
       try {
         const { user_id } = JSON.parse(userData);
-        const response = await axios.post("http://localhost:5000/api/chat/frequent", { user_id });
+        const response = await axios.post(
+          "https://echoo-backend.vercel.app/api/chat/frequent",
+          { user_id }
+        );
 
         if (response.data && Array.isArray(response.data)) {
           const newEntries = response.data;
@@ -31,17 +34,21 @@ const RequentlyContacted = () => {
           }
 
           // Merge: latest contact on top, remove duplicates
-          const merged = [...uniqueNew.values(), ...existingParsed].reduce((acc, entry) => {
-            if (!acc.find(e => e.other_user_id === entry.other_user_id)) {
-              acc.push(entry);
-            }
-            return acc;
-          }, []);
+          const merged = [...uniqueNew.values(), ...existingParsed].reduce(
+            (acc, entry) => {
+              if (!acc.find((e) => e.other_user_id === entry.other_user_id)) {
+                acc.push(entry);
+              }
+              return acc;
+            },
+            []
+          );
 
           // Keep only latest 5
           const topFive = merged.slice(0, 5);
 
-          const hasChanged = JSON.stringify(existingParsed) !== JSON.stringify(topFive);
+          const hasChanged =
+            JSON.stringify(existingParsed) !== JSON.stringify(topFive);
           if (hasChanged) {
             localStorage.setItem("RecentlyContacted", JSON.stringify(topFive));
             console.log("[INFO] RecentlyContacted cache updated.");

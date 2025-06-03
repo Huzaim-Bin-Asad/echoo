@@ -1,5 +1,5 @@
 let intervalId = null;
-const CACHE_KEY = 'myStatusCache';
+const CACHE_KEY = "myStatusCache";
 const EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 // In-memory cache for thumbnails keyed by blob URL
@@ -9,7 +9,6 @@ export const startCurrentStatusFetcher = (setStatusPreview) => {
   if (intervalId !== null) {
     return;
   }
-
 
   let lastBlobUrl = null;
   let lastStatusTimestamp = null;
@@ -36,15 +35,18 @@ export const startCurrentStatusFetcher = (setStatusPreview) => {
         thumbnailCache[lastBlobUrl] = parsed.thumbnail;
       }
     } catch (err) {
-      console.warn('[StatusFetcher] Error parsing cached status. Removing.', err);
+      console.warn(
+        "[StatusFetcher] Error parsing cached status. Removing.",
+        err
+      );
       localStorage.removeItem(CACHE_KEY);
     }
   }
 
   async function fetchAndCacheStatus() {
-    const raw = localStorage.getItem('user');
+    const raw = localStorage.getItem("user");
     if (!raw) {
-      console.warn('[StatusFetcher] No user found in localStorage.');
+      console.warn("[StatusFetcher] No user found in localStorage.");
       return;
     }
 
@@ -52,27 +54,29 @@ export const startCurrentStatusFetcher = (setStatusPreview) => {
     try {
       user = JSON.parse(raw);
     } catch (err) {
-      console.warn('[StatusFetcher] Failed to parse user JSON.', err);
+      console.warn("[StatusFetcher] Failed to parse user JSON.", err);
       return;
     }
 
     const userId = user.user_id;
     if (!userId) {
-      console.warn('[StatusFetcher] No user_id found.');
+      console.warn("[StatusFetcher] No user_id found.");
       return;
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/getCurrentStatus', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: userId,
-          originalMediaUrl: lastOriginalMediaUrl || null,
-          isCached: !!lastOriginalMediaUrl,
-        }),
-      });
-
+      const response = await fetch(
+        "https://echoo-backend.vercel.app/api/getCurrentStatus",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            user_id: userId,
+            originalMediaUrl: lastOriginalMediaUrl || null,
+            isCached: !!lastOriginalMediaUrl,
+          }),
+        }
+      );
 
       if (response.status === 204) {
         return;
@@ -93,17 +97,19 @@ export const startCurrentStatusFetcher = (setStatusPreview) => {
       }
 
       if (!response.ok) {
-        console.error('[StatusFetcher] Failed to fetch status:', response.statusText);
+        console.error(
+          "[StatusFetcher] Failed to fetch status:",
+          response.statusText
+        );
         return;
       }
 
-      const timestampHeader = response.headers.get('x-status-timestamp');
-      const originalMediaUrl = response.headers.get('x-status-mediaurl');
+      const timestampHeader = response.headers.get("x-status-timestamp");
+      const originalMediaUrl = response.headers.get("x-status-mediaurl");
       const serverTimestamp = Number(timestampHeader);
 
-
       if (!serverTimestamp || !originalMediaUrl) {
-        console.warn('[StatusFetcher] Missing required headers.');
+        console.warn("[StatusFetcher] Missing required headers.");
         return;
       }
 
@@ -137,7 +143,7 @@ export const startCurrentStatusFetcher = (setStatusPreview) => {
 
       generateThumbnail(lastBlobUrl, mediaBlob.type, (thumbnail) => {
         if (!thumbnail) {
-          console.error('[StatusFetcher] Failed to generate thumbnail.');
+          console.error("[StatusFetcher] Failed to generate thumbnail.");
           return;
         }
 
@@ -161,7 +167,7 @@ export const startCurrentStatusFetcher = (setStatusPreview) => {
         );
       });
     } catch (err) {
-      console.error('[StatusFetcher] Fetch error:', err);
+      console.error("[StatusFetcher] Fetch error:", err);
     }
   }
 
@@ -217,7 +223,6 @@ const generateThumbnail = (src, type, callback) => {
       console.error("[ThumbnailGenerator] Image load error for:", src, e);
       callback(null);
     };
-
   } else if (
     normalizedType.startsWith("video/") ||
     normalizedType === "video/mp4"
@@ -284,7 +289,6 @@ const generateThumbnail = (src, type, callback) => {
 
     // Timeout fallback in case onseeked doesn't trigger
     setTimeout(fallback, 3000);
-
   } else {
     console.warn("[ThumbnailGenerator] Unsupported media type:", type);
     callback(null);

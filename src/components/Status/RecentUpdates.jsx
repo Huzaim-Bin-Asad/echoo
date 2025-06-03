@@ -13,13 +13,18 @@ const RecentUpdates = ({ onStatusClick }) => {
     const now = new Date();
     const past = new Date(date);
     const seconds = Math.floor((now - past) / 1000);
-    const timeString = past.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true });
+    const timeString = past.toLocaleTimeString([], {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
 
     if (seconds < 60) return `${seconds} sec ago, ${timeString}`;
     const minutes = Math.floor(seconds / 60);
     if (minutes < 60) return `${minutes} min ago, ${timeString}`;
     const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours} hr${hours > 1 ? "s" : ""} ago, ${timeString}`;
+    if (hours < 24)
+      return `${hours} hr${hours > 1 ? "s" : ""} ago, ${timeString}`;
     const days = Math.floor(hours / 24);
     return `${days} day${days > 1 ? "s" : ""} ago, ${timeString}`;
   };
@@ -40,7 +45,9 @@ const RecentUpdates = ({ onStatusClick }) => {
 
     const latest = Object.entries(grouped).map(([contactName, statuses]) => {
       const latestStatus = statuses.reduce((latest, current) =>
-        new Date(current.timestamp) > new Date(latest.timestamp) ? current : latest
+        new Date(current.timestamp) > new Date(latest.timestamp)
+          ? current
+          : latest
       );
       const userId = latestStatus.user_id || statuses[0].user_id || "unknown";
       const statusIds = statuses.map((s) => s.status_id);
@@ -83,7 +90,8 @@ const RecentUpdates = ({ onStatusClick }) => {
 
   const getGradientForCount = (count) => {
     const gap = 4;
-    if (count <= 1) return "conic-gradient(#8e5db1 0deg 360deg, #9b6ea9 360deg 360deg)";
+    if (count <= 1)
+      return "conic-gradient(#8e5db1 0deg 360deg, #9b6ea9 360deg 360deg)";
     const degreesPerArc = 360 / count;
     const arcs = [];
 
@@ -97,8 +105,14 @@ const RecentUpdates = ({ onStatusClick }) => {
     return `conic-gradient(${arcs.join(", ")})`;
   };
 
-  const handleStatusClick = async (contactName, allStatuses, latestStatus, meta) => {
-    const cachedStatuses = JSON.parse(localStorage.getItem(CACHE_KEY))?.statuses || [];
+  const handleStatusClick = async (
+    contactName,
+    allStatuses,
+    latestStatus,
+    meta
+  ) => {
+    const cachedStatuses =
+      JSON.parse(localStorage.getItem(CACHE_KEY))?.statuses || [];
     const matchingStatuses = cachedStatuses.filter((status) =>
       meta.statusIds.includes(status.status_id)
     );
@@ -112,14 +126,21 @@ const RecentUpdates = ({ onStatusClick }) => {
         let duration = 5000;
 
         if (!blob) {
-          const statusObj = matchingStatuses.find((s) => s.status_id === statusId);
+          const statusObj = matchingStatuses.find(
+            (s) => s.status_id === statusId
+          );
 
           if (statusObj?.original_media_url) {
-            const mediaRes = await fetch("http://localhost:5000/api/getMediaByUrl", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ media_url: statusObj.original_media_url }),
-            });
+            const mediaRes = await fetch(
+              "https://echoo-backend.vercel.app/api/getMediaByUrl",
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  media_url: statusObj.original_media_url,
+                }),
+              }
+            );
 
             if (mediaRes.ok) {
               blob = await mediaRes.blob();
@@ -128,7 +149,9 @@ const RecentUpdates = ({ onStatusClick }) => {
               console.warn(`❌ Failed to fetch blob for status_id=${statusId}`);
             }
           } else {
-            console.warn(`⚠️ No original_media_url found for status_id=${statusId}`);
+            console.warn(
+              `⚠️ No original_media_url found for status_id=${statusId}`
+            );
           }
         }
 
@@ -142,7 +165,9 @@ const RecentUpdates = ({ onStatusClick }) => {
             duration = await new Promise((resolve) => {
               video.onloadedmetadata = () => resolve(video.duration * 1000);
               video.onerror = () => {
-                console.warn(`⚠️ Failed to load metadata for video ${statusId}`);
+                console.warn(
+                  `⚠️ Failed to load metadata for video ${statusId}`
+                );
                 resolve(5000);
               };
             });
@@ -155,7 +180,12 @@ const RecentUpdates = ({ onStatusClick }) => {
         mediaItems.push({ statusId, blobUrl, timestamp, duration });
       } catch (err) {
         console.error(`🚨 Error handling status ID ${statusId}:`, err);
-        mediaItems.push({ statusId, blobUrl: null, timestamp: null, duration: 5000 });
+        mediaItems.push({
+          statusId,
+          blobUrl: null,
+          timestamp: null,
+          duration: 5000,
+        });
       }
     }
 
@@ -168,15 +198,24 @@ const RecentUpdates = ({ onStatusClick }) => {
       mediaItems,
     };
 
-
     if (onStatusClick) {
       onStatusClick(clickData);
     }
   };
 
   return (
-    <div className="bg-white mt-2 px-3 py-2" style={{ borderRadius: "12px", margin: "0 12px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-      <h6 className="text-muted mb-3" style={{ fontSize: "0.85rem", fontWeight: "500" }}>
+    <div
+      className="bg-white mt-2 px-3 py-2"
+      style={{
+        borderRadius: "12px",
+        margin: "0 12px",
+        boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+      }}
+    >
+      <h6
+        className="text-muted mb-3"
+        style={{ fontSize: "0.85rem", fontWeight: "500" }}
+      >
         RECENT UPDATES
       </h6>
 
@@ -186,17 +225,25 @@ const RecentUpdates = ({ onStatusClick }) => {
         <p className="text-muted">No recent updates</p>
       ) : (
         statuses.map(({ contactName, statuses: allStatuses, latestStatus }) => {
-          const meta = statusMetaMap[contactName] || { userId: "unknown", statusIds: [] };
+          const meta = statusMetaMap[contactName] || {
+            userId: "unknown",
+            statusIds: [],
+          };
 
           return (
             <div
               key={latestStatus.status_id || latestStatus.id}
               className="mb-3"
               style={{ cursor: "pointer" }}
-              onClick={() => handleStatusClick(contactName, allStatuses, latestStatus, meta)}
+              onClick={() =>
+                handleStatusClick(contactName, allStatuses, latestStatus, meta)
+              }
             >
               <div className="d-flex align-items-center">
-                <div className="position-relative" style={{ width: 52, height: 52 }}>
+                <div
+                  className="position-relative"
+                  style={{ width: 52, height: 52 }}
+                >
                   <div
                     className="position-absolute top-0 start-0 rounded-circle"
                     style={{
@@ -219,7 +266,11 @@ const RecentUpdates = ({ onStatusClick }) => {
                       <img
                         src={latestStatus.thumbnail}
                         alt={`${contactName} status thumbnail`}
-                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                        }}
                       />
                     ) : (
                       <User size={24} color="#6c757d" />
@@ -233,7 +284,10 @@ const RecentUpdates = ({ onStatusClick }) => {
                     {timeAgo(latestStatus.timestamp)}
                   </p>
                   {latestStatus.caption && (
-                    <p className="mb-0 text-muted" style={{ fontSize: "0.75rem" }}>
+                    <p
+                      className="mb-0 text-muted"
+                      style={{ fontSize: "0.75rem" }}
+                    >
                       {latestStatus.caption}
                     </p>
                   )}
