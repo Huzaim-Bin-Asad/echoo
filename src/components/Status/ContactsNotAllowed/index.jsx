@@ -55,57 +55,60 @@ const ContactsNotAllowed = ({ handleBackClick, initialExcludedContacts = [] }) =
     );
   };
 
-  const handleCheckClick = async () => {
-    console.log("✅ Sticky check button clicked");
-    console.log("Selected receiver IDs:", selectedReceiverIds);
+const handleCheckClick = async () => {
+  console.log("✅ Sticky check button clicked");
+  console.log("Selected receiver IDs:", selectedReceiverIds);
 
-    localStorage.setItem("ContactsExcludedMemory", JSON.stringify(selectedReceiverIds));
+  localStorage.setItem("ContactsExcludedMemory", JSON.stringify(selectedReceiverIds));
 
-    const userStr = localStorage.getItem("user");
-    if (!userStr) {
-      console.error("User not found in localStorage");
-      return;
-    }
+  const userStr = localStorage.getItem("user");
+  if (!userStr) {
+    console.error("User not found in localStorage");
+    return;
+  }
 
-    let user;
-    try {
-      user = JSON.parse(userStr);
-    } catch (err) {
-      console.error("Failed to parse user JSON from localStorage", err);
-      return;
-    }
+  let user;
+  try {
+    user = JSON.parse(userStr);
+  } catch (err) {
+    console.error("Failed to parse user JSON from localStorage", err);
+    return;
+  }
 
-    const user_id = user.user_id;
-    if (!user_id) {
-      console.error("user_id missing in user object");
-      return;
-    }
+  const user_id = user.user_id;
+  if (!user_id) {
+    console.error("user_id missing in user object");
+    return;
+  }
 
-    const payload = {
-      user_id,
-      contacts_except: selectedReceiverIds,
-    };
-
-    try {
-      const response = await fetch("http://localhost:5000/api/update-except", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Failed to update status privacy:", errorData.message);
-        return;
-      }
-
-      const data = await response.json();
-      console.log("Status privacy updated:", data.message);
-      // Optionally add UI feedback here
-    } catch (error) {
-      console.error("Error sending update-except request:", error);
-    }
+  const payload = {
+    user_id,
+    contacts_except: selectedReceiverIds,
   };
+
+  try {
+    const response = await fetch("http://localhost:5000/api/update-except", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("Failed to update status privacy:", errorData.message);
+      return;
+    }
+
+    const data = await response.json();
+    console.log("Status privacy updated:", data.message);
+
+    // ✅ Go back after success
+    handleBackClick();
+  } catch (error) {
+    console.error("Error sending update-except request:", error);
+  }
+};
+
 
   return (
     <div 

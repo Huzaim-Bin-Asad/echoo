@@ -3,12 +3,19 @@ import { ChevronLeft, User, ShieldBan, HandCoins } from 'lucide-react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import fetchStatusPrivacy from './getStatusPrivacy';
 
-// Example: import or access your ContactsExcludedMemory here
-// For demo, I'll assume it's in localStorage as a JSON array of excluded contacts
-// You can replace this with your actual ContactsExcludedMemory source
+// Utility functions
 const getContactsExcludedMemory = () => {
   try {
     const stored = localStorage.getItem('ContactsExcludedMemory');
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+};
+
+const getContactsIncludedMemory = () => {
+  try {
+    const stored = localStorage.getItem('ContactsIncludedMemory');
     return stored ? JSON.parse(stored) : [];
   } catch {
     return [];
@@ -22,7 +29,7 @@ const StatusPrivacy = ({
 }) => {
   const [selectedOption, setSelectedOption] = useState('contacts');
   const [excludedCount, setExcludedCount] = useState(0);
-  const [includedCount, setIncludedCount] = useState(0); // for completeness, you can do similar for included if needed
+  const [includedCount, setIncludedCount] = useState(0);
 
   useEffect(() => {
     const storedOption = localStorage.getItem('StatusOptionSelected');
@@ -30,7 +37,6 @@ const StatusPrivacy = ({
     if (storedOption) {
       setSelectedOption(storedOption);
     } else {
-      // Fallback: fetch from backend and cache if not in localStorage
       fetchStatusPrivacy().then((data) => {
         const type = data?.type_selected || 'contacts';
 
@@ -41,22 +47,19 @@ const StatusPrivacy = ({
     }
   }, []);
 
-  // Update excluded count whenever component mounts or excluded memory changes
+  // Update counts on mount + every 3s
   useEffect(() => {
-    const updateExcluded = () => {
+    const updateCounts = () => {
       const excluded = getContactsExcludedMemory();
+      const included = getContactsIncludedMemory();
       setExcludedCount(Array.isArray(excluded) ? excluded.length : 0);
+      setIncludedCount(Array.isArray(included) ? included.length : 0);
     };
 
-    updateExcluded();
-
-    // Optionally, set up an event or interval to update excludedCount if ContactsExcludedMemory changes dynamically
-    // Example with interval (poll every 3 seconds):
-    const interval = setInterval(updateExcluded, 3000);
+    updateCounts();
+    const interval = setInterval(updateCounts, 3000);
     return () => clearInterval(interval);
   }, []);
-
-  // Similarly, you could update includedCount if you track included contacts elsewhere
 
   const sendPrivacySelection = async (selectionType) => {
     try {
@@ -70,18 +73,11 @@ const StatusPrivacy = ({
 
       const response = await fetch('http://localhost:5000/api/status-privacy-update', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          user_id,
-          type_selected: selectionType,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id, type_selected: selectionType }),
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to update status privacy');
-      }
+      if (!response.ok) throw new Error('Failed to update status privacy');
 
       console.log('Privacy setting updated:', selectionType);
     } catch (error) {
@@ -99,7 +95,6 @@ const StatusPrivacy = ({
     text: '#333',
   };
 
-  // Build options dynamically using excludedCount and includedCount
   const options = [
     {
       key: 'contacts',
@@ -205,7 +200,6 @@ const StatusPrivacy = ({
                   color: getIconColor(option.key),
                 })}
               </div>
-
               <div className="fw-medium">{option.label}</div>
             </div>
 
