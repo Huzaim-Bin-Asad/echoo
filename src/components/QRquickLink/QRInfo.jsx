@@ -1,7 +1,10 @@
-// components/QRquickLink/QRInfo.jsx
 import React from 'react';
 
 const QRInfo = ({ activeTab, onTabChange }) => {
+  const handleTabClick = (tab) => {
+    onTabChange(tab);
+  };
+
   return (
     <div className="border-bottom mb-3">
       <div className="d-flex">
@@ -9,7 +12,7 @@ const QRInfo = ({ activeTab, onTabChange }) => {
           className={`flex-fill text-center py-2 border-0 bg-transparent ${
             activeTab === 'myCode' ? 'text-primary border-bottom border-primary fw-semibold' : 'text-muted'
           }`}
-          onClick={() => onTabChange('myCode')}
+          onClick={() => handleTabClick('myCode')}
         >
           My code
         </button>
@@ -17,7 +20,7 @@ const QRInfo = ({ activeTab, onTabChange }) => {
           className={`flex-fill text-center py-2 border-0 bg-transparent ${
             activeTab === 'scanCode' ? 'text-primary border-bottom border-primary fw-semibold' : 'text-muted'
           }`}
-          onClick={() => onTabChange('scanCode')}
+          onClick={() => handleTabClick('scanCode')}
         >
           Scan code
         </button>
