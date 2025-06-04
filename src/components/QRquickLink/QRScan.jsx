@@ -1,8 +1,14 @@
-import React, { useEffect, useRef, useCallback, useState } from 'react';
+import React, {
+  useRef,
+  useCallback,
+  useState,
+  forwardRef,
+  useImperativeHandle,
+} from 'react';
 import { LightbulbOff, Lightbulb, Images } from 'lucide-react';
 import { AiOutlineClose } from 'react-icons/ai';
 
-const QRScan = ({ flashOn, setFlashOn }) => {
+const QRScan = forwardRef(({ flashOn, setFlashOn }, ref) => {
   const [cameraStarted, setCameraStarted] = useState(false);
   const [cameraError, setCameraError] = useState(null);
 
@@ -12,7 +18,7 @@ const QRScan = ({ flashOn, setFlashOn }) => {
 
   const stopCamera = () => {
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
       trackRef.current = null;
       setCameraStarted(false);
@@ -69,17 +75,17 @@ const QRScan = ({ flashOn, setFlashOn }) => {
     }
   };
 
-  // Automatically start camera on component mount
-  useEffect(() => {
-    startCamera();
-    return () => stopCamera(); // Cleanup on unmount
-  }, []); // Only once on mount
+  // Expose methods to parent via ref
+  useImperativeHandle(ref, () => ({
+    startCamera,
+    stopCamera,
+  }));
 
   return (
     <div className="position-relative" style={{ height: '100%' }}>
       {!cameraStarted && !cameraError && (
         <div className="d-flex justify-content-center align-items-center h-100">
-          <div className="text-muted">Requesting camera access...</div>
+          <div className="text-muted">Camera is off</div>
         </div>
       )}
 
@@ -106,20 +112,17 @@ const QRScan = ({ flashOn, setFlashOn }) => {
 
           {/* Overlay Icons */}
           <div className="position-absolute bottom-0 start-0 end-0 d-flex justify-content-between px-3 pb-3">
-            {/* Flash toggle */}
             <button onClick={() => toggleFlash()} className="btn btn-light rounded-circle">
               {flashOn ? <Lightbulb color="gold" size={24} /> : <LightbulbOff size={24} />}
             </button>
 
-            {/* Open Gallery */}
             <button
-              onClick={() => alert('Open gallery or files here!')} 
+              onClick={() => alert('Open gallery or files here!')}
               className="btn btn-light rounded-circle"
             >
               <Images size={24} />
             </button>
 
-            {/* Close Scanner */}
             <button onClick={stopCamera} className="btn btn-light rounded-circle">
               <AiOutlineClose size={24} />
             </button>
@@ -128,6 +131,6 @@ const QRScan = ({ flashOn, setFlashOn }) => {
       )}
     </div>
   );
-};
+});
 
 export default QRScan;
