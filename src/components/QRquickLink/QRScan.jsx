@@ -1,16 +1,9 @@
-import React, {
-  useRef,
-  useCallback,
-  useState,
-  forwardRef,
-  useImperativeHandle,
-} from 'react';
+import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { LightbulbOff, Lightbulb, Images } from 'lucide-react';
 import { AiOutlineClose } from 'react-icons/ai';
 
-const QRScan = forwardRef(({ flashOn, setFlashOn }, ref) => {
+const QRScan = ({ flashOn, setFlashOn }) => {
   const [cameraStarted, setCameraStarted] = useState(false);
-  const [cameraError, setCameraError] = useState(null);
 
   const videoRef = useRef(null);
   const streamRef = useRef(null);
@@ -18,7 +11,7 @@ const QRScan = forwardRef(({ flashOn, setFlashOn }, ref) => {
 
   const stopCamera = () => {
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
       trackRef.current = null;
       setCameraStarted(false);
@@ -40,64 +33,41 @@ const QRScan = forwardRef(({ flashOn, setFlashOn }, ref) => {
     [flashOn, setFlashOn]
   );
 
-  const startCamera = async () => {
-    try {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error('Camera not supported in this environment.');
-      }
+  const initializeCamera = async () => {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment' },
+    });
 
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' },
-      });
+    streamRef.current = stream;
+    const videoTrack = stream.getVideoTracks()[0];
+    trackRef.current = videoTrack;
 
-      streamRef.current = stream;
-      const videoTrack = stream.getVideoTracks()[0];
-      trackRef.current = videoTrack;
-
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.onloadedmetadata = () => {
-          videoRef.current.play().catch((err) =>
-            console.warn('Video play error:', err)
-          );
-        };
-      }
-
-      if (flashOn) {
-        toggleFlash(true);
-      }
-
-      setCameraStarted(true);
-    } catch (err) {
-      console.error('Camera error:', err.message);
-      setCameraError(err.message);
-      alert(`Camera access failed: ${err.message}`);
+    if (videoRef.current) {
+      videoRef.current.srcObject = stream;
+      videoRef.current.onloadedmetadata = () => {
+        videoRef.current.play().catch((err) =>
+          console.warn('Video play error:', err)
+        );
+      };
     }
+
+    if (flashOn) {
+      toggleFlash(true);
+    }
+
+    setCameraStarted(true);
   };
 
-  // Expose methods to parent via ref
-  useImperativeHandle(ref, () => ({
-    startCamera,
-    stopCamera,
-  }));
+  useEffect(() => {
+    initializeCamera();
+    return () => stopCamera();
+  }, []);
 
   return (
     <div className="position-relative" style={{ height: '100%' }}>
-      {!cameraStarted && !cameraError && (
+      {!cameraStarted && (
         <div className="d-flex justify-content-center align-items-center h-100">
-          <div className="text-muted">Camera is off</div>
-        </div>
-      )}
-
-      {cameraError && (
-        <div className="d-flex justify-content-center align-items-center h-100 text-danger text-center px-3">
-          <div>
-            <p><strong>Camera error:</strong></p>
-            <p>{cameraError}</p>
-            <button className="btn btn-outline-primary mt-2" onClick={startCamera}>
-              Retry
-            </button>
-          </div>
+          <div className="text-muted">Loading camera...</div>
         </div>
       )}
 
@@ -110,7 +80,6 @@ const QRScan = forwardRef(({ flashOn, setFlashOn }, ref) => {
             muted
           />
 
-          {/* Overlay Icons */}
           <div className="position-absolute bottom-0 start-0 end-0 d-flex justify-content-between px-3 pb-3">
             <button onClick={() => toggleFlash()} className="btn btn-light rounded-circle">
               {flashOn ? <Lightbulb color="gold" size={24} /> : <LightbulbOff size={24} />}
@@ -131,6 +100,6 @@ const QRScan = forwardRef(({ flashOn, setFlashOn }, ref) => {
       )}
     </div>
   );
-});
+};
 
 export default QRScan;
