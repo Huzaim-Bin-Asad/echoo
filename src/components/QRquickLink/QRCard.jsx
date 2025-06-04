@@ -19,26 +19,36 @@ const QRCard = ({ qrImage, name }) => {
           }}
         ></div>
 
-    {/* Card lowered */}
-    <Card className="text-center shadow rounded pt-2 pb-1 mt-2">
-  <Card.Body className="px-3">
-    <h6 className="mb-1" style={{ marginTop: '3px' }}>{name}</h6>
-    <p className="text-muted" style={{ fontSize: '0.85rem', marginTop: '0px', marginBottom: '8px' }}>
-      Echoo Account
-    </p>
-    <img
-      src={qrImage}
-      alt="QR"
-      className="img-fluid"
-      style={{ minWidth: 170 }}
-    />
-  </Card.Body>
-</Card>
-
+        {/* Card lowered */}
+        <Card className="text-center shadow rounded pt-2 pb-1 mt-2">
+          <Card.Body className="px-3">
+            <h6 className="mb-1" style={{ marginTop: '3px' }}>{name}</h6>
+            <p className="text-muted" style={{ fontSize: '0.85rem', marginTop: '0px', marginBottom: '8px' }}>
+              Echoo Account
+            </p>
+            {qrImage ? (
+              <img
+                src={qrImage}
+                alt="QR"
+                className="img-fluid"
+                style={{ minWidth: 170 }}
+              />
+            ) : (
+              <div className="text-muted" style={{ minHeight: 170 }}>
+                QR code not available
+              </div>
+            )}
+          </Card.Body>
+        </Card>
 
         {/* Share button further below */}
         <div className="d-flex justify-content-center mt-5" style={{ marginBottom: '60px' }}>
-          <button className="btn btn-outline-primary btn-sm">Share code</button>
+          <button
+            className="btn btn-outline-primary btn-sm"
+            disabled={!qrImage}
+          >
+            Share code
+          </button>
         </div>
       </div>
     </div>

@@ -33,7 +33,7 @@ const QRquickLink = () => {
   }, []);
 
   return (
-    <div className="container py-5" style={{ maxWidth: 480 }}>
+    <div className="container py-2" >
       <QRHeader showDotIcon={activeTab !== 'scanCode'} />
       <QRInfo activeTab={activeTab} onTabChange={setActiveTab} />
 
