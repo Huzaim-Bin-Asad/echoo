@@ -40,7 +40,7 @@ const ProfileSetting = () => {
     const fetchData = async () => {
       try {
         const response = await axios.post(
-          "https://echoo-backend.vercel.app/api/SettingUserDataUpdate",
+          "http://localhost:5000/api/SettingUserDataUpdate",
           { user_id }
         );
         const freshData = response.data;

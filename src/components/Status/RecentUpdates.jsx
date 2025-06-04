@@ -132,7 +132,7 @@ const RecentUpdates = ({ onStatusClick }) => {
 
           if (statusObj?.original_media_url) {
             const mediaRes = await fetch(
-              "https://echoo-backend.vercel.app/api/getMediaByUrl",
+              "http://localhost:5000/api/getMediaByUrl",
               {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },

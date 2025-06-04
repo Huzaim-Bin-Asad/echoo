@@ -66,7 +66,7 @@ export const startCurrentStatusFetcher = (setStatusPreview) => {
 
     try {
       const response = await fetch(
-        "https://echoo-backend.vercel.app/api/getCurrentStatus",
+        "http://localhost:5000/api/getCurrentStatus",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

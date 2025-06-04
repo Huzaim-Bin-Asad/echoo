@@ -174,7 +174,7 @@ const ContactStatuses = ({ onStatusesUpdate }) => {
       };
 
       const response = await fetch(
-        "https://echoo-backend.vercel.app/api/get-contacts-statuses",
+        "http://localhost:5000/api/get-contacts-statuses",
         {
           method: "POST",
           headers: requestHeaders,

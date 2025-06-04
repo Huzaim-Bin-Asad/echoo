@@ -1,5 +1,11 @@
-import React, { createContext, useEffect, useState, useContext, useRef } from 'react';
-import axios from 'axios';
+import React, {
+  createContext,
+  useEffect,
+  useState,
+  useContext,
+  useRef,
+} from "react";
+import axios from "axios";
 
 const UserContext = createContext();
 
@@ -10,24 +16,26 @@ export const UserProvider = ({ children }) => {
   const requestCountRef = useRef(0);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     if (!token) {
       setLoading(false);
       return;
     }
 
     const fetchUser = () => {
-      axios.get('https://echoo-backend.vercel.app/api/userinfo', {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-        .then(res => {
+      axios
+        .get("http://localhost:5000/api/userinfo", {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        .then((res) => {
           const newUserData = res.data;
           requestCountRef.current += 1;
 
           // Print full response data every 10 requests
           if (requestCountRef.current % 20 === 0) {
-            
-            if (JSON.stringify(userRef.current) !== JSON.stringify(newUserData)) {
+            if (
+              JSON.stringify(userRef.current) !== JSON.stringify(newUserData)
+            ) {
             } else {
             }
           }
@@ -36,7 +44,7 @@ export const UserProvider = ({ children }) => {
           userRef.current = newUserData;
           setLoading(false);
         })
-        .catch(err => {
+        .catch((err) => {
           console.error("❌ Failed to fetch user:", err);
           setUser(null);
           userRef.current = null;

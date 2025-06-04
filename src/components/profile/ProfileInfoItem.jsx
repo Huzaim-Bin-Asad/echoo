@@ -1,8 +1,16 @@
-import React, { useState, useRef } from 'react';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useRef } from "react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
-const ProfileInfoItem = ({ icon, label, value, onValueChange, type = 'text', placeholder, id }) => {
+const ProfileInfoItem = ({
+  icon,
+  label,
+  value,
+  onValueChange,
+  type = "text",
+  placeholder,
+  id,
+}) => {
   const [isEditing, setIsEditing] = useState(false);
   const [inputValue, setInputValue] = useState(value);
   const hasUpdated = useRef(false); // ✅ Prevent multiple submissions
@@ -33,7 +41,7 @@ const ProfileInfoItem = ({ icon, label, value, onValueChange, type = 'text', pla
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       handleBlur();
     }
   };
@@ -42,34 +50,32 @@ const ProfileInfoItem = ({ icon, label, value, onValueChange, type = 'text', pla
     try {
       const storedUser = JSON.parse(localStorage.getItem("user"));
       if (!storedUser) {
-        console.error('No user data found in localStorage');
+        console.error("No user data found in localStorage");
         return false;
       }
 
-      if (id === 'name') {
-        storedUser.full_name = newValue || '';
-      } else if (id === 'about') {
+      if (id === "name") {
+        storedUser.full_name = newValue || "";
+      } else if (id === "about") {
         storedUser.about_message = newValue;
       } else {
         storedUser[id] = newValue;
       }
 
-      const url = `https://echoo-backend.vercel.app/api/users/update`;
+      const url = `http://localhost:5000/api/users/update`;
       await axios.put(url, storedUser);
       localStorage.setItem("user", JSON.stringify(storedUser));
-      console.log('Profile updated successfully');
+      console.log("Profile updated successfully");
       return true;
     } catch (error) {
-      console.error('Error updating profile:', error);
+      console.error("Error updating profile:", error);
       return false;
     }
   };
 
   return (
     <div className="d-flex align-items-start mb-4">
-      <div className="d-flex align-items-center">
-        {icon}
-      </div>
+      <div className="d-flex align-items-center">{icon}</div>
       <div>
         <small className="text-white">{label}</small>
         <div className="text-white">
@@ -91,11 +97,11 @@ const ProfileInfoItem = ({ icon, label, value, onValueChange, type = 'text', pla
                 onMouseDown={(e) => e.preventDefault()} // ✅ Prevent focus loss before click
                 onClick={handleBlur}
                 style={{
-                  height: '100%',
-                  width: '40px',
-                  color: 'white',
+                  height: "100%",
+                  width: "40px",
+                  color: "white",
                   zIndex: 10,
-                  background: 'transparent'
+                  background: "transparent",
                 }}
               >
                 <svg
@@ -115,8 +121,12 @@ const ProfileInfoItem = ({ icon, label, value, onValueChange, type = 'text', pla
               </button>
             </div>
           ) : (
-            <span onClick={handleFocus} className="text-white" style={{ cursor: 'pointer' }}>
-              {value || 'Click to edit'}
+            <span
+              onClick={handleFocus}
+              className="text-white"
+              style={{ cursor: "pointer" }}
+            >
+              {value || "Click to edit"}
             </span>
           )}
         </div>

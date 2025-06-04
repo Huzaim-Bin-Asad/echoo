@@ -1,8 +1,8 @@
-import React, { useRef, useState } from 'react';
-import { User, SwitchCamera } from 'lucide-react';
-import { useUser } from '../../services/UserContext.jsx';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom'; // ✅ import useNavigate
+import React, { useRef, useState } from "react";
+import { User, SwitchCamera } from "lucide-react";
+import { useUser } from "../../services/UserContext.jsx";
+import axios from "axios";
+import { useNavigate } from "react-router-dom"; // ✅ import useNavigate
 
 const ProfileImage = () => {
   const { user, setUser } = useUser();
@@ -20,10 +20,10 @@ const ProfileImage = () => {
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (!file || isUploading) return;
-  
+
     // Instantly navigate back
     navigate(-1);
-  
+
     const newImageUrl = URL.createObjectURL(file);
     setUser((prev) => ({
       ...prev,
@@ -32,22 +32,26 @@ const ProfileImage = () => {
         profile_picture: newImageUrl,
       },
     }));
-  
+
     setIsUploading(true);
-  
+
     const formData = new FormData();
-    formData.append('profilePicture', file);
-    formData.append('userId', userId);
-  
+    formData.append("profilePicture", file);
+    formData.append("userId", userId);
+
     try {
-      const response = await axios.post('https://echoo-backend.vercel.app/api/upload-profile-picture', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-  
+      const response = await axios.post(
+        "http://localhost:5000/api/upload-profile-picture",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
       const uploadedImageUrl = response.data.profilePictureUrl;
-  
+
       if (uploadedImageUrl !== user?.user?.profile_picture) {
         setUser((prev) => ({
           ...prev,
@@ -58,12 +62,12 @@ const ProfileImage = () => {
         }));
       }
     } catch (error) {
-      console.error('Error uploading profile picture:', error);
+      console.error("Error uploading profile picture:", error);
     } finally {
       setIsUploading(false);
     }
   };
-  
+
   return (
     <div className="position-relative d-flex justify-content-center mb-4">
       {profileImageUrl ? (
@@ -72,11 +76,11 @@ const ProfileImage = () => {
           alt="Profile"
           className="rounded-circle"
           style={{
-            width: '120px',
-            height: '120px',
-            objectFit: 'cover',
-            padding: '10px',
-            display: 'inline-block',
+            width: "120px",
+            height: "120px",
+            objectFit: "cover",
+            padding: "10px",
+            display: "inline-block",
           }}
         />
       ) : (
@@ -84,9 +88,9 @@ const ProfileImage = () => {
           size={120}
           className="rounded-circle text-white"
           style={{
-            backgroundColor: 'grey',
-            padding: '10px',
-            display: 'inline-block',
+            backgroundColor: "grey",
+            padding: "10px",
+            display: "inline-block",
           }}
         />
       )}
@@ -95,12 +99,12 @@ const ProfileImage = () => {
         onClick={handleIconClick}
         className="position-absolute bottom-0 bg-white rounded-circle d-flex justify-content-center align-items-center"
         style={{
-          height: '34px',
-          width: '34px',
-          marginBottom: '5px',
-          left: '58%',
-          zIndex: '1',
-          cursor: 'pointer',
+          height: "34px",
+          width: "34px",
+          marginBottom: "5px",
+          left: "58%",
+          zIndex: "1",
+          cursor: "pointer",
         }}
       >
         <SwitchCamera size={20} color="#121B22" />
@@ -111,7 +115,7 @@ const ProfileImage = () => {
         accept="image/*"
         ref={fileInputRef}
         onChange={handleFileChange}
-        style={{ display: 'none' }}
+        style={{ display: "none" }}
       />
     </div>
   );

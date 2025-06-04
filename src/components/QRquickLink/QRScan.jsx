@@ -1,9 +1,11 @@
-import React, { useRef, useCallback, useState } from 'react';
+import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { LightbulbOff, Lightbulb, Images } from 'lucide-react';
 import { AiOutlineClose } from 'react-icons/ai';
 
 const QRScan = ({ flashOn, setFlashOn }) => {
   const [cameraStarted, setCameraStarted] = useState(false);
+  const [cameraError, setCameraError] = useState(null);
+
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const trackRef = useRef(null);
@@ -17,17 +19,20 @@ const QRScan = ({ flashOn, setFlashOn }) => {
     }
   };
 
-  const toggleFlash = useCallback(async (on = !flashOn) => {
-    try {
-      if (!trackRef.current) return;
-      await trackRef.current.applyConstraints({
-        advanced: [{ torch: on }],
-      });
-      setFlashOn(on);
-    } catch (err) {
-      console.warn('Flash not supported:', err);
-    }
-  }, [flashOn, setFlashOn]);
+  const toggleFlash = useCallback(
+    async (on = !flashOn) => {
+      try {
+        if (!trackRef.current) return;
+        await trackRef.current.applyConstraints({
+          advanced: [{ torch: on }],
+        });
+        setFlashOn(on);
+      } catch (err) {
+        console.warn('Flash not supported:', err);
+      }
+    },
+    [flashOn, setFlashOn]
+  );
 
   const startCamera = async () => {
     try {
@@ -59,19 +64,38 @@ const QRScan = ({ flashOn, setFlashOn }) => {
       setCameraStarted(true);
     } catch (err) {
       console.error('Camera error:', err.message);
+      setCameraError(err.message);
       alert(`Camera access failed: ${err.message}`);
     }
   };
 
+  // Automatically start camera on component mount
+  useEffect(() => {
+    startCamera();
+    return () => stopCamera(); // Cleanup on unmount
+  }, []); // Only once on mount
+
   return (
     <div className="position-relative" style={{ height: '100%' }}>
-      {!cameraStarted ? (
+      {!cameraStarted && !cameraError && (
         <div className="d-flex justify-content-center align-items-center h-100">
-          <button className="btn btn-primary" onClick={startCamera}>
-            Start Camera
-          </button>
+          <div className="text-muted">Requesting camera access...</div>
         </div>
-      ) : (
+      )}
+
+      {cameraError && (
+        <div className="d-flex justify-content-center align-items-center h-100 text-danger text-center px-3">
+          <div>
+            <p><strong>Camera error:</strong></p>
+            <p>{cameraError}</p>
+            <button className="btn btn-outline-primary mt-2" onClick={startCamera}>
+              Retry
+            </button>
+          </div>
+        </div>
+      )}
+
+      {cameraStarted && (
         <>
           <video
             ref={videoRef}

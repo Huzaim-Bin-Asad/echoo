@@ -24,14 +24,11 @@ const ensureBlobUrl = async (status) => {
     }
 
     // Fetch media from backend and save
-    const mediaRes = await fetch(
-      "https://echoo-backend.vercel.app/api/getMediaByUrl",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ media_url: status.original_media_url }),
-      }
-    );
+    const mediaRes = await fetch("http://localhost:5000/api/getMediaByUrl", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ media_url: status.original_media_url }),
+    });
 
     if (!mediaRes.ok) {
       console.warn(
@@ -143,14 +140,11 @@ const generateThumbnail = async (mediaUrl) => {
   if (!mediaUrl) return null;
 
   try {
-    const res = await fetch(
-      "https://echoo-backend.vercel.app/api/getMediaByUrl",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ media_url: mediaUrl }),
-      }
-    );
+    const res = await fetch("http://localhost:5000/api/getMediaByUrl", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ media_url: mediaUrl }),
+    });
 
     if (!res.ok) {
       console.error(
@@ -332,14 +326,11 @@ const refreshStatusesFromBackend = async (user_id) => {
       ({ blobUrl, ...rest }) => rest
     );
 
-    const res = await fetch(
-      "https://echoo-backend.vercel.app/api/getAllStatuses",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id, cached_statuses: cachedToSend }),
-      }
-    );
+    const res = await fetch("http://localhost:5000/api/getAllStatuses", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user_id, cached_statuses: cachedToSend }),
+    });
 
     if (!res.ok) {
       console.error(

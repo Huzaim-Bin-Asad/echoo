@@ -9,7 +9,7 @@ function fetchStatusPrivacy() {
     return Promise.resolve(null);
   }
 
-  return fetch("https://echoo-backend.vercel.app/api/status-privacy-get", {
+  return fetch("http://localhost:5000/api/status-privacy-get", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ user_id: userId }),

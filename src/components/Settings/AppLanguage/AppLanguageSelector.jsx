@@ -92,7 +92,6 @@ export default function AppLanguageSelector({ show, handleClose }) {
       <div
           style={{
             borderBottom: "1px solid lightgray",
-            margin: "16px 0", // Adding some margin for spacing
           }}
         ></div>
       <Modal.Body className="bg-dark text-white custom-modal-body">

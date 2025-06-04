@@ -12,7 +12,7 @@ const RequentlyContacted = () => {
       try {
         const { user_id } = JSON.parse(userData);
         const response = await axios.post(
-          "https://echoo-backend.vercel.app/api/chat/frequent",
+          "http://localhost:5000/api/chat/frequent",
           { user_id }
         );
 

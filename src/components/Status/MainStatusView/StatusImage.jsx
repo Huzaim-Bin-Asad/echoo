@@ -7,16 +7,13 @@ const blobUrlCache = new Map(); // In-memory cache for object URLs
 // New function to fetch readers and likers of this status from server (without cache check)
 const fetchReadersFromServer = async (statusId) => {
   try {
-    const response = await fetch(
-      "https://echoo-backend.vercel.app/api/readers",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ statusId }),
-      }
-    );
+    const response = await fetch("http://localhost:5000/api/readers", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ statusId }),
+    });
 
     if (!response.ok) throw new Error("Failed to fetch readers/likers");
 
@@ -61,7 +58,7 @@ const updateReadersCacheIfNew = (statusId, newReaders, newLikers) => {
 // New function to mark status as read on backend
 const markStatusAsRead = async (userId, statusId) => {
   try {
-    const response = await fetch("https://echoo-backend.vercel.app/api/read", {
+    const response = await fetch("http://localhost:5000/api/read", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

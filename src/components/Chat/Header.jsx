@@ -29,17 +29,21 @@ function Header({ goBack }) {
         receiver_id: receiverId,
       };
 
-
       try {
         // Make a POST request to the backend to get the contact details
-        const response = await axios.post('https://echoo-backend.vercel.app/api/contact-info', payload);
-
+        const response = await axios.post(
+          "http://localhost:5000/api/contact-info",
+          payload
+        );
 
         const { contactName, profilePicture } = response.data;
 
         // Update the display data
         setDisplayData((prev) => {
-          if (prev.name !== contactName || prev.profilePicture !== profilePicture) {
+          if (
+            prev.name !== contactName ||
+            prev.profilePicture !== profilePicture
+          ) {
             return { name: contactName, profilePicture };
           }
           return prev;
@@ -49,7 +53,9 @@ function Header({ goBack }) {
         // Enhanced error handling
         if (error.response) {
           // Server responded with a status other than 2xx
-          console.error(`Backend returned error status: ${error.response.status}`);
+          console.error(
+            `Backend returned error status: ${error.response.status}`
+          );
           console.error("Response data:", error.response.data);
         } else if (error.request) {
           // No response from server
@@ -66,10 +72,12 @@ function Header({ goBack }) {
     };
   }, [user]);
 
-
   return (
     <div className="d-flex align-items-center justify-content-between p-2 border-bottom flex-wrap">
-      <div className="d-flex align-items-center flex-grow-1 flex-shrink-1" style={{ minWidth: 0 }}>
+      <div
+        className="d-flex align-items-center flex-grow-1 flex-shrink-1"
+        style={{ minWidth: 0 }}
+      >
         <ChevronLeft
           size={24}
           className="me-2 flex-shrink-0"
@@ -97,9 +105,21 @@ function Header({ goBack }) {
       </div>
 
       <div className="d-flex align-items-center justify-content-end flex-shrink-0 mt-2 mt-md-0">
-        <PhoneCall size={24} className="mx-2" style={{ color: "black", cursor: "pointer" }} />
-        <Video size={24} className="mx-2" style={{ color: "black", cursor: "pointer" }} />
-        <EllipsisVertical size={24} className="mx-2" style={{ color: "black", cursor: "pointer" }} />
+        <PhoneCall
+          size={24}
+          className="mx-2"
+          style={{ color: "black", cursor: "pointer" }}
+        />
+        <Video
+          size={24}
+          className="mx-2"
+          style={{ color: "black", cursor: "pointer" }}
+        />
+        <EllipsisVertical
+          size={24}
+          className="mx-2"
+          style={{ color: "black", cursor: "pointer" }}
+        />
       </div>
     </div>
   );

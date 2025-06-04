@@ -13,13 +13,15 @@ function ChatDisplay() {
   const [messageInput, setMessageInput] = useState('');
   const [showMediaOptions, setShowMediaOptions] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState('disconnected');
   const { user: contextUser } = useUser();
   const messageEndRef = useRef(null);
   const socketRef = useRef(null);
   const retryCountRef = useRef(0);
   const pendingMessagesRef = useRef([]);
   const isConnectingRef = useRef(false);
-  const userIdRef = useRef(null); // Track userId to prevent unnecessary reconnections
+  const userIdRef = useRef(null);
+  const reconnectTimeoutRef = useRef(null);
 
   const formatMessage = useCallback((msg) => ({
     ...msg,
@@ -32,156 +34,178 @@ function ChatDisplay() {
     if (socketRef.current?.readyState === WebSocket.OPEN) {
       while (pendingMessagesRef.current.length > 0) {
         const message = pendingMessagesRef.current.shift();
-        socketRef.current.send(JSON.stringify(message));
+        try {
+          socketRef.current.send(JSON.stringify(message));
+        } catch (err) {
+          console.error('Failed to send pending message:', err);
+          // Requeue failed message
+          pendingMessagesRef.current.unshift(message);
+          break;
+        }
       }
     }
+  }, []);
+
+  const cleanupWebSocket = useCallback(() => {
+    if (socketRef.current) {
+      socketRef.current.onopen = null;
+      socketRef.current.onclose = null;
+      socketRef.current.onerror = null;
+      socketRef.current.onmessage = null;
+      
+      if (socketRef.current.readyState === WebSocket.OPEN) {
+        socketRef.current.close(1000, 'Normal closure');
+      }
+      socketRef.current = null;
+    }
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+    isConnectingRef.current = false;
   }, []);
 
   const setupWebSocket = useCallback(() => {
     const userId = contextUser?.user?.user_id;
     if (!userId) {
       console.warn('No user ID available for WebSocket connection');
+      setConnectionStatus('disconnected');
       return;
     }
 
-    // Prevent reinitialization if userId hasn’t changed
-    if (userId === userIdRef.current && socketRef.current?.readyState === WebSocket.OPEN) {
-      console.log('WebSocket already connected for user:', userId);
+    // Prevent reinitialization if already connecting or connected
+    if (isConnectingRef.current || 
+        (userId === userIdRef.current && socketRef.current?.readyState === WebSocket.OPEN)) {
       return;
     }
 
-    if (isConnectingRef.current) {
-      console.log('WebSocket connection already in progress');
-      return;
-    }
-
-    if (socketRef.current) {
-      console.log('Closing existing WebSocket');
-      socketRef.current.close(1000, 'Normal closure');
-      socketRef.current = null;
-    }
-
+    cleanupWebSocket();
     isConnectingRef.current = true;
     userIdRef.current = userId;
-    const socket = new WebSocket("wss://echoo-backend-production.up.railway.app");
-    socketRef.current = socket;
-    socket.onopen = () => {
-      console.log('✅ WebSocket connected for user:', userId);
-      setIsConnected(true);
-      retryCountRef.current = 0;
-      isConnectingRef.current = false;
+    setConnectionStatus('connecting');
 
-      socket.send(JSON.stringify({
-        type: 'identify',
-        user_id: userId
-      }));
+    try {
+      const socket = new WebSocket("ws://localhost:5000");
+      socketRef.current = socket;
 
-      sendPendingMessages();
-    };
+      socket.onopen = () => {
+        console.log('✅ WebSocket connected for user:', userId);
+        setIsConnected(true);
+        setConnectionStatus('connected');
+        retryCountRef.current = 0;
+        isConnectingRef.current = false;
 
-    socket.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (data.type === 'messages') {
-          const newMessages = data.payload?.messages?.map(formatMessage) || [];
-          setMessages(prev => {
-            const existingIds = new Set(prev.map(msg => msg.message_id || msg.temp_id));
-            const filtered = newMessages.filter(msg => !existingIds.has(msg.message_id || msg.temp_id));
-            return [...prev, ...filtered];
-          });
-        } else if (data.type === 'new_message') {
-          const msg = data.payload;
-          console.log('new_message:', { temp_id: msg.temp_id, message_id: msg.message_id, text: msg.message_text });
-          setMessages(prev => {
-            // Check for existing message by temp_id or matching content
-            const existingIndex = prev.findIndex(m =>
-              (m.temp_id && m.temp_id === msg.temp_id) ||
-              (m.status === 'sending' && m.text === msg.message_text && m.sender_id === msg.sender_id &&
-               Math.abs(new Date(m.timestamp) - new Date(msg.timestamp)) < 1000)
-            );
-            if (existingIndex !== -1) {
-              // Update existing message
-              return prev.map((m, index) =>
-                index === existingIndex
-                  ? { ...formatMessage(msg), message_id: msg.message_id, status: 'sent' }
-                  : m
-              );
-            }
-            // Add new message if no match (e.g., from another user)
-            return [...prev, { ...formatMessage(msg), status: 'sent' }];
-          });
-        } else if (data.type === 'message_sent') {
-          const { message_id, temp_id, savedMessage } = data.payload;
-          console.log('message_sent:', { temp_id, message_id, text: savedMessage.message_text });
-          setMessages(prev =>
-            prev.map(msg =>
-              msg.temp_id === temp_id
-                ? { ...formatMessage(savedMessage), message_id, status: 'sent' }
-                : msg
-            )
-          );
-        } else if (data.type === 'read_receipt') {
-          const { message_ids } = data.payload;
-          setMessages(prev =>
-            prev.map(msg =>
-              message_ids.includes(msg.message_id) ? { ...msg, read_checker: 'read' } : msg
-            )
-          );
-        } else if (data.type === 'error') {
-          console.error('Server error:', data.payload);
-          setMessages(prev =>
-            prev.map(msg =>
-              msg.status === 'sending' && msg.temp_id ? { ...msg, status: 'failed' } : msg
-            )
-          );
-        } else if (data.type === 'pong') {
-          console.log('🏓 Received pong from server');
-          return; // Handle ping/pong for keep-alive
+        // Send identification message
+        try {
+          socket.send(JSON.stringify({
+            type: 'identify',
+            user_id: userId
+          }));
+          sendPendingMessages();
+        } catch (err) {
+          console.error('Failed to send identify message:', err);
         }
-      } catch (err) {
-        console.error('Error processing message:', err);
-      }
-    };
+      };
 
-    socket.onerror = (err) => {
-      console.error('❌ WebSocket error:', err);
-      setIsConnected(false);
+      socket.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === 'messages') {
+            const newMessages = data.payload?.messages?.map(formatMessage) || [];
+            setMessages(prev => {
+              const existingIds = new Set(prev.map(msg => msg.message_id || msg.temp_id));
+              const filtered = newMessages.filter(msg => !existingIds.has(msg.message_id || msg.temp_id));
+              return [...prev, ...filtered];
+            });
+          } else if (data.type === 'new_message') {
+            const msg = data.payload;
+            setMessages(prev => {
+              const existingIndex = prev.findIndex(m =>
+                (m.temp_id && m.temp_id === msg.temp_id) ||
+                (m.status === 'sending' && m.text === msg.message_text && m.sender_id === msg.sender_id &&
+                Math.abs(new Date(m.timestamp) - new Date(msg.timestamp) < 1000)
+              ));
+              if (existingIndex !== -1) {
+                return prev.map((m, index) =>
+                  index === existingIndex
+                    ? { ...formatMessage(msg), message_id: msg.message_id, status: 'sent' }
+                    : m
+                );
+              }
+              return [...prev, { ...formatMessage(msg), status: 'sent' }];
+            });
+          } else if (data.type === 'message_sent') {
+            const { message_id, temp_id, savedMessage } = data.payload;
+            setMessages(prev =>
+              prev.map(msg =>
+                msg.temp_id === temp_id
+                  ? { ...formatMessage(savedMessage), message_id, status: 'sent' }
+                  : msg
+              )
+            );
+          } else if (data.type === 'read_receipt') {
+            const { message_ids } = data.payload;
+            setMessages(prev =>
+              prev.map(msg =>
+                message_ids.includes(msg.message_id) ? { ...msg, read_checker: 'read' } : msg
+              )
+            );
+          } else if (data.type === 'error') {
+            console.error('Server error:', data.payload);
+            setMessages(prev =>
+              prev.map(msg =>
+                msg.status === 'sending' && msg.temp_id ? { ...msg, status: 'failed' } : msg
+              )
+            );
+          } else if (data.type === 'pong') {
+            console.log('🏓 Received pong from server');
+          }
+        } catch (err) {
+          console.error('Error processing message:', err);
+        }
+      };
+
+      socket.onerror = (err) => {
+        console.error('❌ WebSocket error:', err);
+        setIsConnected(false);
+        setConnectionStatus('error');
+        isConnectingRef.current = false;
+      };
+
+      socket.onclose = (event) => {
+        console.log(`🔌 WebSocket disconnected. Code: ${event.code}, Reason: ${event.reason || 'Unknown'}`);
+        setIsConnected(false);
+        setConnectionStatus('disconnected');
+        isConnectingRef.current = false;
+
+        const maxRetries = 5;
+        if (retryCountRef.current >= maxRetries) {
+          console.log('Max retries reached. Stopping reconnection attempts.');
+          return;
+        }
+
+        const retryDelay = Math.min(2000 * Math.pow(2, retryCountRef.current), 30000);
+        retryCountRef.current += 1;
+
+        reconnectTimeoutRef.current = setTimeout(() => {
+          console.log(`Reconnecting... Attempt ${retryCountRef.current}`);
+          setupWebSocket();
+        }, retryDelay);
+      };
+
+    } catch (err) {
+      console.error('WebSocket initialization error:', err);
+      setConnectionStatus('error');
       isConnectingRef.current = false;
-    };
-
-    socket.onclose = (event) => {
-      console.log(`🔌 WebSocket disconnected. Code: ${event.code}, Reason: ${event.reason || 'Unknown'}`);
-      setIsConnected(false);
-      isConnectingRef.current = false;
-
-      const maxRetries = 5;
-      if (retryCountRef.current >= maxRetries) {
-        console.log('Max retries reached. Stopping reconnection attempts.');
-        return;
-      }
-
-      const retryDelay = Math.min(2000 * Math.pow(2, retryCountRef.current), 30000);
-      retryCountRef.current += 1;
-
-      setTimeout(() => {
-        console.log(`Reconnecting... Attempt ${retryCountRef.current}`);
-        setupWebSocket();
-      }, retryDelay);
-    };
-
-    return () => {
-      if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-        console.log('Cleaning up WebSocket on unmount');
-        socketRef.current.close(1000, 'Component unmount');
-      }
-      isConnectingRef.current = false;
-    };
-  }, [contextUser, formatMessage, sendPendingMessages]);
+    }
+  }, [contextUser, formatMessage, sendPendingMessages, cleanupWebSocket]);
 
   useEffect(() => {
-    const cleanup = setupWebSocket();
-    return cleanup;
-  }, [setupWebSocket]);
+    setupWebSocket();
+    return () => {
+      cleanupWebSocket();
+    };
+  }, [setupWebSocket, cleanupWebSocket]);
 
   const fetchMessages = useCallback(() => {
     if (!isConnected || !socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
@@ -231,10 +255,15 @@ function ChatDisplay() {
     if (!isConnected) return;
     const interval = setInterval(() => {
       if (socketRef.current?.readyState === WebSocket.OPEN) {
+        try {
+          socketRef.current.send(JSON.stringify({ type: 'ping' }));
         console.log('🏓 Sending ping to server');
-        socketRef.current.send(JSON.stringify({ type: 'ping' }));
+        setConnectionStatus('connected');
+      } catch (err) {
+        console.error('Failed to send ping:', err);
+        setConnectionStatus('error');
       }
-    }, 30000);
+  }}, 30000);
     return () => clearInterval(interval);
   }, [isConnected]);
 
@@ -248,8 +277,13 @@ function ChatDisplay() {
 
   const handleSendMessage = () => {
     const messageText = messageInput.trim();
-    if (!messageText || !isConnected || !socketRef.current) {
-      console.warn('Cannot send message: Not connected or empty message');
+    if (!messageText) {
+      console.warn('Cannot send empty message');
+      return;
+    }
+
+    if (!isConnected || !socketRef.current) {
+      console.warn('Cannot send message: Not connected to WebSocket');
       return;
     }
 
@@ -282,23 +316,23 @@ function ChatDisplay() {
     }]);
     setMessageInput('');
 
-    if (socketRef.current.readyState === WebSocket.OPEN) {
-      try {
+    try {
+      if (socketRef.current.readyState === WebSocket.OPEN) {
         socketRef.current.send(JSON.stringify({
           type: 'send_message',
           ...newMessage
         }));
-      } catch (err) {
-        console.error('Failed to send message:', err);
-        setMessages(prev => prev.map(msg =>
-          msg.temp_id === temp_id ? { ...msg, status: 'failed' } : msg
-        ));
+      } else {
+        pendingMessagesRef.current.push({
+          type: 'send_message',
+          ...newMessage
+        });
       }
-    } else {
-      pendingMessagesRef.current.push({
-        type: 'send_message',
-        ...newMessage
-      });
+    } catch (err) {
+      console.error('Failed to send message:', err);
+      setMessages(prev => prev.map(msg =>
+        msg.temp_id === temp_id ? { ...msg, status: 'failed' } : msg
+      ));
     }
   };
 
@@ -307,14 +341,16 @@ function ChatDisplay() {
   );
 
   return (
-<div className="d-flex flex-column h-100" style={{ height: '100vh' }}>
-     <div className="flex-grow-1 overflow-auto p-2" style={{ background: '#f8f9fa' }}>
+    <div className="d-flex flex-column h-100" style={{ height: '100vh' }}>
+
+
+      <div className="flex-grow-1 overflow-auto p-2" style={{ background: '#f8f9fa' }}>
         {sortedMessages.map((msg) => {
           const isMe = msg.from === 'me';
           const emojiOnly = isEmojiOnly(msg.text);
           const isFailed = msg.status === 'failed';
           const isSending = msg.status === 'sending';
-  
+
           return (
             <div
               key={msg.message_id || msg.temp_id}
@@ -364,93 +400,84 @@ function ChatDisplay() {
         })}
         <div ref={messageEndRef} />
       </div>
-  
 
       <div
-  className="p-2 d-flex align-items-end flex-wrap position-relative"
-  style={{
-    backgroundColor: '#f8f9fa',
-    border: 'none',
-  }}
->
-  {/* Input + Icon Container */}
-  <div
-    className="position-relative d-flex align-items-center"
-    style={{
-      flex: '1 1 auto',
-      maxWidth: 'calc(100% - 56px)', // 48px button + spacing
-      marginRight: '0.5rem',
-    }}
-  >
-    {/* Camera Icon */}
-    <Camera
-      size={20}
-      className="position-absolute ms-2"
-      style={{ color: '#6c757d', top: '8px', pointerEvents: 'none' }}
-    />
+        className="p-2 d-flex align-items-end flex-wrap position-relative"
+        style={{
+          backgroundColor: '#f8f9fa',
+          border: 'none',
+        }}
+      >
+        <div
+          className="position-relative d-flex align-items-center"
+          style={{
+            flex: '1 1 auto',
+            maxWidth: 'calc(100% - 56px)',
+            marginRight: '0.5rem',
+          }}
+        >
+          <Camera
+            size={20}
+            className="position-absolute ms-2"
+            style={{ color: '#6c757d', top: '8px', pointerEvents: 'none' }}
+          />
 
-    {/* Textarea */}
-    <textarea
-      rows={1}
-      className="form-control ps-5 pe-5"
-      placeholder="Type something"
-      value={messageInput}
-      onChange={(e) => setMessageInput(e.target.value)}
-      onKeyPress={(e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-          e.preventDefault();
-          handleSendMessage();
-        }
-      }}
-      style={{
-        resize: 'none',
-        overflowY: 'auto',
-        maxHeight: '150px',
-        backgroundColor: 'white',
-        borderRadius: '20px',
-        border: '1px solid #ccc',
-        fontSize: '1rem',
-        lineHeight: '1.5',
-        width: '100%',
-      }}
-    />
+          <textarea
+            rows={1}
+            className="form-control ps-5 pe-5"
+            placeholder="Type something"
+            value={messageInput}
+            onChange={(e) => setMessageInput(e.target.value)}
+            onKeyPress={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSendMessage();
+              }
+            }}
+            style={{
+              resize: 'none',
+              overflowY: 'auto',
+              maxHeight: '150px',
+              backgroundColor: 'white',
+              borderRadius: '20px',
+              border: '1px solid #ccc',
+              fontSize: '1rem',
+              lineHeight: '1.5',
+              width: '100%',
+            }}
+          />
 
-    {/* Paperclip Icon */}
-    <div className="position-absolute end-0 top-50 translate-middle-y me-3">
-      <Paperclip
-        size={20}
-        style={{ color: '#6c757d', cursor: 'pointer' }}
-        onClick={() => setShowMediaOptions(!showMediaOptions)}
-      />
-    </div>
-  </div>
+          <div className="position-absolute end-0 top-50 translate-middle-y me-3">
+            <Paperclip
+              size={20}
+              style={{ color: '#6c757d', cursor: 'pointer' }}
+              onClick={() => setShowMediaOptions(!showMediaOptions)}
+            />
+          </div>
+        </div>
 
-  {/* Send / Mic Button */}
-  <div
-    className="rounded-circle bg-success d-flex align-items-center justify-content-center"
-    style={{
-      width: '48px',
-      height: '48px',
-      cursor: 'pointer',
-      opacity: messageInput.trim() ? 1 : 0.7,
-      flexShrink: 0,
-    }}
-    onClick={messageInput.trim() ? handleSendMessage : null}
-  >
-    {messageInput.trim() ? (
-      <SendHorizontal size={20} color="white" />
-    ) : (
-      <Mic size={20} color="white" />
-    )}
-  </div>
+        <div
+          className="rounded-circle bg-success d-flex align-items-center justify-content-center"
+          style={{
+            width: '48px',
+            height: '48px',
+            cursor: 'pointer',
+            opacity: messageInput.trim() ? 1 : 0.7,
+            flexShrink: 0,
+          }}
+          onClick={messageInput.trim() ? handleSendMessage : null}
+        >
+          {messageInput.trim() ? (
+            <SendHorizontal size={20} color="white" />
+          ) : (
+            <Mic size={20} color="white" />
+          )}
+        </div>
 
-  {/* Media Options */}
-  {showMediaOptions && (
-    <div className="w-100 mt-2">Media Options Component Here</div>
-  )}
-</div>
-
-
+        {showMediaOptions && (
+          <div className="w-100 mt-2">Media Options Component Here</div>
+        )}
+      </div>
     </div>
   );
 }
