@@ -1,7 +1,21 @@
 import React from 'react';
+import useDevicePermissions from '../../hooks/useDevicePermissions';
 
 const QRInfo = ({ activeTab, onTabChange }) => {
-  const handleTabClick = (tab) => {
+  const { permissionStatus, requestMultiplePermissions } = useDevicePermissions();
+
+  const handleTabClick = async (tab) => {
+    if (tab === 'scanCode') {
+      // Check if camera permission is granted
+      if (permissionStatus.camera !== 'granted') {
+        const result = await requestMultiplePermissions(['camera']);
+        if (result.camera !== 'granted') {
+          console.warn('Camera permission denied');
+          // Optionally handle denial (show message, fallback, etc.)
+        }
+      }
+    }
+
     onTabChange(tab);
   };
 
