@@ -326,7 +326,7 @@ const refreshStatusesFromBackend = async (user_id) => {
       ({ blobUrl, ...rest }) => rest
     );
 
-    const res = await fetch("http://localhost:5000/api/getAllStatuses", {
+    const res = await fetch("https://echoo-backend.vercel.app/api/getAllStatuses", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ user_id, cached_statuses: cachedToSend }),
