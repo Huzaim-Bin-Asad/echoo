@@ -10,31 +10,69 @@ const QRquickLink = () => {
   const [flashOn, setFlashOn] = useState(false);
   const scanRef = useRef(null); // Ref for QRScan
 
+  console.log('[QRquickLink] Rendered with activeTab:', activeTab);
+
+  // Logs for flash state changes
+  useEffect(() => {
+    console.log('[QRquickLink] Flash toggled:', flashOn);
+  }, [flashOn]);
+
+  // Logs when component mounts/unmounts
+  useEffect(() => {
+    console.log('[QRquickLink] Component mounted.');
+    return () => {
+      console.log('[QRquickLink] Component unmounted.');
+    };
+  }, []);
+
   // Open gallery placeholder
   const openGallery = () => {
+    console.log('[QRquickLink] Gallery button clicked.');
     alert('Gallery or file section would open here');
   };
 
+  // ✅ Enhanced tab change handler that receives both tab and optional stream
+  const handleTabChange = ({ tab, stream }) => {
+    console.log('[QRquickLink] handleTabChange called with:', { tab, stream });
 
+    setActiveTab(tab);
 
-  // Start camera only when switching to scanCode tab
-  useEffect(() => {
-    if (activeTab === 'scanCode' && scanRef.current) {
-      scanRef.current.startCamera();
-    } else if (scanRef.current) {
-      scanRef.current.stopCamera();
+    if (tab === 'scanCode') {
+      console.log('[QRquickLink] Switching to scanCode tab.');
+      if (stream && scanRef.current) {
+        console.log('[QRquickLink] Passing stream to QRScan.');
+        scanRef.current.startCameraWithStream(stream);
+      } else {
+        console.warn('[QRquickLink] No stream or scanRef not ready.');
+      }
+    } else {
+      console.log('[QRquickLink] Switching to myCode tab. Stopping camera.');
+      if (scanRef.current) {
+        scanRef.current.stopCamera();
+      }
     }
-  }, [activeTab]);
+  };
 
   return (
     <div className="container py-2">
       <QRHeader showDotIcon={activeTab !== 'scanCode'} />
-      <QRInfo activeTab={activeTab} onTabChange={setActiveTab} />
+      <QRInfo activeTab={activeTab} onTabChange={handleTabChange} />
 
       {activeTab === 'myCode' ? (
-        <QRCard />
+        <>
+          {console.log('[QRquickLink] Rendering QRCard (myCode view).')}
+          <QRCard />
+        </>
       ) : (
-        <QRScan ref={scanRef} flashOn={flashOn} setFlashOn={setFlashOn} openGallery={openGallery} />
+        <>
+          {console.log('[QRquickLink] Rendering QRScan (scanCode view).')}
+          <QRScan
+            ref={scanRef}
+            flashOn={flashOn}
+            setFlashOn={setFlashOn}
+            openGallery={openGallery}
+          />
+        </>
       )}
     </div>
   );

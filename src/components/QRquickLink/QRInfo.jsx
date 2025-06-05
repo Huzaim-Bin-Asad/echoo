@@ -5,18 +5,50 @@ const QRInfo = ({ activeTab, onTabChange }) => {
   const { permissionStatus, requestMultiplePermissions } = useDevicePermissions();
 
   const handleTabClick = async (tab) => {
-    if (tab === 'scanCode') {
-      // Check if camera permission is granted
-      if (permissionStatus.camera !== 'granted') {
-        const result = await requestMultiplePermissions(['camera']);
-        if (result.camera !== 'granted') {
-          console.warn('Camera permission denied');
-          // Optionally handle denial (show message, fallback, etc.)
-        }
-      }
-    }
+    console.log(`[QRInfo] Tab clicked: ${tab}`);
 
-    onTabChange(tab);
+    if (tab === 'scanCode') {
+      // Check camera permission
+      console.log('[QRInfo] Checking camera permission...');
+      if (permissionStatus.camera !== 'granted') {
+        console.warn('[QRInfo] Camera permission not granted. Requesting...');
+        try {
+          const result = await requestMultiplePermissions(['camera']);
+          console.log('[QRInfo] Permission request result:', result);
+
+          if (result.camera !== 'granted') {
+            console.warn('[QRInfo] Camera permission denied by user.');
+            return;
+          }
+        } catch (err) {
+          console.error('[QRInfo] Error while requesting camera permission:', err);
+          return;
+        }
+      } else {
+        console.log('[QRInfo] Camera permission already granted.');
+      }
+
+      // Attempt to get camera stream
+      try {
+        console.log('[QRInfo] Requesting media stream...');
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: { ideal: 'environment' },
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+          },
+        });
+
+        console.log('[QRInfo] Media stream obtained successfully.');
+        onTabChange({ tab, stream });
+      } catch (err) {
+        console.error('[QRInfo] Error accessing camera after permission granted:', err);
+        return;
+      }
+    } else {
+      console.log('[QRInfo] Switching to tab:', tab);
+      onTabChange({ tab });
+    }
   };
 
   return (

@@ -36,7 +36,6 @@ export default function BarcodeFetcher() {
 
         const data = await response.json();
         localStorage.setItem("BarcodeData", JSON.stringify(data));
-        console.log("Barcode data cached:", data);
       } catch (error) {
         console.error("Error fetching barcode data:", error);
       }

@@ -1,67 +1,130 @@
-import React, { useEffect, useRef, useCallback, useState } from 'react';
+import React, {
+  useEffect,
+  useRef,
+  useCallback,
+  useState,
+  useImperativeHandle,
+  forwardRef,
+} from 'react';
 import { LightbulbOff, Lightbulb, Images } from 'lucide-react';
 import { AiOutlineClose } from 'react-icons/ai';
 
-const QRScan = ({ flashOn, setFlashOn }) => {
+const QRScan = forwardRef(({ flashOn, setFlashOn }, ref) => {
   const [cameraStarted, setCameraStarted] = useState(false);
-
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const trackRef = useRef(null);
 
   const stopCamera = () => {
+    console.log('[QRScan] Stopping camera...');
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current.getTracks().forEach((track) => {
+        console.log(`[QRScan] Stopping track: ${track.kind}`);
+        track.stop();
+      });
       streamRef.current = null;
       trackRef.current = null;
       setCameraStarted(false);
+      console.log('[QRScan] Camera stopped.');
+    } else {
+      console.warn('[QRScan] No stream to stop.');
     }
   };
 
   const toggleFlash = useCallback(
     async (on = !flashOn) => {
+      console.log(`[QRScan] Toggling flash: ${on}`);
       try {
-        if (!trackRef.current) return;
+        if (!trackRef.current) {
+          console.warn('[QRScan] No video track available for toggling flash.');
+          return;
+        }
         await trackRef.current.applyConstraints({
           advanced: [{ torch: on }],
         });
+        console.log(`[QRScan] Flash ${on ? 'enabled' : 'disabled'}`);
         setFlashOn(on);
       } catch (err) {
-        console.warn('Flash not supported:', err);
+        console.warn('[QRScan] Flash not supported:', err);
       }
     },
     [flashOn, setFlashOn]
   );
 
-  const initializeCamera = async () => {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment' },
-    });
+  const startCamera = async () => {
+    console.log('[QRScan] Requesting camera access...');
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { ideal: 'environment' },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+      });
+      console.log('[QRScan] Camera stream obtained.');
+      streamRef.current = stream;
+      const videoTrack = stream.getVideoTracks()[0];
+      trackRef.current = videoTrack;
+      console.log('[QRScan] Video track initialized:', videoTrack.label);
 
-    streamRef.current = stream;
-    const videoTrack = stream.getVideoTracks()[0];
-    trackRef.current = videoTrack;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+        console.log('[QRScan] Video playback started.');
+      } else {
+        console.warn('[QRScan] Video element is not available.');
+      }
 
-    if (videoRef.current) {
-      videoRef.current.srcObject = stream;
-      videoRef.current.onloadedmetadata = () => {
-        videoRef.current.play().catch((err) =>
-          console.warn('Video play error:', err)
-        );
-      };
+      if (flashOn) {
+        await toggleFlash(true);
+      }
+
+      setCameraStarted(true);
+    } catch (err) {
+      console.error('[QRScan] Error starting camera:', err);
     }
-
-    if (flashOn) {
-      toggleFlash(true);
-    }
-
-    setCameraStarted(true);
   };
 
-  useEffect(() => {
-    initializeCamera();
-    return () => stopCamera();
-  }, []);
+  useImperativeHandle(ref, () => ({
+    startCamera,
+    stopCamera,
+    startCameraWithStream: async (externalStream) => {
+      console.log('[QRScan] Using external stream...');
+      try {
+        streamRef.current = externalStream;
+        const videoTrack = externalStream.getVideoTracks()[0];
+        trackRef.current = videoTrack;
+        console.log('[QRScan] External video track:', videoTrack.label);
+
+        if (videoRef.current) {
+          videoRef.current.srcObject = externalStream;
+          await videoRef.current.play();
+          console.log('[QRScan] External stream playback started.');
+        } else {
+          console.warn('[QRScan] Video element not ready for external stream.');
+        }
+
+        if (flashOn) {
+          await toggleFlash(true);
+        }
+
+        setCameraStarted(true);
+      } catch (err) {
+        console.error('[QRScan] Error using external camera stream:', err);
+      }
+    },
+  }));
+
+useEffect(() => {
+  console.log('[QRScan] Component mounted, starting camera automatically...');
+  startCamera();
+
+  return () => {
+    console.log('[QRScan] Component unmounted, cleaning up...');
+    stopCamera();
+  };
+}, []);
+
 
   return (
     <div className="position-relative" style={{ height: '100%' }}>
@@ -86,13 +149,22 @@ const QRScan = ({ flashOn, setFlashOn }) => {
             </button>
 
             <button
-              onClick={() => alert('Open gallery or files here!')}
+              onClick={() => {
+                console.log('[QRScan] Gallery button clicked.');
+                alert('Open gallery or files here!');
+              }}
               className="btn btn-light rounded-circle"
             >
               <Images size={24} />
             </button>
 
-            <button onClick={stopCamera} className="btn btn-light rounded-circle">
+            <button
+              onClick={() => {
+                console.log('[QRScan] Close button clicked.');
+                stopCamera();
+              }}
+              className="btn btn-light rounded-circle"
+            >
               <AiOutlineClose size={24} />
             </button>
           </div>
@@ -100,6 +172,6 @@ const QRScan = ({ flashOn, setFlashOn }) => {
       )}
     </div>
   );
-};
+});
 
 export default QRScan;
