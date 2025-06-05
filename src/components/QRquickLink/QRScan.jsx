@@ -126,6 +126,7 @@ useEffect(() => {
 }, []);
 
 
+
   return (
     <div className="position-relative" style={{ height: '100%' }}>
       {!cameraStarted && (

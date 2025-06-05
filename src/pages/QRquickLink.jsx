@@ -32,26 +32,26 @@ const QRquickLink = () => {
   };
 
   // ✅ Enhanced tab change handler that receives both tab and optional stream
-  const handleTabChange = ({ tab, stream }) => {
-    console.log('[QRquickLink] handleTabChange called with:', { tab, stream });
+const handleTabChange = ({ tab /*, stream removed*/ }) => {
+  console.log('[QRquickLink] handleTabChange called with:', { tab });
 
-    setActiveTab(tab);
+  setActiveTab(tab);
 
-    if (tab === 'scanCode') {
-      console.log('[QRquickLink] Switching to scanCode tab.');
-      if (stream && scanRef.current) {
-        console.log('[QRquickLink] Passing stream to QRScan.');
-        scanRef.current.startCameraWithStream(stream);
-      } else {
-        console.warn('[QRquickLink] No stream or scanRef not ready.');
-      }
-    } else {
-      console.log('[QRquickLink] Switching to myCode tab. Stopping camera.');
-      if (scanRef.current) {
-        scanRef.current.stopCamera();
-      }
+  if (tab === 'scanCode') {
+    console.log('[QRquickLink] Switching to scanCode tab.');
+    // Don't try to start camera with a stream anymore
+    if (scanRef.current) {
+      // Optionally, you can still start camera, but without a stream passed from outside
+      // Or just leave this empty if you want no camera start here
+      console.log('[QRquickLink] scanRef is ready but no external stream provided.');
     }
-  };
+  } else {
+    console.log('[QRquickLink] Switching to myCode tab. Stopping camera.');
+    if (scanRef.current) {
+      scanRef.current.stopCamera();
+    }
+  }
+};
 
   return (
     <div className="container py-2">
