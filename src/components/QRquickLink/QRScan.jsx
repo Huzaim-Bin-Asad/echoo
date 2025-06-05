@@ -6,6 +6,8 @@ import React, {
   useImperativeHandle,
   forwardRef,
 } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import { LightbulbOff, Lightbulb, Images } from 'lucide-react';
 import { AiOutlineClose } from 'react-icons/ai';
 import jsQR from 'jsqr';
@@ -19,6 +21,7 @@ const QRScan = forwardRef(({ flashOn, setFlashOn, onQRCodeScanned }, ref) => {
   const fileInputRef = useRef(null);
   const scanIntervalRef = useRef(null);
   const lastScannedCode = useRef(null);
+  const navigate = useNavigate(); // 👈 hook to navigate
 
   const stopCamera = () => {
     if (streamRef.current) {
@@ -80,10 +83,16 @@ const QRScan = forwardRef(({ flashOn, setFlashOn, onQRCodeScanned }, ref) => {
 
       const result = await response.json();
       console.log('[QRScan] Contact saved:', result);
+
+      // ✅ Show toast + navigate
+      toast.success('Account created!');
+      stopCamera();
+      setTimeout(() => navigate('/echoo'), 1000); // slight delay to allow toast to show
+
       if (onQRCodeScanned) onQRCodeScanned(codeData);
     } catch (err) {
       console.error('[QRScan] Error handling QR code:', err);
-      alert('Failed to add contact. Please try again.');
+      toast.error('Failed to add contact. Please try again.');
     }
   };
 
