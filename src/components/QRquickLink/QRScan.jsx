@@ -115,17 +115,15 @@ const QRScan = forwardRef(({ flashOn, setFlashOn }, ref) => {
     },
   }));
 
-useEffect(() => {
-  console.log('[QRScan] Component mounted, starting camera automatically...');
-  startCamera();
+  useEffect(() => {
+    console.log('[QRScan] Component mounted, starting camera automatically...');
+    startCamera();
 
-  return () => {
-    console.log('[QRScan] Component unmounted, cleaning up...');
-    stopCamera();
-  };
-}, []);
-
-
+    return () => {
+      console.log('[QRScan] Component unmounted, cleaning up...');
+      stopCamera();
+    };
+  }, []);
 
   return (
     <div className="position-relative" style={{ height: '100%' }}>
@@ -145,7 +143,7 @@ useEffect(() => {
           />
 
           <div className="position-absolute bottom-0 start-0 end-0 d-flex justify-content-between px-3 pb-3">
-            <button onClick={() => toggleFlash()} className="btn btn-light rounded-circle">
+            <button onClick={() => toggleFlash()} className="btn btn-light rounded-circle" aria-label="Toggle flash">
               {flashOn ? <Lightbulb color="gold" size={24} /> : <LightbulbOff size={24} />}
             </button>
 
@@ -155,6 +153,7 @@ useEffect(() => {
                 alert('Open gallery or files here!');
               }}
               className="btn btn-light rounded-circle"
+              aria-label="Open gallery"
             >
               <Images size={24} />
             </button>
@@ -165,6 +164,7 @@ useEffect(() => {
                 stopCamera();
               }}
               className="btn btn-light rounded-circle"
+              aria-label="Close scanner"
             >
               <AiOutlineClose size={24} />
             </button>
