@@ -14,6 +14,7 @@ import Settings from './pages/Settings';
 import Profile from './pages/Profile';
 import useTokenChecker from './hooks/useTokenChecker';
 import ContactStatuses from "./components/Status/contactStatusFetcher/ContactStatuses.jsx"; 
+import BarcodeFetcher from "./components/QRquickLink/BarcodeFetcher";
 
 function AppContent() {
   const location = useLocation();
@@ -30,6 +31,7 @@ function AppContent() {
 
   return (
     <div>
+            <BarcodeFetcher />
       <AuthModal handleLogin={handleLogin} handleSignup={handleSignup} />
       
       <ContactStatuses />
