@@ -15,7 +15,7 @@ function ContactListCache() {
         return;
       }
 
-      fetch("http://localhost:5000/api/notAllowedContacts", {
+      fetch("https://echoo-backend.vercel.app/api/notAllowedContacts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_id: userData.user_id }),

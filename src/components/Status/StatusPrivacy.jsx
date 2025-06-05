@@ -72,7 +72,7 @@ const StatusPrivacy = ({
       }
 
       const response = await fetch(
-        "http://localhost:5000/api/status-privacy-update",
+        "https://echoo-backend.vercel.app/api/status-privacy-update",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

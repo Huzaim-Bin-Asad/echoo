@@ -32,7 +32,7 @@ const StatusView = ({
     const fetchProfilePicture = async () => {
       try {
         const response = await fetch(
-          "http://localhost:5000/api/profile-picture",
+          "https://echoo-backend.vercel.app/api/profile-picture",
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },

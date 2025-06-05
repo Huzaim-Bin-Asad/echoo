@@ -24,7 +24,7 @@ const ensureBlobUrl = async (status) => {
     }
 
     // Fetch media from backend and save
-    const mediaRes = await fetch("http://localhost:5000/api/getMediaByUrl", {
+    const mediaRes = await fetch("https://echoo-backend.vercel.app/api/getMediaByUrl", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ media_url: status.original_media_url }),
@@ -140,7 +140,7 @@ const generateThumbnail = async (mediaUrl) => {
   if (!mediaUrl) return null;
 
   try {
-    const res = await fetch("http://localhost:5000/api/getMediaByUrl", {
+    const res = await fetch("https://echoo-backend.vercel.app/api/getMediaByUrl", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ media_url: mediaUrl }),

@@ -41,7 +41,7 @@ const ProfileImage = () => {
 
     try {
       const response = await axios.post(
-        "http://localhost:5000/api/upload-profile-picture",
+        "https://echoo-backend.vercel.app/api/upload-profile-picture",
         formData,
         {
           headers: {

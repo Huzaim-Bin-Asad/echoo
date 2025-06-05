@@ -386,7 +386,7 @@ const MediaEditor = ({ fileUrl, fileType, onClose }) => {
         if (!mediaUrl) throw new Error("Media URL is empty");
 
         // Send the status to the server
-        const response = await fetch("http://localhost:5000/api/status", {
+        const response = await fetch("https://echoo-backend.vercel.app/api/status", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

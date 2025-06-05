@@ -188,7 +188,7 @@ const ContactsAllowed = ({ handleBackClick }) => {
       console.log("Selected contact IDs:", selectedIds);
 
       const response = await fetch(
-        "http://localhost:5000/api/update-included",
+        "https://echoo-backend.vercel.app/api/update-included",
         {
           method: "POST",
           headers: {

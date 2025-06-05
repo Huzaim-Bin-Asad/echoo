@@ -98,7 +98,7 @@ const ContactsNotAllowed = ({
     };
 
     try {
-      const response = await fetch("http://localhost:5000/api/update-except", {
+      const response = await fetch("https://echoo-backend.vercel.app/api/update-except", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

@@ -25,7 +25,7 @@ const Footer = ({ statusId }) => {
     if (!userId || !statusId) return console.warn("Missing userId or statusId");
 
     try {
-      const response = await fetch("http://localhost:5000/api/like-status", {
+      const response = await fetch("https://echoo-backend.vercel.app/api/like-status", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId, statusId }),

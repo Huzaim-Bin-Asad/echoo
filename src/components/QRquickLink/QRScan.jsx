@@ -8,41 +8,36 @@ import React, {
 } from 'react';
 import { LightbulbOff, Lightbulb, Images } from 'lucide-react';
 import { AiOutlineClose } from 'react-icons/ai';
+import jsQR from 'jsqr';
 
-const QRScan = forwardRef(({ flashOn, setFlashOn }, ref) => {
+const QRScan = forwardRef(({ flashOn, setFlashOn, onQRCodeScanned }, ref) => {
   const [cameraStarted, setCameraStarted] = useState(false);
   const videoRef = useRef(null);
+  const canvasRef = useRef(null);
   const streamRef = useRef(null);
   const trackRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const scanIntervalRef = useRef(null);
+  const lastScannedCode = useRef(null);
 
   const stopCamera = () => {
-    console.log('[QRScan] Stopping camera...');
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => {
-        console.log(`[QRScan] Stopping track: ${track.kind}`);
-        track.stop();
-      });
+      streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
       trackRef.current = null;
-      setCameraStarted(false);
-      console.log('[QRScan] Camera stopped.');
-    } else {
-      console.warn('[QRScan] No stream to stop.');
     }
+    if (scanIntervalRef.current) {
+      clearInterval(scanIntervalRef.current);
+      scanIntervalRef.current = null;
+    }
+    setCameraStarted(false);
   };
 
   const toggleFlash = useCallback(
     async (on = !flashOn) => {
-      console.log(`[QRScan] Toggling flash: ${on}`);
       try {
-        if (!trackRef.current) {
-          console.warn('[QRScan] No video track available for toggling flash.');
-          return;
-        }
-        await trackRef.current.applyConstraints({
-          advanced: [{ torch: on }],
-        });
-        console.log(`[QRScan] Flash ${on ? 'enabled' : 'disabled'}`);
+        if (!trackRef.current) return;
+        await trackRef.current.applyConstraints({ advanced: [{ torch: on }] });
         setFlashOn(on);
       } catch (err) {
         console.warn('[QRScan] Flash not supported:', err);
@@ -51,8 +46,71 @@ const QRScan = forwardRef(({ flashOn, setFlashOn }, ref) => {
     [flashOn, setFlashOn]
   );
 
+  const parseAndSendQRCode = async (codeData) => {
+    try {
+      const currentUser = JSON.parse(localStorage.getItem('user'));
+      if (!currentUser) throw new Error('No user found in localStorage');
+
+      const [receiver_id, contact_name, username, email] = codeData.split('|');
+      if (!receiver_id || !contact_name || !username || !email) {
+        alert('Invalid QR code format');
+        return;
+      }
+
+      const payload = {
+        contact_id: crypto.randomUUID(),
+        user_id: currentUser.user_id,
+        sender_id: currentUser.user_id,
+        receiver_id,
+        contact_name,
+      };
+
+      console.log('[QRScan] Sending contact data:', payload);
+
+      const response = await fetch('https://echoo-backend.vercel.app/api/qrContact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Backend error: ${errText}`);
+      }
+
+      const result = await response.json();
+      console.log('[QRScan] Contact saved:', result);
+      if (onQRCodeScanned) onQRCodeScanned(codeData);
+    } catch (err) {
+      console.error('[QRScan] Error handling QR code:', err);
+      alert('Failed to add contact. Please try again.');
+    }
+  };
+
+  const startScanning = () => {
+    if (!canvasRef.current || !videoRef.current) return;
+    const canvas = canvasRef.current;
+    const context = canvas.getContext('2d');
+
+    scanIntervalRef.current = setInterval(() => {
+      if (
+        videoRef.current.readyState === videoRef.current.HAVE_ENOUGH_DATA &&
+        videoRef.current.videoWidth
+      ) {
+        canvas.width = videoRef.current.videoWidth;
+        canvas.height = videoRef.current.videoHeight;
+        context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, canvas.width, canvas.height);
+        if (code && code.data !== lastScannedCode.current) {
+          lastScannedCode.current = code.data;
+          parseAndSendQRCode(code.data);
+        }
+      }
+    }, 500);
+  };
+
   const startCamera = async () => {
-    console.log('[QRScan] Requesting camera access...');
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
@@ -61,25 +119,18 @@ const QRScan = forwardRef(({ flashOn, setFlashOn }, ref) => {
           height: { ideal: 720 },
         },
       });
-      console.log('[QRScan] Camera stream obtained.');
       streamRef.current = stream;
       const videoTrack = stream.getVideoTracks()[0];
       trackRef.current = videoTrack;
-      console.log('[QRScan] Video track initialized:', videoTrack.label);
 
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         await videoRef.current.play();
-        console.log('[QRScan] Video playback started.');
-      } else {
-        console.warn('[QRScan] Video element is not available.');
       }
 
-      if (flashOn) {
-        await toggleFlash(true);
-      }
-
+      if (flashOn) await toggleFlash(true);
       setCameraStarted(true);
+      startScanning();
     } catch (err) {
       console.error('[QRScan] Error starting camera:', err);
     }
@@ -88,54 +139,58 @@ const QRScan = forwardRef(({ flashOn, setFlashOn }, ref) => {
   useImperativeHandle(ref, () => ({
     startCamera,
     stopCamera,
-    startCameraWithStream: async (externalStream) => {
-      console.log('[QRScan] Using external stream...');
-      try {
-        streamRef.current = externalStream;
-        const videoTrack = externalStream.getVideoTracks()[0];
-        trackRef.current = videoTrack;
-        console.log('[QRScan] External video track:', videoTrack.label);
-
-        if (videoRef.current) {
-          videoRef.current.srcObject = externalStream;
-          await videoRef.current.play();
-          console.log('[QRScan] External stream playback started.');
-        } else {
-          console.warn('[QRScan] Video element not ready for external stream.');
-        }
-
-        if (flashOn) {
-          await toggleFlash(true);
-        }
-
-        setCameraStarted(true);
-      } catch (err) {
-        console.error('[QRScan] Error using external camera stream:', err);
-      }
-    },
   }));
 
-  // Only stop camera on unmount
   useEffect(() => {
     return () => {
-      console.log('[QRScan] Component unmounted, cleaning up...');
       stopCamera();
     };
   }, []);
 
-  // Start camera *after* videoRef is attached
   useEffect(() => {
     if (videoRef.current && !cameraStarted) {
-      console.log('[QRScan] Video element ready, starting camera...');
       startCamera();
     }
   }, [videoRef.current]);
 
+  const openGallery = () => {
+    if (fileInputRef.current) fileInputRef.current.click();
+  };
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = canvasRef.current;
+          const ctx = canvas.getContext('2d');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          ctx.drawImage(img, 0, 0);
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const code = jsQR(imageData.data, canvas.width, canvas.height);
+          if (code) {
+            parseAndSendQRCode(code.data);
+          } else {
+            alert('No QR code detected in image.');
+          }
+        };
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   return (
-    <div className="position-relative" style={{ height: '100%' }}>
+    <div
+      className="position-relative d-flex align-items-center justify-content-center"
+      style={{ height: '100%', width: '100%' }}
+    >
       {!cameraStarted && (
-        <div className="d-flex justify-content-center align-items-center h-100">
-          <div className="text-muted">Loading camera...</div>
+        <div className="text-muted position-absolute top-50 start-50 translate-middle">
+          Loading camera...
         </div>
       )}
 
@@ -147,29 +202,43 @@ const QRScan = forwardRef(({ flashOn, setFlashOn }, ref) => {
         style={{ display: cameraStarted ? 'block' : 'none' }}
       />
 
+      <canvas ref={canvasRef} style={{ display: 'none' }} />
+
+      <input
+        type="file"
+        accept="image/*"
+        ref={fileInputRef}
+        style={{ display: 'none' }}
+        onChange={handleFileSelect}
+      />
+
       {cameraStarted && (
-        <div className="position-absolute bottom-0 start-0 end-0 d-flex justify-content-between px-3 pb-3">
-          <button onClick={() => toggleFlash()} className="btn btn-light rounded-circle" aria-label="Toggle flash">
+        <div
+          className="position-absolute bottom-0 start-0 end-0 d-flex justify-content-between px-3 pb-3"
+          style={{ gap: '4vw' }}
+        >
+          <button
+            onClick={() => toggleFlash()}
+            className="btn btn-light rounded-pill shadow"
+            style={{ width: '12vw', height: '12vw', maxWidth: 60, maxHeight: 60 }}
+            aria-label="Toggle flash"
+          >
             {flashOn ? <Lightbulb color="gold" size={24} /> : <LightbulbOff size={24} />}
           </button>
 
           <button
-            onClick={() => {
-              console.log('[QRScan] Gallery button clicked.');
-              alert('Open gallery or files here!');
-            }}
-            className="btn btn-light rounded-circle"
+            onClick={openGallery}
+            className="btn btn-light rounded-pill shadow"
+            style={{ width: '12vw', height: '12vw', maxWidth: 60, maxHeight: 60 }}
             aria-label="Open gallery"
           >
             <Images size={24} />
           </button>
 
           <button
-            onClick={() => {
-              console.log('[QRScan] Close button clicked.');
-              stopCamera();
-            }}
-            className="btn btn-light rounded-circle"
+            onClick={() => stopCamera()}
+            className="btn btn-light rounded-pill shadow"
+            style={{ width: '12vw', height: '12vw', maxWidth: 60, maxHeight: 60 }}
             aria-label="Close scanner"
           >
             <AiOutlineClose size={24} />
