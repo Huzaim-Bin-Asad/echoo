@@ -24,7 +24,7 @@ export default function BarcodeFetcher() {
       }
 
       try {
-        const response = await fetch("http://localhost:5000/api/user-barcode", {
+        const response = await fetch("https://echoo-backend.vercel.app/api/user-barcode", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ user_id: userId }),
