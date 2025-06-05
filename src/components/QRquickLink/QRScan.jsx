@@ -115,15 +115,21 @@ const QRScan = forwardRef(({ flashOn, setFlashOn }, ref) => {
     },
   }));
 
+  // Only stop camera on unmount
   useEffect(() => {
-    console.log('[QRScan] Component mounted, starting camera automatically...');
-    startCamera();
-
     return () => {
       console.log('[QRScan] Component unmounted, cleaning up...');
       stopCamera();
     };
   }, []);
+
+  // Start camera *after* videoRef is attached
+  useEffect(() => {
+    if (videoRef.current && !cameraStarted) {
+      console.log('[QRScan] Video element ready, starting camera...');
+      startCamera();
+    }
+  }, [videoRef.current]);
 
   return (
     <div className="position-relative" style={{ height: '100%' }}>
@@ -133,43 +139,42 @@ const QRScan = forwardRef(({ flashOn, setFlashOn }, ref) => {
         </div>
       )}
 
+      <video
+        ref={videoRef}
+        className="w-100 h-100 object-fit-cover rounded"
+        playsInline
+        muted
+        style={{ display: cameraStarted ? 'block' : 'none' }}
+      />
+
       {cameraStarted && (
-        <>
-          <video
-            ref={videoRef}
-            className="w-100 h-100 object-fit-cover rounded"
-            playsInline
-            muted
-          />
+        <div className="position-absolute bottom-0 start-0 end-0 d-flex justify-content-between px-3 pb-3">
+          <button onClick={() => toggleFlash()} className="btn btn-light rounded-circle" aria-label="Toggle flash">
+            {flashOn ? <Lightbulb color="gold" size={24} /> : <LightbulbOff size={24} />}
+          </button>
 
-          <div className="position-absolute bottom-0 start-0 end-0 d-flex justify-content-between px-3 pb-3">
-            <button onClick={() => toggleFlash()} className="btn btn-light rounded-circle" aria-label="Toggle flash">
-              {flashOn ? <Lightbulb color="gold" size={24} /> : <LightbulbOff size={24} />}
-            </button>
+          <button
+            onClick={() => {
+              console.log('[QRScan] Gallery button clicked.');
+              alert('Open gallery or files here!');
+            }}
+            className="btn btn-light rounded-circle"
+            aria-label="Open gallery"
+          >
+            <Images size={24} />
+          </button>
 
-            <button
-              onClick={() => {
-                console.log('[QRScan] Gallery button clicked.');
-                alert('Open gallery or files here!');
-              }}
-              className="btn btn-light rounded-circle"
-              aria-label="Open gallery"
-            >
-              <Images size={24} />
-            </button>
-
-            <button
-              onClick={() => {
-                console.log('[QRScan] Close button clicked.');
-                stopCamera();
-              }}
-              className="btn btn-light rounded-circle"
-              aria-label="Close scanner"
-            >
-              <AiOutlineClose size={24} />
-            </button>
-          </div>
-        </>
+          <button
+            onClick={() => {
+              console.log('[QRScan] Close button clicked.');
+              stopCamera();
+            }}
+            className="btn btn-light rounded-circle"
+            aria-label="Close scanner"
+          >
+            <AiOutlineClose size={24} />
+          </button>
+        </div>
       )}
     </div>
   );
