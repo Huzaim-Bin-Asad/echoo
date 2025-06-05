@@ -1,44 +1,46 @@
 import React from 'react';
+import { toast } from 'react-toastify';
 import useDevicePermissions from '../../hooks/useDevicePermissions';
 
 const QRInfo = ({ activeTab, onTabChange }) => {
   const { permissionStatus, requestMultiplePermissions } = useDevicePermissions();
 
-const handleTabClick = async (tab) => {
-  console.log(`[QRInfo] Tab clicked: ${tab}`);
+  const handleTabClick = async (tab) => {
+    console.log(`[QRInfo] Tab clicked: ${tab}`);
 
-  if (tab === 'scanCode') {
-    // Check camera permission
-    console.log('[QRInfo] Checking camera permission...');
-    if (permissionStatus.camera !== 'granted') {
-      console.warn('[QRInfo] Camera permission not granted. Requesting...');
-      try {
-        const result = await requestMultiplePermissions(['camera']);
-        console.log('[QRInfo] Permission request result:', result);
+    if (tab === 'scanCode') {
+      console.log('[QRInfo] Checking camera permission...');
+      
+      if (permissionStatus.camera !== 'granted') {
+        toast.info('Camera permission required to scan QR code.');
 
-        if (result.camera !== 'granted') {
-          console.warn('[QRInfo] Camera permission denied by user.');
+        try {
+          const result = await requestMultiplePermissions(['camera']);
+          console.log('[QRInfo] Permission request result:', result);
+
+          if (result.camera !== 'granted') {
+            toast.error('Camera access denied. Please enable it to scan QR codes.');
+            return;
+          } else {
+            toast.success('Camera permission granted!');
+          }
+        } catch (err) {
+          console.error('[QRInfo] Error while requesting camera permission:', err);
+          toast.error('Failed to request camera permission.');
           return;
         }
-      } catch (err) {
-        console.error('[QRInfo] Error while requesting camera permission:', err);
-        return;
+      } else {
+        console.log('[QRInfo] Camera permission already granted.');
+        toast.success('Camera already authorized!');
       }
+
+      onTabChange({ tab });
+
     } else {
-      console.log('[QRInfo] Camera permission already granted.');
+      console.log('[QRInfo] Switching to tab:', tab);
+      onTabChange({ tab });
     }
-
-    // *** REMOVED getUserMedia call here ***
-
-    // Instead of opening camera, just notify tab change without stream
-    onTabChange({ tab });
-
-  } else {
-    console.log('[QRInfo] Switching to tab:', tab);
-    onTabChange({ tab });
-  }
-};
-
+  };
 
   return (
     <div className="border-bottom mb-3">

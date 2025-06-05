@@ -15,6 +15,8 @@ import Profile from './pages/Profile';
 import useTokenChecker from './hooks/useTokenChecker';
 import ContactStatuses from "./components/Status/contactStatusFetcher/ContactStatuses.jsx"; 
 import BarcodeFetcher from "./components/QRquickLink/BarcodeFetcher";
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 function AppContent() {
   const location = useLocation();
@@ -30,7 +32,9 @@ function AppContent() {
   };
 
   return (
-    <div>
+    <div>      
+      <ToastContainer position="top-center" autoClose={3000} />
+
             <BarcodeFetcher />
       <AuthModal handleLogin={handleLogin} handleSignup={handleSignup} />
       
