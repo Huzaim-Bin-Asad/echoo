@@ -2,51 +2,55 @@ import React, { useState } from 'react';
 import Header from '../components/NewGroup/Header';
 import ContactList from '../components/NewGroup/ContactList';
 import SelectedContacts from '../components/NewGroup/SelectedContacts';
-import { contacts as allContacts } from '../components/NewGroup/ContactList';
-import ContactItem from '../components/NewGroup/ContactItem';
-import ChevronButton from '../components/NewGroup/ChevronButton'; // Import ChevronButton
+import ChevronButton from '../components/NewGroup/ChevronButton';
 
-const NewContact = () => {
+const NewGroup = () => {
+  const [combinedContacts, setCombinedContacts] = useState([]);
   const [selected, setSelected] = useState([]);
 
-  const toggleSelect = (contact) => {
-    if (selected.includes(contact)) {
-      setSelected(selected.filter((c) => c !== contact));
+const toggleSelect = (contact) => {
+  setSelected((prevSelected) => {
+    const isSelected = prevSelected.some((c) => c.id === contact.id);
+    let newSelected;
+    if (isSelected) {
+      newSelected = prevSelected.filter((c) => c.id !== contact.id);
     } else {
-      setSelected([...selected, contact]);
+      newSelected = [...prevSelected, contact];
     }
-  };
+    console.log('Updated selected contacts:', newSelected);
+    return newSelected;
+  });
+};
 
-  const frequentlyContacted = allContacts.slice(0, 5);
-  const others = allContacts.slice(5);
+
 
   return (
     <div className="bg-dark text-white min-vh-100">
-      <Header count={selected.length} total={allContacts.length} />
+      <Header count={selected.length} total={combinedContacts.length} />
+
       {selected.length > 0 && (
         <SelectedContacts selected={selected} toggleSelect={toggleSelect} />
       )}
+
       <div className="px-3">
-        <small className="fw-bold">Frequently Contacted</small>
-        <div className="d-flex flex-column mt-2">
-          {frequentlyContacted.map((contact, idx) => (
-            <div key={idx} onClick={() => toggleSelect(contact)}>
-              <ContactItem {...contact} selected={selected.includes(contact)} />
-            </div>
-          ))}
-        </div>
-        <small className="fw-bold mt-4 d-block">Contacts on Echoo</small>
+        <small className="fw-bold d-block mt-4">Recently Contacted</small>
         <ContactList
-          contacts={others}
           selected={selected}
           toggleSelect={toggleSelect}
+          filterBySource="frequentlyContacted"
+        />
+
+        <small className="fw-bold d-block mt-2">Contacts on Echoo</small>
+        <ContactList
+          selected={selected}
+          toggleSelect={toggleSelect}
+          filterBySource="hideStatusList"
         />
       </div>
 
-      {/* Chevron Button */}
       <ChevronButton />
     </div>
   );
 };
 
-export default NewContact;
+export default NewGroup;
