@@ -64,9 +64,7 @@ const renderContacts = (contacts) =>
       key={contact.id}
       className="mb-3"
       onClick={() => {
-        console.log('Clicked contact userId:', contact.userId);
-        console.log('All selected contacts:', selected);
-        toggleSelect(contact);
+                toggleSelect(contact);
       }}
     >
       <input type="hidden" value={contact.userId} />

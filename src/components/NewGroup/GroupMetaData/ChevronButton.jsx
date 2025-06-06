@@ -2,10 +2,7 @@ import React from 'react';
 import { ChevronRight } from 'lucide-react';
 
 const ChevronButton = ({ onClick, data }) => {
-  const handleClick = () => {
-    console.log('ChevronButton clicked with data:', data);
-    onClick(data); // forward it if needed
-  };
+
 
   return (
     <div
@@ -17,7 +14,6 @@ const ChevronButton = ({ onClick, data }) => {
         borderRadius: '12px',
         cursor: 'pointer',
       }}
-      onClick={handleClick}
     >
       <ChevronRight size={24} color="white" />
     </div>

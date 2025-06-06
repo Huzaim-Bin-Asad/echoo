@@ -3,27 +3,67 @@ import Header from '../components/NewGroup/Header';
 import ContactList from '../components/NewGroup/ContactList';
 import SelectedContacts from '../components/NewGroup/SelectedContacts';
 import ChevronButton from '../components/NewGroup/ChevronButton';
+import GroupMetaData from '../components/NewGroup/GroupMetaData';
+import GroupPermissions from '../components/NewGroup/permissions/GroupPermissions'; // ✅ Import
 
 const NewGroup = () => {
   const [combinedContacts, setCombinedContacts] = useState([]);
   const [selected, setSelected] = useState([]);
+  const [showGroupMetaData, setShowGroupMetaData] = useState(false);
+  const [showGroupPermissions, setShowGroupPermissions] = useState(false);
 
-const toggleSelect = (contact) => {
-  setSelected((prevSelected) => {
-    const isSelected = prevSelected.some((c) => c.id === contact.id);
-    let newSelected;
-    if (isSelected) {
-      newSelected = prevSelected.filter((c) => c.id !== contact.id);
+  const toggleSelect = (contact) => {
+    setSelected((prevSelected) => {
+      const isSelected = prevSelected.some((c) => c.id === contact.id);
+      const newSelected = isSelected
+        ? prevSelected.filter((c) => c.id !== contact.id)
+        : [...prevSelected, contact];
+
+      console.log('Updated selected contacts:', newSelected);
+      return newSelected;
+    });
+  };
+
+  const handleChevronClick = () => {
+    if (selected.length > 0) {
+      console.log('Final selected contacts:', selected);
+      setShowGroupMetaData(true);
+      setShowGroupPermissions(false);
     } else {
-      newSelected = [...prevSelected, contact];
+      alert('Please select at least one contact.');
     }
-    console.log('Updated selected contacts:', newSelected);
-    return newSelected;
-  });
-};
+  };
 
+  // Callback to handle "Group permissions" action from GroupMetaData
+  const handleGroupSettingAction = (action) => {
+    if (action === "group-setting") {
+      setShowGroupPermissions(true);
+      setShowGroupMetaData(false);
+    }
+  };
 
+  // Callback for back action from GroupPermissions to reopen GroupMetaData
+  const handleBackFromPermissions = () => {
+    setShowGroupPermissions(false);
+    setShowGroupMetaData(true);
+  };
 
+  // Render GroupPermissions exclusively when active
+  if (showGroupPermissions) {
+    return <GroupPermissions onBack={handleBackFromPermissions} />;
+  }
+
+  // Render GroupMetaData exclusively when active, passing members and callback
+  if (showGroupMetaData) {
+    return (
+      <GroupMetaData
+        members={selected}
+        onGroupSettingAction={handleGroupSettingAction}
+      />
+    );
+  }
+
+  // Default view: selection UI
   return (
     <div className="bg-dark text-white min-vh-100">
       <Header count={selected.length} total={combinedContacts.length} />
@@ -48,7 +88,7 @@ const toggleSelect = (contact) => {
         />
       </div>
 
-      <ChevronButton />
+      <ChevronButton onClick={handleChevronClick} data={selected} />
     </div>
   );
 };
