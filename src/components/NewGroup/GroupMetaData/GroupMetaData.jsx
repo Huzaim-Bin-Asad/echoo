@@ -1,17 +1,18 @@
 import { Camera, SmilePlus } from "lucide-react";
 import { useEffect, useImperativeHandle, forwardRef, useState } from "react";
 
-const GroupMetaData = forwardRef(({ onMetaDataChange }, ref) => {
+const GroupMetaData = forwardRef(({ onMetaDataChange, initialGroupName = "", initialGroupImage = null }, ref) => {
   const [groupImage, setGroupImage] = useState(null);
   const [groupName, setGroupName] = useState("");
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const storedImage = sessionStorage.getItem("groupImage");
     const storedName = sessionStorage.getItem("groupName");
 
-    if (storedImage) setGroupImage(storedImage);
-    if (storedName) setGroupName(storedName);
-  }, []);
+    setGroupImage(storedImage || initialGroupImage || null);
+    setGroupName(storedName || initialGroupName || "");
+  }, [initialGroupImage, initialGroupName]);
 
   const saveToLocalStorage = (image, name) => {
     localStorage.setItem(
@@ -26,10 +27,7 @@ const GroupMetaData = forwardRef(({ onMetaDataChange }, ref) => {
   useEffect(() => {
     sessionStorage.setItem("groupImage", groupImage || "");
     sessionStorage.setItem("groupName", groupName);
-
-    // Save to localStorage when data changes
     saveToLocalStorage(groupImage, groupName);
-
     if (onMetaDataChange) {
       onMetaDataChange({ groupImage, groupName });
     }
@@ -46,17 +44,13 @@ const GroupMetaData = forwardRef(({ onMetaDataChange }, ref) => {
     if (file) {
       const imageUrl = URL.createObjectURL(file);
       setGroupImage(imageUrl);
-
-      // Save image immediately to localStorage
       saveToLocalStorage(imageUrl, groupName);
     }
   };
 
   useImperativeHandle(ref, () => ({
-    getGroupMetaData: () => ({
-      groupImage,
-      groupName,
-    }),
+    getGroupMetaData: () => ({ groupImage, groupName }),
+    showGroupNameError: (msg) => setError(msg),
   }));
 
   return (
@@ -110,8 +104,11 @@ const GroupMetaData = forwardRef(({ onMetaDataChange }, ref) => {
             type="text"
             id="groupNameInput"
             value={groupName}
-            placeholder="Group Name"
-            onChange={(e) => setGroupName(e.target.value)}
+            placeholder="Choose a Group Name"
+            onChange={(e) => {
+              setGroupName(e.target.value);
+              if (error) setError("");
+            }}
             className="w-100"
             style={{
               backgroundColor: "transparent",
@@ -122,6 +119,9 @@ const GroupMetaData = forwardRef(({ onMetaDataChange }, ref) => {
               paddingBottom: "6px",
             }}
           />
+          {error && (
+            <div style={{ fontSize: "0.75rem", color: "#ffbdbd", marginTop: 4 }}>{error}</div>
+          )}
         </div>
 
         <button

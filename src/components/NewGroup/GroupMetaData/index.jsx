@@ -14,13 +14,11 @@ export default function GroupScreen({
 }) {
   const groupMetaRef = useRef(null);
 
-  // Clear stored sessionStorage on mount (page refresh)
   useEffect(() => {
     sessionStorage.removeItem("groupMetaData");
     sessionStorage.removeItem("disappearingDisplayText");
   }, []);
 
-  // Initialize metaData from sessionStorage or defaults
   const [metaData, setMetaData] = useState(() => {
     const saved = sessionStorage.getItem("groupMetaData");
     if (saved) {
@@ -29,14 +27,11 @@ export default function GroupScreen({
     return { groupImage: null, groupName: "", disappearingDuration: disappearingDuration || "off" };
   });
 
-  // Initialize currentDuration from metaData or props
   const [currentDuration, setCurrentDuration] = useState(metaData.disappearingDuration || "off");
   const [showDisappearingMessages, setShowDisappearingMessages] = useState(false);
 
-  // When currentDuration changes, update metaData & sessionStorage
   const handleDisappearingDurationChange = (value) => {
-
-    if (value === currentDuration) return; // Avoid unnecessary updates
+    if (value === currentDuration) return;
 
     setCurrentDuration(value);
 
@@ -50,7 +45,6 @@ export default function GroupScreen({
 
     sessionStorage.setItem("disappearingDisplayText", displayText);
 
-    // Update metaData with disappearingDuration and persist
     setMetaData((prev) => {
       const updated = { ...prev, disappearingDuration: value };
       sessionStorage.setItem("groupMetaData", JSON.stringify(updated));
@@ -62,7 +56,16 @@ export default function GroupScreen({
     }
   };
 
-  const handleClick = () => {
+  const handleChevronAction = (result) => {
+    if (result.error) {
+      // Forward error to GroupMetaData to display to user
+      if (groupMetaRef.current && typeof groupMetaRef.current.showGroupNameError === "function") {
+        groupMetaRef.current.showGroupNameError(result.error);
+      }
+      return;
+    }
+
+    // Proceed with group creation
     alert("Group created!");
   };
 
@@ -71,8 +74,6 @@ export default function GroupScreen({
   };
 
   const handleGroupSettingAction = async (source, displayText) => {
-
-
     if (groupMetaRef.current && typeof groupMetaRef.current.getGroupMetaData === "function") {
       const groupMeta = await groupMetaRef.current.getGroupMetaData();
     }
@@ -153,14 +154,15 @@ export default function GroupScreen({
               >
                 {member.name}
               </span>
+              <span style={{ display: "none" }} data-user-id={member.userId}>
+                {member.userId}
+              </span>
             </div>
           ))}
         </div>
       </div>
 
-      <ChevronButton onClick={handleClick} backgroundColor="#A78BFA" color="#1E1B24">
-        ✓
-      </ChevronButton>
+      <ChevronButton onClick={handleChevronAction} backgroundColor="#A78BFA" color="#1E1B24" />
 
       {showDisappearingMessages && (
         <div
