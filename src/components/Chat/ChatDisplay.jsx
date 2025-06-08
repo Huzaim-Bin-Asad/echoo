@@ -13,6 +13,7 @@ function ChatDisplay() {
   const [messageInput, setMessageInput] = useState('');
   const [showMediaOptions, setShowMediaOptions] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
+  // eslint-disable-next-line no-unused-vars
   const [connectionStatus, setConnectionStatus] = useState('disconnected');
   const { user: contextUser } = useUser();
   const messageEndRef = useRef(null);

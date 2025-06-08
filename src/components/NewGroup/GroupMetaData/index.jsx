@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { User } from "lucide-react";
 import GroupHeader from "./GroupHeader";
 import GroupMetaData from "./GroupMetaData";
@@ -10,9 +10,58 @@ export default function GroupScreen({
   members = [],
   onGroupSettingAction,
   disappearingDuration = "off",
-  onDisappearingDurationChange, // <-- callback from parent
+  onDisappearingDurationChange,
 }) {
+  const groupMetaRef = useRef(null);
+
+  // Clear stored sessionStorage on mount (page refresh)
+  useEffect(() => {
+    sessionStorage.removeItem("groupMetaData");
+    sessionStorage.removeItem("disappearingDisplayText");
+  }, []);
+
+  // Initialize metaData from sessionStorage or defaults
+  const [metaData, setMetaData] = useState(() => {
+    const saved = sessionStorage.getItem("groupMetaData");
+    if (saved) {
+      return JSON.parse(saved);
+    }
+    return { groupImage: null, groupName: "", disappearingDuration: disappearingDuration || "off" };
+  });
+
+  // Initialize currentDuration from metaData or props
+  const [currentDuration, setCurrentDuration] = useState(metaData.disappearingDuration || "off");
   const [showDisappearingMessages, setShowDisappearingMessages] = useState(false);
+
+  // When currentDuration changes, update metaData & sessionStorage
+  const handleDisappearingDurationChange = (value) => {
+    console.log("GroupScreen received disappearingDuration:", value);
+
+    if (value === currentDuration) return; // Avoid unnecessary updates
+
+    setCurrentDuration(value);
+
+    const durationMap = {
+      off: "None",
+      "24h": "24 hours",
+      "7d": "7 days",
+      "90d": "90 days",
+    };
+    const displayText = durationMap[value] || "None";
+
+    sessionStorage.setItem("disappearingDisplayText", displayText);
+
+    // Update metaData with disappearingDuration and persist
+    setMetaData((prev) => {
+      const updated = { ...prev, disappearingDuration: value };
+      sessionStorage.setItem("groupMetaData", JSON.stringify(updated));
+      return updated;
+    });
+
+    if (onDisappearingDurationChange) {
+      onDisappearingDurationChange(value);
+    }
+  };
 
   const handleClick = () => {
     alert("Group created!");
@@ -22,29 +71,40 @@ export default function GroupScreen({
     setShowDisappearingMessages(true);
   };
 
-  const closeDisappearingMessages = () => {
-    setShowDisappearingMessages(false);
-  };
+  const handleGroupSettingAction = async (source, displayText) => {
+    console.log("GroupSettingAction Triggered:");
+    console.log("Source:", source);
+    console.log("Disappearing Message Display Text:", displayText);
 
-  const handleGroupSettingAction = (source) => {
+    if (groupMetaRef.current && typeof groupMetaRef.current.getGroupMetaData === "function") {
+      const groupMeta = await groupMetaRef.current.getGroupMetaData();
+      console.log("GroupMetaData returned:", groupMeta);
+    }
+
     if (onGroupSettingAction) {
-      onGroupSettingAction(source);
+      onGroupSettingAction(source, displayText);
     }
   };
 
+  const handleMetaDataChange = (data) => {
+    console.log("MetaData changed:", data);
+    setMetaData((prev) => {
+      const updated = { ...prev, ...data };
+      sessionStorage.setItem("groupMetaData", JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   return (
-    <div
-      className="min-vh-100 text-white position-relative"
-      style={{ backgroundColor: "#3c324f" }}
-    >
+    <div className="min-vh-100 text-white position-relative" style={{ backgroundColor: "#3c324f" }}>
       <GroupHeader />
-      <GroupMetaData />
+      <GroupMetaData ref={groupMetaRef} onMetaDataChange={handleMetaDataChange} />
 
       <GroupSetting
         onOpenDisappearingMessages={openDisappearingMessages}
         onOpenGroupPermissions={handleGroupSettingAction}
-        disappearingDuration={disappearingDuration}
-        onDisappearingDurationChange={onDisappearingDurationChange}
+        disappearingDuration={currentDuration}
+        onDisappearingDurationChange={handleDisappearingDurationChange}
       />
 
       <div className="p-3">
@@ -103,11 +163,7 @@ export default function GroupScreen({
         </div>
       </div>
 
-      <ChevronButton
-        onClick={handleClick}
-        backgroundColor="#A78BFA"
-        color="#1E1B24"
-      >
+      <ChevronButton onClick={handleClick} backgroundColor="#A78BFA" color="#1E1B24">
         ✓
       </ChevronButton>
 
@@ -126,11 +182,10 @@ export default function GroupScreen({
           }}
         >
           <DisappearingMessages
+            value={currentDuration}
             onSelect={(value) => {
-              onDisappearingDurationChange?.(value);
-              setTimeout(() => {
-                setShowDisappearingMessages(false);
-              }, 80);
+              handleDisappearingDurationChange(value);
+              setTimeout(() => setShowDisappearingMessages(false), 80);
             }}
           />
         </div>

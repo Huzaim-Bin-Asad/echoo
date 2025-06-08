@@ -1,12 +1,30 @@
 import { Camera, SmilePlus } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useImperativeHandle, forwardRef, useState } from "react";
 
-export default function GroupMetaData() {
+const GroupMetaData = forwardRef(({ onMetaDataChange }, ref) => {
   const [groupImage, setGroupImage] = useState(null);
+  const [groupName, setGroupName] = useState("");
+
+  useEffect(() => {
+    const storedImage = sessionStorage.getItem("groupImage");
+    const storedName = sessionStorage.getItem("groupName");
+
+    if (storedImage) setGroupImage(storedImage);
+    if (storedName) setGroupName(storedName);
+  }, []);
+
+  useEffect(() => {
+    sessionStorage.setItem("groupImage", groupImage || "");
+    sessionStorage.setItem("groupName", groupName);
+
+    if (onMetaDataChange) {
+      onMetaDataChange({ groupImage, groupName });
+    }
+  }, [groupImage, groupName]);
 
   const openEmojiKeyboard = () => {
     const input = document.getElementById("groupNameInput");
-    input.blur(); // reset focus
+    input.blur();
     setTimeout(() => input.focus(), 50);
   };
 
@@ -17,6 +35,13 @@ export default function GroupMetaData() {
       setGroupImage(imageUrl);
     }
   };
+
+  useImperativeHandle(ref, () => ({
+    getGroupMetaData: () => ({
+      groupImage,
+      groupName,
+    }),
+  }));
 
   return (
     <>
@@ -29,18 +54,15 @@ export default function GroupMetaData() {
         `}
       </style>
 
-      <div
-        className="d-flex align-items-center justify-content-between px-3 border-bottom"
+      <div className="d-flex align-items-center justify-content-between px-3 border-bottom"
         style={{
           backgroundColor: "#9980e3a9",
           color: "white",
           paddingTop: "20px",
           paddingBottom: "16px",
           minHeight: "80px",
-          borderBottom: "1px solid white",
         }}
       >
-        {/* Profile Picture Upload */}
         <label
           htmlFor="groupImageInput"
           className="me-3 d-flex justify-content-center align-items-center"
@@ -53,9 +75,7 @@ export default function GroupMetaData() {
             backgroundPosition: "center",
             borderRadius: "50%",
             cursor: "pointer",
-            flexShrink: 0,
             overflow: "hidden",
-            position: "relative",
           }}
         >
           {!groupImage && <Camera size={20} color="#121212" />}
@@ -68,12 +88,13 @@ export default function GroupMetaData() {
           />
         </label>
 
-        {/* Input Field */}
         <div className="flex-grow-1 me-2">
           <input
             type="text"
             id="groupNameInput"
+            value={groupName}
             placeholder="Group Name"
+            onChange={(e) => setGroupName(e.target.value)}
             className="w-100"
             style={{
               backgroundColor: "transparent",
@@ -86,7 +107,6 @@ export default function GroupMetaData() {
           />
         </div>
 
-        {/* Emoji Button */}
         <button
           onClick={openEmojiKeyboard}
           className="btn btn-link p-0"
@@ -97,4 +117,6 @@ export default function GroupMetaData() {
       </div>
     </>
   );
-}
+});
+
+export default GroupMetaData;

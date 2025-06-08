@@ -3,76 +3,96 @@ import { Pencil, MessageCircleMore, UserPlus } from "lucide-react";
 
 const SwitchOption = ({ label, description, Icon }) => {
   return (
-    <div
-      className="form-check form-switch d-flex mb-4"
-      style={{
-        position: "relative",  // enable absolute positioning of toggle
-        paddingLeft: 0,
-        paddingRight: 16,
-        alignItems: "flex-start",
-        width: "100%",
-        maxWidth: 700,
-        margin: "0 auto",
-      }}
-    >
+    <>
+      <style>
+        {`
+          .custom-toggle:checked {
+            background-color: #A78BFA !important; /* light mauve */
+            border-color: #A78BFA !important;
+          }
+          .custom-toggle:checked:focus {
+            box-shadow: 0 0 0 0.25rem rgba(167, 139, 250, 0.5);
+          }
+          .custom-toggle {
+            background-color: #6b5ca5; /* slightly dull mauve off state */
+            border-color: #6b5ca5;
+            cursor: pointer;
+            transition: background-color 0.3s, border-color 0.3s;
+          }
+        `}
+      </style>
+
       <div
-        className="d-flex align-items-center"
+        className="form-check form-switch d-flex mb-4"
         style={{
-          gap: 18,
-          flex: 1,
-          maxWidth: "80%",
-          marginLeft: -12,
+          position: "relative", // enable absolute positioning of toggle
+          paddingLeft: 0,
+          paddingRight: 16,
+          alignItems: "flex-start",
+          width: "100%",
+          maxWidth: 700,
+          margin: "0 auto",
         }}
       >
-        {Icon && (
-          <Icon
-            size={23}
-            style={{
-              color: "#A78BFA",
-              minWidth: 28,
-              minHeight: 28,
-              marginLeft: 0,
-            }}
-          />
-        )}
-        <div>
-          <label
-            className="form-check-label fw-bold"
-            style={{ color: "#ffffff", cursor: "pointer", fontSize: "1.05rem" }}
-          >
-            {label}
-          </label>
-          {description && (
-            <div
-              className="small"
+        <div
+          className="d-flex align-items-center"
+          style={{
+            gap: 18,
+            flex: 1,
+            maxWidth: "80%",
+            marginLeft: -12,
+          }}
+        >
+          {Icon && (
+            <Icon
+              size={26} // smaller size, from 28 to 20
               style={{
-                color: "rgba(255, 255, 255, 0.7)",
-                fontSize: "0.8em",
-                marginTop: 3,
-                maxWidth: 370,
+                color: "#A78BFA",
+                minWidth: 20, // match size for compactness
+                minHeight: 20,
+                marginLeft: 0,
               }}
-            >
-              {description}
-            </div>
+            />
           )}
+
+          <div>
+            <label
+              className="form-check-label fw-bold"
+              style={{ color: "#ffffff", cursor: "pointer", fontSize: "1.05rem" }}
+            >
+              {label}
+            </label>
+            {description && (
+              <div
+                className="small"
+                style={{
+                  color: "rgba(255, 255, 255, 0.7)",
+                  fontSize: "0.8em",
+                  marginTop: 3,
+                  maxWidth: 370,
+                }}
+              >
+                {description}
+              </div>
+            )}
+          </div>
         </div>
+        <input
+          className="form-check-input custom-toggle"
+          type="checkbox"
+          defaultChecked
+          style={{
+            position: "absolute",
+            top: "50%",
+            right: -16,
+            transform: "translateY(-50%) scale(1.4)",
+            cursor: "pointer",
+          }}
+        />
       </div>
-      <input
-        className="form-check-input"
-        type="checkbox"
-        defaultChecked
-        style={{
-          position: "absolute",
-          top: "50%",
-          right: -16,
-          transform: "translateY(-50%) scale(1.4)",
-          cursor: "pointer",
-        }}
-      />
-    </div>
+    </>
   );
 };
-
 
 const MembersCan = () => {
   return (
@@ -82,7 +102,7 @@ const MembersCan = () => {
         backgroundColor: "#1e1b24",
         color: "#ffffff",
         width: "100%",
-        maxWidth: "200vh",       // slightly wider container
+        maxWidth: "200vh", // slightly wider container
         margin: "0 auto",
       }}
     >
@@ -92,7 +112,7 @@ const MembersCan = () => {
           color: "rgba(255, 255, 255, 0.7)",
           fontSize: "0.95rem",
           fontWeight: "600",
-          marginLeft: 2,     // tiny left offset for heading
+          marginLeft: 2, // tiny left offset for heading
         }}
       >
         Members can:

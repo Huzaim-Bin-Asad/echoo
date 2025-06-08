@@ -23,91 +23,113 @@ const UserLockIcon = (props) => (
 
 const AdminsCan = () => {
   return (
-    <div
-      className="p-3 mb-4 rounded"
-      style={{
-        backgroundColor: "#1e1b24",
-        color: "#ffffff",
-        width: "100%",
-        maxWidth: 700,
-        margin: "0 auto",
-      }}
-    >
-      <h6
-        className="mb-3"
-        style={{
-          color: "rgba(255, 255, 255, 0.6)",
-          fontSize: "0.9rem",
-          fontWeight: "600",
-          marginLeft: 2,
-        }}
-      >
-        Admins can:
-      </h6>
+    <>
+      {/* Scoped style for mauve toggle */}
+      <style>
+        {`
+          .custom-toggle:checked {
+            background-color: #A78BFA !important; /* light mauve */
+            border-color: #A78BFA !important;
+          }
+          .custom-toggle:checked:focus {
+            box-shadow: 0 0 0 0.25rem rgba(167, 139, 250, 0.5);
+          }
+          .custom-toggle {
+            background-color: #6b5ca5; /* slightly dull mauve for off state */
+            border-color: #6b5ca5;
+            cursor: pointer;
+            transition: background-color 0.3s, border-color 0.3s;
+          }
+        `}
+      </style>
 
       <div
-        className="form-check form-switch d-flex mb-4"
+        className="p-3 rounded"
         style={{
-          position: "relative",
-          paddingLeft: 0,
-          paddingRight: 16,
-          alignItems: "flex-start",
+          backgroundColor: "#1e1b24",
+          color: "#ffffff",
           width: "100%",
           maxWidth: 700,
           margin: "0 auto",
+          marginBottom: "20px",
+          marginTop: "-20px",
         }}
       >
-        <div
-          className="d-flex align-items-center"
+        <h6
+          className="mb-3"
           style={{
-            gap: 18,
-            flex: 1,
-            maxWidth: "80%",
-            marginLeft: -12,
+            color: "rgba(255, 255, 255, 0.6)",
+            fontSize: "0.9rem",
+            fontWeight: "600",
+            marginLeft: 2,
           }}
         >
-          <UserLockIcon
-            size={28}
+          Admins can:
+        </h6>
+
+        <div
+          className="form-check form-switch d-flex mb-4"
+          style={{
+            position: "relative",
+            paddingLeft: 0,
+            paddingRight: 16,
+            alignItems: "flex-start",
+            width: "100%",
+            maxWidth: 700,
+            margin: "0 auto",
+          }}
+        >
+          <div
+            className="d-flex align-items-center"
             style={{
-              color: "#A78BFA",
-              minWidth: 28,
-              minHeight: 28,
-              marginLeft: 0,
+              gap: 18,
+              flex: 1,
+              maxWidth: "80%",
+              marginLeft: -12,
             }}
-          />
-          <div>
-            <label
-              className="form-check-label fw-bold"
-              style={{ color: "#ffffff", cursor: "pointer", fontSize: "1.05rem" }}
-            >
-              Approve new members
-            </label>
-            <div
-              className="small"
+          >
+            <UserLockIcon
+              size={28}
               style={{
-                color: "rgba(255, 255, 255, 0.6)",
-                fontSize: "0.8rem",
-                marginTop: 3,
-                maxWidth: 370,
+                color: "#A78BFA",
+                minWidth: 28,
+                minHeight: 28,
+                marginLeft: 0,
               }}
-            >
-              When turned on, admins must approve anyone who wants to join the group.
+            />
+            <div>
+              <label
+                className="form-check-label fw-bold"
+                style={{ color: "#ffffff", cursor: "pointer", fontSize: "1.05rem" }}
+              >
+                Approve new members
+              </label>
+              <div
+                className="small"
+                style={{
+                  color: "rgba(255, 255, 255, 0.6)",
+                  fontSize: "0.8rem",
+                  marginTop: 3,
+                  maxWidth: 370,
+                }}
+              >
+                When turned on, admins must approve anyone who wants to join the group.
+              </div>
             </div>
           </div>
+          <input
+            className="form-check-input custom-toggle"
+            type="checkbox"
+            style={{
+              position: "absolute",
+              top: "50%",
+              right: -16,
+              transform: "translateY(-50%) scale(1.4)",
+            }}
+          />
         </div>
-        <input
-          className="form-check-input"
-          type="checkbox"
-          style={{
-            position: "absolute",
-            top: "50%",
-          right: -16,
-            transform: "translateY(-50%) scale(1.4)",
-            cursor: "pointer",
-          }}
-        />
       </div>
-    </div>
+    </>
   );
 };
 

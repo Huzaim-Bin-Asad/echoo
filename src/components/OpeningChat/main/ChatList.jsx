@@ -4,7 +4,11 @@ import { useUser } from '../../../services/UserContext';
 
 const ChatList = ({ visible = false }) => {
   const { user } = useUser();
-  const chatPreviews = user ? user.chat_previews : [];
+
+  // Support both 'chat_preview' and 'chat_previews' just in case
+  const chatPreviews = user
+    ? user.chat_preview ?? user.chat_previews ?? []
+    : [];
 
   if (!visible || chatPreviews.length === 0) return null;
 
@@ -19,7 +23,7 @@ const ChatList = ({ visible = false }) => {
           last_text={chat.last_text}
           text_timestamp={chat.text_timestamp}
           sender_id={chat.sender_id}
-          receiver_id={chat.receiver_id}
+          receiver_id={Array.isArray(chat.receiver_id) ? chat.receiver_id : [chat.receiver_id]}
         />
       ))}
     </div>

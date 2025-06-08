@@ -8,16 +8,25 @@ const UserInfoPrinter = () => {
   const navigate = useNavigate();
   const printCount = useRef(0);
 
+ 
   useEffect(() => {
+
+
     if (user && !loading) {
       printCount.current += 1;
       if (printCount.current % 10 === 0) {
-        console.log('Checked user data');
       }
     }
   }, [user, loading]);
 
-  const chatPreview = user ? user.chat_previews : null;
+  const chatPreview = user ? user.chat_preview || user.chat_previews || null : null;
+
+
+
+  const handleStartConvoClick = (e) => {
+    console.log('[UserInfoPrinter] Start first convo clicked, navigating to /new-contact');
+    navigate('/new-contact');
+  };
 
   return (
     <div className="flex-grow-1 overflow-auto p-3" style={{ backgroundColor: 'transparent' }}>
@@ -30,7 +39,7 @@ const UserInfoPrinter = () => {
           <p className="mb-1">It’s a little quiet here... you haven’t echoed any thoughts yet.</p>
           <p style={{ fontSize: '0.85rem' }}>
             <span
-              onClick={() => navigate('/new-contact')}
+              onClick={handleStartConvoClick}
               style={{
                 color: 'inherit',
                 fontWeight: '500',
@@ -42,12 +51,14 @@ const UserInfoPrinter = () => {
               onMouseOut={(e) => (e.target.style.backgroundColor = 'transparent')}
             >
               Start your first convo
-            </span>{" "}
+            </span>{' '}
             and let Echoo carry your words 🎈
           </p>
         </div>
       ) : (
-        <ChatList visible={true} />
+        <>
+          <ChatList visible={true} />
+        </>
       )}
     </div>
   );

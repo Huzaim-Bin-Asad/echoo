@@ -1,9 +1,7 @@
-import React, { useState } from "react";
+import React from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 
-const DisappearingMessages = ({ onSelect }) => {
-  const [selected, setSelected] = useState("off");
-
+const DisappearingMessages = ({ value = "off", onSelect }) => {
   const options = [
     { label: "24 hours", value: "24h" },
     { label: "7 days", value: "7d" },
@@ -11,9 +9,9 @@ const DisappearingMessages = ({ onSelect }) => {
     { label: "Off", value: "off" },
   ];
 
-  const handleChange = (value) => {
-    setSelected(value);
-    if (onSelect) onSelect(value);
+  const handleChange = (newValue) => {
+    console.log("Selected disappearing message option:", newValue); // Log here
+    if (onSelect) onSelect(newValue);
   };
 
   return (
@@ -28,12 +26,12 @@ const DisappearingMessages = ({ onSelect }) => {
           position: relative;
           z-index: 1050;
           border-radius: 27px !important;
-          padding: 1.15rem 1.5rem; /* increased vertical padding by ~15% */
+          padding: 1.15rem 1.5rem;
         }
         .custom-radio-label {
           cursor: pointer;
           border-radius: 30px !important;
-          padding: 10px 12px; /* increased vertical padding for taller option */
+          padding: 10px 12px;
           background-color: transparent;
           color: white;
           user-select: none;
@@ -41,7 +39,7 @@ const DisappearingMessages = ({ onSelect }) => {
           padding-left: 40px;
           display: flex;
           align-items: center;
-          margin-bottom: 1rem; /* increased spacing between options */
+          margin-bottom: 1rem;
           position: relative;
         }
         .custom-radio-input {
@@ -79,7 +77,7 @@ const DisappearingMessages = ({ onSelect }) => {
         </p>
         <div className="mt-3">
           {options.map((option) => {
-            const isSelected = selected === option.value;
+            const isSelected = value === option.value;
             return (
               <label
                 key={option.value}

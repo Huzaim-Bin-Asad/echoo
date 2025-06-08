@@ -3,8 +3,16 @@ import { ChevronRight } from 'lucide-react';
 
 const ChevronButton = ({ onClick, data }) => {
   const handleClick = () => {
+    // Clear sessionStorage keys
+    sessionStorage.removeItem("disappearingDisplayText");
+    sessionStorage.removeItem("groupMetaData");
+    sessionStorage.removeItem("groupName");
+    sessionStorage.removeItem("groupImage");
+
     console.log('ChevronButton clicked with data:', data);
-    onClick(data); // forward it if needed
+    if (onClick) {
+      onClick(data); // forward it if needed
+    }
   };
 
   return (

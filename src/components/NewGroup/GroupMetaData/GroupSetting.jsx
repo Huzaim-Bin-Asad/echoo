@@ -1,26 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Clock, Settings2 } from "lucide-react";
 
 export default function GroupSetting({
   onOpenDisappearingMessages,
   onOpenGroupPermissions,
   disappearingDuration = "off",
-  onDisappearingDurationChange,
+  // Remove onDisappearingDurationChange here since we won't call it internally
 }) {
-  const [duration, setDuration] = useState(disappearingDuration);
-
-  // Sync internal state if prop changes externally
-  useEffect(() => {
-    setDuration(disappearingDuration);
-  }, [disappearingDuration]);
-
-  // Notify parent when internal duration changes
-  useEffect(() => {
-    if (onDisappearingDurationChange) {
-      onDisappearingDurationChange(duration);
-    }
-  }, [duration, onDisappearingDurationChange]);
-
   const displayTextMap = {
     off: "Off",
     "24h": "24 hours",
@@ -28,10 +14,22 @@ export default function GroupSetting({
     "90d": "90 days",
   };
 
+  // Sync local duration with prop
+  const [duration, setDuration] = useState(disappearingDuration);
+
+  useEffect(() => {
+    setDuration(disappearingDuration);
+  }, [disappearingDuration]);
+
   const displayText = displayTextMap[duration] || "Off";
 
-  const handleDurationChange = (newDuration) => {
-    setDuration(newDuration);
+  // Only open the Disappearing Messages selector
+  const handleDisappearingClick = () => {
+    onOpenDisappearingMessages?.();
+  };
+
+  const handleGroupPermissionsClick = () => {
+    onOpenGroupPermissions?.("group-setting", displayText);
   };
 
   return (
@@ -48,12 +46,7 @@ export default function GroupSetting({
         <div
           className="d-flex justify-content-between align-items-start mb-3"
           style={{ cursor: "pointer" }}
-          onClick={() => {
-            onOpenDisappearingMessages?.();
-            // Toggle duration for demo (replace with proper selector in production)
-            const nextDuration = duration === "off" ? "24h" : "off";
-            handleDurationChange(nextDuration);
-          }}
+          onClick={handleDisappearingClick}
         >
           <div style={{ textAlign: "left" }}>
             <span>Disappearing messages</span>
@@ -69,7 +62,7 @@ export default function GroupSetting({
         <div
           className="d-flex justify-content-between align-items-center"
           style={{ cursor: "pointer" }}
-          onClick={() => onOpenGroupPermissions?.("group-setting")}
+          onClick={handleGroupPermissionsClick}
         >
           <span>Group permissions</span>
           <Settings2 size={20} />

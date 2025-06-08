@@ -59,23 +59,25 @@ const ContactList = ({
   }, [frequentlyContactedMapped, hideStatusMapped, onContactsSeparated]);
 
 const renderContacts = (contacts) =>
-  contacts.map((contact) => (
-    <div
-      key={contact.id}
-      className="mb-3"
-      onClick={() => {
-                toggleSelect(contact);
-      }}
-    >
-      <input type="hidden" value={contact.userId} />
-      <ContactItem
-        name={contact.name}
-        profilePicture={contact.profilePicture}
-        selected={selected.some(s => s.id === contact.id)}
-        lastTextTime={contact.lastTextTime}
-      />
-    </div>
-  ));
+  contacts
+    .filter(contact =>
+      contact.userId && contact.name && contact.profilePicture // or adjust required fields
+    )
+    .map((contact) => (
+      <div
+        key={`${contact.source}-${contact.userId}`} // Ensures unique key
+        className="mb-3"
+        onClick={() => toggleSelect(contact)}
+      >
+        <input type="hidden" value={contact.userId} />
+        <ContactItem
+          name={contact.name}
+          profilePicture={contact.profilePicture}
+          selected={selected.some(s => s.userId === contact.userId)} // Match by userId
+          lastTextTime={contact.lastTextTime}
+        />
+      </div>
+    ));
 
 
   return (
