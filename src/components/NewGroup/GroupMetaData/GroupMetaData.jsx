@@ -13,9 +13,22 @@ const GroupMetaData = forwardRef(({ onMetaDataChange }, ref) => {
     if (storedName) setGroupName(storedName);
   }, []);
 
+  const saveToLocalStorage = (image, name) => {
+    localStorage.setItem(
+      "groupMetaData",
+      JSON.stringify({
+        groupImage: image || "",
+        groupName: name || "",
+      })
+    );
+  };
+
   useEffect(() => {
     sessionStorage.setItem("groupImage", groupImage || "");
     sessionStorage.setItem("groupName", groupName);
+
+    // Save to localStorage when data changes
+    saveToLocalStorage(groupImage, groupName);
 
     if (onMetaDataChange) {
       onMetaDataChange({ groupImage, groupName });
@@ -33,6 +46,9 @@ const GroupMetaData = forwardRef(({ onMetaDataChange }, ref) => {
     if (file) {
       const imageUrl = URL.createObjectURL(file);
       setGroupImage(imageUrl);
+
+      // Save image immediately to localStorage
+      saveToLocalStorage(imageUrl, groupName);
     }
   };
 
@@ -54,7 +70,8 @@ const GroupMetaData = forwardRef(({ onMetaDataChange }, ref) => {
         `}
       </style>
 
-      <div className="d-flex align-items-center justify-content-between px-3 border-bottom"
+      <div
+        className="d-flex align-items-center justify-content-between px-3 border-bottom"
         style={{
           backgroundColor: "#9980e3a9",
           color: "white",

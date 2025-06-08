@@ -19,14 +19,12 @@ const NewGroup = () => {
         ? prevSelected.filter((c) => c.id !== contact.id)
         : [...prevSelected, contact];
 
-      console.log('Updated selected contacts:', newSelected);
       return newSelected;
     });
   };
 
   const handleChevronClick = () => {
     if (selected.length > 0) {
-      console.log('Final selected contacts:', selected);
       setShowGroupMetaData(true);
       setShowGroupPermissions(false);
     } else {

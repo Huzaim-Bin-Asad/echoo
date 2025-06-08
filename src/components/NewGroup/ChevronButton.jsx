@@ -3,15 +3,37 @@ import { ChevronRight } from 'lucide-react';
 
 const ChevronButton = ({ onClick, data }) => {
   const handleClick = () => {
+
     // Clear sessionStorage keys
     sessionStorage.removeItem("disappearingDisplayText");
+
     sessionStorage.removeItem("groupMetaData");
+
     sessionStorage.removeItem("groupName");
+
     sessionStorage.removeItem("groupImage");
 
-    console.log('ChevronButton clicked with data:', data);
+    // Clear localStorage keys
+    localStorage.removeItem("disappearingDisplayText");
+
+    // Remove existing GroupPermissionCache
+    localStorage.removeItem("GroupPermissionCache");
+
+    // Create and set GroupPermissionCache
+    const groupPermissionCache = {
+      MemberEditGroupSetting: true,
+      MemberSendMessages: true,
+      MemberAddNewMembers: true,
+      AdminApproveNewMembers: false,
+    };
+    localStorage.setItem("GroupPermissionCache", JSON.stringify(groupPermissionCache));
+
+    // Log click data
+
+    // Trigger callback if provided
     if (onClick) {
-      onClick(data); // forward it if needed
+      onClick(data);
+    } else {
     }
   };
 

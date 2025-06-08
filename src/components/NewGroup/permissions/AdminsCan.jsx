@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 
 const UserLockIcon = (props) => (
   <svg
@@ -22,20 +22,44 @@ const UserLockIcon = (props) => (
 );
 
 const AdminsCan = () => {
+  const [isApproved, setIsApproved] = useState(false);
+
+  // Load from sessionStorage
+  useEffect(() => {
+    const cache = JSON.parse(localStorage.getItem("GroupPermissionCache"));
+    if (cache && typeof cache.AdminApproveNewMembers === "boolean") {
+      setIsApproved(cache.AdminApproveNewMembers);
+    }
+  }, []);
+
+  // Handle toggle change
+  const handleToggle = () => {
+    const newValue = !isApproved;
+    setIsApproved(newValue);
+
+    const existingCache = JSON.parse(localStorage.getItem("GroupPermissionCache")) || {};
+    const updatedCache = {
+      ...existingCache,
+      AdminApproveNewMembers: newValue
+    };
+
+    localStorage.setItem("GroupPermissionCache", JSON.stringify(updatedCache));
+    console.log("Updated GroupPermissionCache:", updatedCache);
+  };
+
   return (
     <>
-      {/* Scoped style for mauve toggle */}
       <style>
         {`
           .custom-toggle:checked {
-            background-color: #A78BFA !important; /* light mauve */
+            background-color: #A78BFA !important;
             border-color: #A78BFA !important;
           }
           .custom-toggle:checked:focus {
             box-shadow: 0 0 0 0.25rem rgba(167, 139, 250, 0.5);
           }
           .custom-toggle {
-            background-color: #6b5ca5; /* slightly dull mauve for off state */
+            background-color: #6b5ca5;
             border-color: #6b5ca5;
             cursor: pointer;
             transition: background-color 0.3s, border-color 0.3s;
@@ -120,6 +144,8 @@ const AdminsCan = () => {
           <input
             className="form-check-input custom-toggle"
             type="checkbox"
+            checked={isApproved}
+            onChange={handleToggle}
             style={{
               position: "absolute",
               top: "50%",

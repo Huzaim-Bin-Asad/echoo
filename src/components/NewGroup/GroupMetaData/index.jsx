@@ -35,7 +35,6 @@ export default function GroupScreen({
 
   // When currentDuration changes, update metaData & sessionStorage
   const handleDisappearingDurationChange = (value) => {
-    console.log("GroupScreen received disappearingDuration:", value);
 
     if (value === currentDuration) return; // Avoid unnecessary updates
 
@@ -72,13 +71,10 @@ export default function GroupScreen({
   };
 
   const handleGroupSettingAction = async (source, displayText) => {
-    console.log("GroupSettingAction Triggered:");
-    console.log("Source:", source);
-    console.log("Disappearing Message Display Text:", displayText);
+
 
     if (groupMetaRef.current && typeof groupMetaRef.current.getGroupMetaData === "function") {
       const groupMeta = await groupMetaRef.current.getGroupMetaData();
-      console.log("GroupMetaData returned:", groupMeta);
     }
 
     if (onGroupSettingAction) {
@@ -87,7 +83,6 @@ export default function GroupScreen({
   };
 
   const handleMetaDataChange = (data) => {
-    console.log("MetaData changed:", data);
     setMetaData((prev) => {
       const updated = { ...prev, ...data };
       sessionStorage.setItem("groupMetaData", JSON.stringify(updated));

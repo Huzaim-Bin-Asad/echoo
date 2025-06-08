@@ -10,7 +10,13 @@ const DisappearingMessages = ({ value = "off", onSelect }) => {
   ];
 
   const handleChange = (newValue) => {
+    const selectedOption = options.find((opt) => opt.value === newValue);
+    const label = selectedOption?.label || "";
     console.log("Selected disappearing message option:", newValue); // Log here
+
+    // Save to localStorage
+    localStorage.setItem("disappearingDisplayText", label);
+
     if (onSelect) onSelect(newValue);
   };
 

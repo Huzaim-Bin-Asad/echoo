@@ -17,23 +17,19 @@ const ContactForm = () => {
   });
 
   useEffect(() => {
-    console.log("👀 useEffect: Checking if user data exists in localStorage.");
     const userData = JSON.parse(localStorage.getItem("user"));
     if (userData) {
-      console.log("✅ User data found in localStorage:", userData);
       setContact((prev) => ({
         ...prev,
         firstName: userData.firstName || "",
         lastName: userData.lastName || "",
       }));
     } else {
-      console.log("❌ No user data found in localStorage.");
     }
   }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    console.log(`📝 handleChange: Updating field - ${name} with value - ${value}`);
     setContact((prev) => ({ ...prev, [name]: value }));
 
     if (name === "email" && value) {
@@ -45,9 +41,7 @@ const ContactForm = () => {
 
   const checkEmail = async (email) => {
     try {
-      console.log(`📧 checkEmail: Sending request to check email - ${email}`);
       const response = await axios.post(`${API_BASE_URL}/api/check-email`, { email });
-      console.log("✅ checkEmail response received:", response.data);
       if (response.data.username) {
         setContact((prev) => ({ ...prev, username: response.data.username }));
       }
@@ -58,9 +52,7 @@ const ContactForm = () => {
 
   const checkUsername = async (username) => {
     try {
-      console.log(`👤 checkUsername: Sending request to check username - ${username}`);
       const response = await axios.post(`${API_BASE_URL}/api/check-username`, { username });
-      console.log("✅ checkUsername response received:", response.data);
       if (response.data.email) {
         setContact((prev) => ({ ...prev, email: response.data.email }));
       }
