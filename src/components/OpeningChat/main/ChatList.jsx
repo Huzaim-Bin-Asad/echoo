@@ -1,19 +1,18 @@
+// src/components/OpeningChat/List.jsx
 import React from 'react';
 import ChatItem from './ChatItem';
 import { useUser } from '../../../services/UserContext';
+import { useGroupChatPreviews } from '../../NewGroup/useGroupChatPreviews';
 
-const ChatList = ({ visible = false }) => {
+const List = () => {
   const { user } = useUser();
+  const { groupPreviews } = useGroupChatPreviews();
 
-  // Support both 'chat_preview' and 'chat_previews' just in case
-  const chatPreviews = user
-    ? user.chat_preview ?? user.chat_previews ?? []
-    : [];
-
-  if (!visible || chatPreviews.length === 0) return null;
+  const chatPreviews = user?.chat_preview ?? user?.chat_previews ?? [];
 
   return (
     <div className="list-group px-2 py-2">
+      {/* Personal chats */}
       {chatPreviews.map((chat, index) => (
         <ChatItem
           key={chat.contact_id || index}
@@ -26,8 +25,21 @@ const ChatList = ({ visible = false }) => {
           receiver_id={Array.isArray(chat.receiver_id) ? chat.receiver_id : [chat.receiver_id]}
         />
       ))}
+
+      {/* Group chats */}
+      {groupPreviews.map((group, index) => (
+        <ChatItem
+          key={group.groupid || `group-${index}`}
+          contact_id={group.groupid}
+          contact_name={group.groupname || "Unnamed Group"}
+          profile_picture={group.groupprofilepicture}
+          last_text={group.lastmessage ?? "No messages yet"}
+          text_timestamp={group.lasttimestamp}
+          isGroup={true}
+        />
+      ))}
     </div>
   );
 };
 
-export default ChatList;
+export default List;

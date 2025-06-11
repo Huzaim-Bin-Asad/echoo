@@ -24,7 +24,7 @@ useEffect(() => {
 
   const fetchUser = () => {
     axios
-      .get("http://localhost:5000/api/userinfo", {
+      .get("https://echoo-backend.vercel.app/api/userinfo", {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => {

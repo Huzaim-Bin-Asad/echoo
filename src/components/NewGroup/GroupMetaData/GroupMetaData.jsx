@@ -7,11 +7,23 @@ const GroupMetaData = forwardRef(({ onMetaDataChange, initialGroupName = "", ini
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const storedImage = sessionStorage.getItem("groupImage");
-    const storedName = sessionStorage.getItem("groupName");
+    const storedMetaData = localStorage.getItem("groupMetaData");
+    if (storedMetaData) {
+      try {
+        const parsed = JSON.parse(storedMetaData);
+        setGroupImage(parsed.groupImage || null);
+        setGroupName(parsed.groupName || "");
+      } catch (err) {
+        console.error("Failed to parse groupMetaData:", err);
+      }
+    } else {
+      // Fallback to sessionStorage or props
+      const storedImage = sessionStorage.getItem("groupImage");
+      const storedName = sessionStorage.getItem("groupName");
 
-    setGroupImage(storedImage || initialGroupImage || null);
-    setGroupName(storedName || initialGroupName || "");
+      setGroupImage(storedImage || initialGroupImage || null);
+      setGroupName(storedName || initialGroupName || "");
+    }
   }, [initialGroupImage, initialGroupName]);
 
   const saveToLocalStorage = (image, name) => {

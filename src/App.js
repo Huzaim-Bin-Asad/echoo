@@ -34,7 +34,6 @@ function AppContent() {
   return (
     <div>      
       <ToastContainer position="top-center" autoClose={3000} />
-
             <BarcodeFetcher />
       <AuthModal handleLogin={handleLogin} handleSignup={handleSignup} />
       

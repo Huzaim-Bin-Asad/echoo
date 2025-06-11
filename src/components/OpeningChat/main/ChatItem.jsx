@@ -58,8 +58,9 @@ const ChatItem = ({
     <div
       className="list-group-item list-group-item-action d-flex justify-content-between align-items-start border-0 py-3"
       style={{ cursor: 'pointer', paddingLeft: '2px' }}
-      data-sender-id={sender_id}
-      data-receiver-id={receiver_id}
+      sender_id={sender_id}
+      receiver_id
+      ={receiver_id}
       data-contact-id={contact_id}
       onClick={handleClick}  // Call the handleClick function when the item is clicked
     >

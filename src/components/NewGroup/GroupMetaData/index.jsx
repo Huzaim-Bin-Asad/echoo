@@ -58,7 +58,6 @@ export default function GroupScreen({
 
   const handleChevronAction = (result) => {
     if (result.error) {
-      // Forward error to GroupMetaData to display to user
       if (groupMetaRef.current && typeof groupMetaRef.current.showGroupNameError === "function") {
         groupMetaRef.current.showGroupNameError(result.error);
       }
@@ -66,7 +65,7 @@ export default function GroupScreen({
     }
 
     // Proceed with group creation
-    alert("Group created!");
+    console.log("✅ Group Members' User IDs:", result.groupMembersId);
   };
 
   const openDisappearingMessages = () => {
@@ -89,6 +88,11 @@ export default function GroupScreen({
       sessionStorage.setItem("groupMetaData", JSON.stringify(updated));
       return updated;
     });
+  };
+
+  const getGroupMembersId = () => {
+    const spans = document.querySelectorAll('[data-user-id]');
+    return Array.from(spans).map(span => span.getAttribute('data-user-id'));
   };
 
   return (
@@ -162,7 +166,12 @@ export default function GroupScreen({
         </div>
       </div>
 
-      <ChevronButton onClick={handleChevronAction} backgroundColor="#A78BFA" color="#1E1B24" />
+      <ChevronButton
+        onClick={handleChevronAction}
+        getGroupMembersId={getGroupMembersId}
+        backgroundColor="#A78BFA"
+        color="#1E1B24"
+      />
 
       {showDisappearingMessages && (
         <div

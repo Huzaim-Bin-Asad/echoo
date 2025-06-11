@@ -3,23 +3,63 @@ import { ChevronRight } from 'lucide-react';
 
 const ChevronButton = ({
   onClick,
-    getGroupMembersId, // 👈 Callback to get groupMembersId
+  getGroupMembersId,
   backgroundColor = '#333',
-  color = 'white'
+  color = 'white',
 }) => {
-  const handleClick = () => {
-    try {
-      const storedData = JSON.parse(localStorage.getItem("groupMetaData"));
-      const groupName = storedData?.groupName?.trim();
+  // Helper: convert blob URL to base64 string
+  const blobUrlToBase64 = async (blobUrl) => {
+    const response = await fetch(blobUrl);
+    const blob = await response.blob();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result); // includes data:image/... prefix
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  };
 
-      if (!groupName) {
-        onClick({ error: "Group name is required." });
-      } else {
-        const groupMembersId = getGroupMembersId?.(); // 👈 Get data from parent
-        onClick({ success: true, groupMembersId });
+  const handleClick = async () => {
+    try {
+      const groupMetaDataRaw = localStorage.getItem('groupMetaData');
+      const disappearingDisplayText = localStorage.getItem('disappearingDisplayText') || 'Off';
+      const groupPermissionRaw = localStorage.getItem('GroupPermissionCache');
+      const userRaw = localStorage.getItem('user');
+
+      let groupMetaData = JSON.parse(groupMetaDataRaw);
+      const groupPermission = JSON.parse(groupPermissionRaw);
+      const user = JSON.parse(userRaw);
+
+      const groupMembersId = getGroupMembersId?.();
+      const currentUserId = user.user_id;
+
+      // ✅ Convert blob URL to base64 if needed
+      if (groupMetaData.groupImage?.startsWith('blob:')) {
+        groupMetaData.groupImage = await blobUrlToBase64(groupMetaData.groupImage);
       }
-    } catch (err) {
-      onClick({ error: "Invalid group metadata format." });
+
+      const payload = {
+        groupMetaData,
+        disappearingDisplayText,
+        groupPermission,
+        createdBy: currentUserId,
+        groupMembersId,
+      };
+
+      const response = await fetch('https://echoo-backend.vercel.app/api/create_groups', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        console.log('Group created successfully:', result);
+      } else {
+        console.error('Group creation failed:', result.error);
+      }
+    } catch (error) {
+      console.error('[ChevronButton] Error:', error);
     }
   };
 
