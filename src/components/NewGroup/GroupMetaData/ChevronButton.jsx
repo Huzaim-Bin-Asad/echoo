@@ -46,7 +46,7 @@ const ChevronButton = ({
         groupMembersId,
       };
 
-      const response = await fetch('https://echoo-backend.vercel.app/api/create_groups', {
+      const response = await fetch('http://localhost:5000/api/create_groups', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

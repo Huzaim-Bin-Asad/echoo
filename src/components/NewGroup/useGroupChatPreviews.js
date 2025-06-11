@@ -8,7 +8,6 @@ export const useGroupChatPreviews = () => {
     const fetchGroupPreviews = async () => {
       try {
         const userStr = localStorage.getItem("user");
-
         if (!userStr) {
           console.error("User not found in localStorage.");
           return;
@@ -17,6 +16,17 @@ export const useGroupChatPreviews = () => {
         const user = JSON.parse(userStr);
         const userId = user.user_id;
 
+        // Try to load from cache
+        const cached = localStorage.getItem("GroupChatPreview");
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed.userId === userId && parsed.data) {
+            setGroupPreviews(parsed.data);
+            return;
+          }
+        }
+
+        // Otherwise fetch from server
         const res = await fetch(`https://echoo-backend.vercel.app/api/fetch-group-previews`, {
           method: "POST",
           headers: {
@@ -30,7 +40,10 @@ export const useGroupChatPreviews = () => {
         }
 
         const data = await res.json();
+
+        // Save to state and cache
         setGroupPreviews(data);
+        localStorage.setItem("GroupChatPreview", JSON.stringify({ userId, data }));
       } catch (error) {
         console.error("❌ Error fetching group previews:", error);
       }

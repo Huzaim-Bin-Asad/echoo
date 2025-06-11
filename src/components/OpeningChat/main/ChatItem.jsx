@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User } from 'lucide-react';
+import { User, Users } from 'lucide-react';
 
 const ChatItem = ({
   contact_id,
@@ -8,12 +8,12 @@ const ChatItem = ({
   text_timestamp,
   profile_picture,
   sender_id,
-  receiver_id
+  receiver_id,
+  isGroup = false, // default to false for personal chats
 }) => {
   const [truncateLimit, setTruncateLimit] = useState(30);
-  
-  // This will allow the app to switch views between main and chat
-  const showChat = window.showChat;  // Access globally exposed showChat function
+
+  const showChat = window.showChat;
 
   useEffect(() => {
     const updateLimit = () => {
@@ -31,15 +31,16 @@ const ChatItem = ({
   }, []);
 
   const truncateMessage = (msg, limit) =>
-    msg.length > limit ? msg.slice(0, limit) + '...' : msg;
+    msg?.length > limit ? msg.slice(0, limit) + '...' : msg;
 
-  const formattedTime = new Date(text_timestamp).toLocaleTimeString([], {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  const formattedTime = text_timestamp
+    ? new Date(text_timestamp).toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    : '';
 
   const handleClick = () => {
-    // Store values in localStorage
     localStorage.setItem('sender_id', sender_id);
     localStorage.setItem('receiver_id', receiver_id);
     localStorage.setItem('contact_id', contact_id);
@@ -48,9 +49,8 @@ const ChatItem = ({
     console.log(`[Set] receiver_id = ${receiver_id}`);
     console.log(`[Set] contact_id = ${contact_id}`);
 
-    // Switch the active view to chat when a ChatItem is clicked
     if (typeof showChat === 'function') {
-      showChat();  // This will trigger the view change in Echoo
+      showChat();
     }
   };
 
@@ -59,10 +59,9 @@ const ChatItem = ({
       className="list-group-item list-group-item-action d-flex justify-content-between align-items-start border-0 py-3"
       style={{ cursor: 'pointer', paddingLeft: '2px' }}
       sender_id={sender_id}
-      receiver_id
-      ={receiver_id}
+      receiver_id={receiver_id}
       data-contact-id={contact_id}
-      onClick={handleClick}  // Call the handleClick function when the item is clicked
+      onClick={handleClick}
     >
       {/* Avatar */}
       <div
@@ -78,6 +77,8 @@ const ChatItem = ({
             height="50"
             style={{ objectFit: 'cover' }}
           />
+        ) : isGroup ? (
+          <Users size={30} className="text-muted" />
         ) : (
           <User size={30} className="text-muted" />
         )}
