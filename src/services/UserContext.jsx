@@ -15,53 +15,59 @@ export const UserProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const requestCountRef = useRef(0);
 
-useEffect(() => {
-  const token = localStorage.getItem("token");
-  if (!token) {
-    setLoading(false);
-    return;
-  }
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      console.warn("⚠️ No token found in localStorage.");
+      setLoading(false);
+      return;
+    }
 
-  const fetchUser = () => {
-    axios
-      .get("https://echoo-backend.vercel.app/api/userinfo", {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      .then((res) => {
-        const newUserData = res.data;
-        requestCountRef.current += 1;
+    const fetchUser = () => {
+      axios
+        .get("https://echoo-backend.vercel.app/api/userinfo", {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        .then((res) => {
+          const newUserData = res.data;
+          requestCountRef.current += 1;
 
-        // Optional: Print full response data every 20 requests if it changed
-        if (requestCountRef.current % 20 === 0) {
-          if (
-            JSON.stringify(userRef.current) !== JSON.stringify(newUserData)
-          ) {
-            console.log(
-              "🔄 User data changed on 20th request:",
-              newUserData
+          const newChatPreview = newUserData.chat_preview || [];
+          const currentChatPreview =
+            JSON.parse(localStorage.getItem("PersonalChatPreviews")) || [];
+
+          const isDifferent =
+            JSON.stringify(currentChatPreview) !==
+            JSON.stringify(newChatPreview);
+
+          if (isDifferent) {
+            console.log("🔁 chat_preview changed. Updating cache.");
+            localStorage.setItem(
+              "PersonalChatPreviews",
+              JSON.stringify(newChatPreview)
             );
-          } else {
-            console.log("ℹ️ User data unchanged on 20th request");
+          } else if (requestCountRef.current % 20 === 0) {
+            console.log("ℹ️ chat_preview unchanged on 20th request");
           }
-        }
 
-        setUser(newUserData);
-        userRef.current = newUserData;
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("❌ Failed to fetch user:", err);
-        setUser(null);
-        userRef.current = null;
-        setLoading(false);
-      });
-  };
+    
 
-  const intervalId = setInterval(fetchUser, 500);
+          setUser(newUserData);
+          userRef.current = newUserData;
+          setLoading(false);
+        })
+        .catch((err) => {
+          console.error("❌ Failed to fetch user:", err.response?.data || err);
+          setUser(null);
+          userRef.current = null;
+          setLoading(false);
+        });
+    };
 
-  return () => clearInterval(intervalId);
-}, []);
+    const intervalId = setInterval(fetchUser, 500);
 
+    return () => clearInterval(intervalId);
+  }, []);
 
   return (
     <UserContext.Provider value={{ user, setUser, loading }}>

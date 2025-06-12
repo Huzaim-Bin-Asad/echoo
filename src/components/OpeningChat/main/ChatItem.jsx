@@ -8,12 +8,13 @@ const ChatItem = ({
   text_timestamp,
   profile_picture,
   sender_id,
-  receiver_id,
-  isGroup = false, // default to false for personal chats
+  receiver_ids = [], // expects array for personal chats
+  isGroup = false,
 }) => {
   const [truncateLimit, setTruncateLimit] = useState(30);
-
   const showChat = window.showChat;
+
+  const receiver_id = receiver_ids?.[0] || ""; // ✅ Safe default for attribute + localStorage
 
   useEffect(() => {
     const updateLimit = () => {

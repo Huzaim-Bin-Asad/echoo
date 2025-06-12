@@ -1,25 +1,35 @@
 import React, { useEffect, useState } from 'react';
 import ChatItem from './ChatItem';
-import { useUser } from '../../../services/UserContext';
 
 const List = () => {
-  const { user } = useUser();
+  const [personalChats, setPersonalChats] = useState([]);
   const [groupPreviews, setGroupPreviews] = useState([]);
 
-  const chatPreviews = user?.chat_preview ?? user?.chat_previews ?? [];
-
   useEffect(() => {
+    // Load personal chat previews from localStorage
     try {
-      const cached = localStorage.getItem("GroupChatPreview");
-      console.log("📦 Cached GroupChatPreview string:", cached);
+      const cachedPersonal = localStorage.getItem("PersonalChatPreviews");
+      if (cachedPersonal) {
+        const parsed = JSON.parse(cachedPersonal);
+        if (Array.isArray(parsed)) {
+          setPersonalChats(parsed);
+        } else {
+          console.warn("⚠️ Invalid format for PersonalChatPreviews:", parsed);
+        }
+      } else {
+        console.log("ℹ️ No cached PersonalChatPreviews found.");
+      }
+    } catch (err) {
+      console.error("❌ Error parsing PersonalChatPreviews:", err);
+    }
 
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        console.log("🧩 Parsed GroupChatPreview:", parsed);
-
+    // Load group chat previews from localStorage
+    try {
+      const cachedGroup = localStorage.getItem("GroupChatPreview");
+      if (cachedGroup) {
+        const parsed = JSON.parse(cachedGroup);
         if (Array.isArray(parsed.data)) {
           setGroupPreviews(parsed.data);
-          console.log(`✅ Loaded ${parsed.data.length} group chat preview(s)`);
         } else {
           console.warn("⚠️ Invalid group data format:", parsed);
         }
@@ -27,14 +37,14 @@ const List = () => {
         console.log("ℹ️ No cached GroupChatPreview found.");
       }
     } catch (err) {
-      console.error("❌ Error parsing GroupChatPreview from localStorage:", err);
+      console.error("❌ Error parsing GroupChatPreview:", err);
     }
-  }, []); // 👈 run only once on mount
+  }, []);
 
   return (
     <div className="list-group px-2 py-2">
       {/* Personal chats */}
-      {chatPreviews.map((chat, index) => (
+      {personalChats.map((chat, index) => (
         <ChatItem
           key={chat.contact_id || index}
           contact_id={chat.contact_id}
@@ -43,24 +53,22 @@ const List = () => {
           last_text={chat.last_text}
           text_timestamp={chat.text_timestamp}
           sender_id={chat.sender_id}
-          receiver_id={Array.isArray(chat.receiver_id) ? chat.receiver_id : [chat.receiver_id]}
+          receiver_ids={Array.isArray(chat.receiver_ids) ? chat.receiver_ids : [chat.receiver_ids]}
         />
       ))}
 
       {/* Group chats */}
-      {groupPreviews.map((group, index) => {
-        return (
-          <ChatItem
-            key={group.groupid || `group-${index}`}
-            contact_id={group.groupid}
-            contact_name={group.groupname || "Unnamed Group"}
-            profile_picture={group.groupprofilepicture}
-            last_text={group.lastmessage ?? "No messages yet"}
-            text_timestamp={group.lasttimestamp}
-            isGroup={true}
-          />
-        );
-      })}
+      {groupPreviews.map((group, index) => (
+        <ChatItem
+          key={group.groupid || `group-${index}`}
+          contact_id={group.groupid}
+          contact_name={group.groupname || "Unnamed Group"}
+          profile_picture={group.groupprofilepicture}
+          last_text={group.lastmessage ?? "No messages yet"}
+          text_timestamp={group.lasttimestamp}
+          isGroup={true}
+        />
+      ))}
     </div>
   );
 };

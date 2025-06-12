@@ -4,10 +4,11 @@ import OpeningChat from "../components/OpeningChat/main/OpeningChat";
 import LinkedDevices from "../components/OpeningChat/linkedDevices/LinkedDevices";
 import StarredMessages from "../components/OpeningChat/StarredMessages";
 import Chat from "../components/Chat/Chat";
-import useFirstTimeReload from "../hooks/useFirstTimeReload"; // ✅ import hook
+import ContactedUserProfileDetails from "../components/OpeningChat/ContactedUserProfileDetails"; // ✅ import
+import useFirstTimeReload from "../hooks/useFirstTimeReload";
 
 const Echoo = () => {
-  useFirstTimeReload(); // ✅ run the logic on mount
+  useFirstTimeReload();
 
   const navigate = useNavigate();
   const storedView = localStorage.getItem("echoo_active_view");
@@ -28,9 +29,13 @@ const Echoo = () => {
     setActiveView("chat");
     setScrollTrigger(Date.now());
   };
+  const showContactedProfile = () => {
+    console.log("🔁 onProfileClick received in Echoo — switching to ContactedUserProfileDetails");
+    setActiveView("profile");
+  };
   const goBack = () => setActiveView("main");
 
-  // Expose for debug
+  // For debugging
   window.showLinkedDevices = showLinkedDevices;
   window.showStarredMessages = showStarredMessages;
   window.showChat = showChat;
@@ -45,7 +50,8 @@ const Echoo = () => {
       )}
       {activeView === "linked" && <LinkedDevices goBack={goBack} />}
       {activeView === "starred" && <StarredMessages goBack={goBack} />}
-      {activeView === "chat" && <Chat goBack={goBack} scrollToBottomTrigger={scrollTrigger} />}
+      {activeView === "chat" && <Chat goBack={goBack} onProfileClick={showContactedProfile} scrollToBottomTrigger={scrollTrigger} />}
+      {activeView === "profile" && <ContactedUserProfileDetails goBack={goBack} />}
     </div>
   );
 };

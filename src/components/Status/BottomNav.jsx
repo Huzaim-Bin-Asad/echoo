@@ -78,16 +78,7 @@ const BottomNav = () => {
         <small className="text-muted" style={{ marginTop: '0px' }}>Call</small>
       </button>
 
-      {/* Profile button */}
-      <button
-        className="nav-link text-muted border-0 bg-transparent d-flex flex-column align-items-center p-0"
-        id="profile"
-        style={{ flex: '1 1 0%' }}
-        onClick={navigateTo("/profile")}
-      >
-        <UserRoundPen size={26} />
-        <small>Profile</small>
-      </button>
+
     </nav>
   );
 };
