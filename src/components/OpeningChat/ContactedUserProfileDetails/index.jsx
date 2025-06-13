@@ -1,10 +1,13 @@
 import React from "react";
-import StickyHeader from "./StickyHeader"; // import the sticky header
+import StickyHeader from "./StickyHeader";
 import UserDetails from "./UserDetails";
 import ContactedUserAbout from "./ContactedUserAbout";
 import MediaLinksDocs from "./MediaLinksDocs";
-import 'bootstrap/dist/css/bootstrap.min.css';
-import 'bootstrap-icons/font/bootstrap-icons.css';
+import ChatOptions from "./ChatOptions";
+import GroupsInCommon from "./GroupsInCommon";
+import UserBasedPreferences from "./UserBasedPreferences";
+import "bootstrap/dist/css/bootstrap.min.css";
+import "bootstrap-icons/font/bootstrap-icons.css";
 
 const ContactedUserProfileDetails = () => {
   return (
@@ -23,6 +26,9 @@ const ContactedUserProfileDetails = () => {
         <UserDetails />
         <ContactedUserAbout />
         <MediaLinksDocs />
+        <ChatOptions />
+        <GroupsInCommon />
+        <UserBasedPreferences />
       </div>
     </div>
   );

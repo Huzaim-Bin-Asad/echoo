@@ -342,7 +342,7 @@ function ChatDisplay() {
   );
 
   return (
-    <div className="d-flex flex-column h-100" style={{ height: '100vh' }}>
+    <div className="d-flex flex-column" style={{ height: '89vh' }}>
 
 
       <div className="flex-grow-1 overflow-auto p-2" style={{ background: '#f8f9fa' }}>
