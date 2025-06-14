@@ -90,7 +90,6 @@ function ChatDisplay() {
       socketRef.current = socket;
 
       socket.onopen = () => {
-        console.log('✅ WebSocket connected for user:', userId);
         setIsConnected(true);
         setConnectionStatus('connected');
         retryCountRef.current = 0;
@@ -159,7 +158,7 @@ function ChatDisplay() {
               )
             );
           } else if (data.type === 'pong') {
-            console.log('🏓 Received pong from server');
+            //console.log('🏓 Received pong from server');
           }
         } catch (err) {
           console.error('Error processing message:', err);
@@ -258,7 +257,7 @@ function ChatDisplay() {
       if (socketRef.current?.readyState === WebSocket.OPEN) {
         try {
           socketRef.current.send(JSON.stringify({ type: 'ping' }));
-        console.log('🏓 Sending ping to server');
+       // console.log('🏓 Sending ping to server');
         setConnectionStatus('connected');
       } catch (err) {
         console.error('Failed to send ping:', err);

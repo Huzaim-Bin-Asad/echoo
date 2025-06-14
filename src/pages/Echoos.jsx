@@ -4,7 +4,7 @@ import OpeningChat from "../components/OpeningChat/main/OpeningChat";
 import LinkedDevices from "../components/OpeningChat/linkedDevices/LinkedDevices";
 import StarredMessages from "../components/OpeningChat/StarredMessages";
 import Chat from "../components/Chat/Chat";
-import ContactedUserProfileDetails from "../components/OpeningChat/ContactedUserProfileDetails"; // ✅ import
+import ContactedUserProfileDetails from "../components/OpeningChat/ContactedUserProfileDetails";
 import useFirstTimeReload from "../hooks/useFirstTimeReload";
 
 const Echoo = () => {
@@ -25,17 +25,29 @@ const Echoo = () => {
   const handleCallClick = () => navigate("/call");
   const showLinkedDevices = () => setActiveView("linked");
   const showStarredMessages = () => setActiveView("starred");
+
   const showChat = () => {
+    const sender_id = localStorage.getItem("sender_id");
+    const receiver_id = localStorage.getItem("receiver_id");
+    const contact_id = localStorage.getItem("contact_id");
+
+   // console.log("🟢 showChat() triggered — logging stored IDs:");
+    console.log("sender_id:", sender_id);
+    console.log("receiver_id:", receiver_id);
+    console.log("contact_id:", contact_id);
+
     setActiveView("chat");
     setScrollTrigger(Date.now());
   };
+
   const showContactedProfile = () => {
     console.log("🔁 onProfileClick received in Echoo — switching to ContactedUserProfileDetails");
     setActiveView("profile");
   };
+
   const goBack = () => setActiveView("main");
 
-  // For debugging
+  // Global function assignments
   window.showLinkedDevices = showLinkedDevices;
   window.showStarredMessages = showStarredMessages;
   window.showChat = showChat;
@@ -50,7 +62,13 @@ const Echoo = () => {
       )}
       {activeView === "linked" && <LinkedDevices goBack={goBack} />}
       {activeView === "starred" && <StarredMessages goBack={goBack} />}
-      {activeView === "chat" && <Chat goBack={goBack} onProfileClick={showContactedProfile} scrollToBottomTrigger={scrollTrigger} />}
+      {activeView === "chat" && (
+        <Chat
+          goBack={goBack}
+          onProfileClick={showContactedProfile}
+          scrollToBottomTrigger={scrollTrigger}
+        />
+      )}
       {activeView === "profile" && <ContactedUserProfileDetails goBack={goBack} />}
     </div>
   );

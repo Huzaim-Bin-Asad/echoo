@@ -47,7 +47,7 @@ export const UserProvider = ({ children }) => {
               JSON.stringify(newChatPreview)
             );
           } else if (requestCountRef.current % 20 === 0) {
-            console.log("ℹ️ chat_preview unchanged on 20th request");
+           // console.log("ℹ️ chat_preview unchanged on 20th request");
           }
 
     
