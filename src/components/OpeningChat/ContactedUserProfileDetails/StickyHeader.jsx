@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import boy2 from "../../../assets/boy2.jpg";
 
-const StickyHeader = () => {
+const StickyHeader = ({ onBack }) => {
   const [scrollY, setScrollY] = useState(0);
 
   useEffect(() => {
@@ -21,7 +21,6 @@ const StickyHeader = () => {
 
   return (
     <>
-      {/* Sticky header sits separately on top with high z-index */}
       <div
         className="d-flex align-items-center px-3 py-4 bg-white sticky-top"
         style={{
@@ -30,7 +29,11 @@ const StickyHeader = () => {
           maxHeight: "70px",
         }}
       >
-        <i className="bi bi-chevron-left fs-4 text-dark" style={{ cursor: "pointer" }}></i>
+        <i
+          className="bi bi-chevron-left fs-4 text-dark"
+          style={{ cursor: "pointer" }}
+          onClick={onBack} // <-- Call the parent's function
+        ></i>
 
         {showMiniHeader && (
           <div className="d-flex align-items-center ms-2" style={{ marginTop: "-4px" }}>
@@ -45,10 +48,12 @@ const StickyHeader = () => {
           </div>
         )}
 
-        <i className="bi bi-three-dots-vertical fs-4 text-dark ms-auto" style={{ cursor: "pointer" }}></i>
+        <i
+          className="bi bi-three-dots-vertical fs-4 text-dark ms-auto"
+          style={{ cursor: "pointer" }}
+        ></i>
       </div>
 
-      {/* Normal scrollable profile section below */}
       <div className="text-center bg-white" style={{ marginTop: "-60px", paddingTop: "0px" }}>
         <div
           style={{
@@ -57,9 +62,8 @@ const StickyHeader = () => {
             transition: "transform 0.2s ease-out, opacity 0.2s ease-out",
             opacity,
             display: "inline-block",
-                position: "relative",        // <-- Required for zIndex to work
-
-    zIndex: 100000,              // <-- Now it works
+            position: "relative",
+            zIndex: 100000,
           }}
         >
           <img

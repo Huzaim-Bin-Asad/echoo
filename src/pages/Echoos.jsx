@@ -69,7 +69,17 @@ const Echoo = () => {
           scrollToBottomTrigger={scrollTrigger}
         />
       )}
-      {activeView === "profile" && <ContactedUserProfileDetails goBack={goBack} />}
+{activeView === "profile" && (
+  <ContactedUserProfileDetails
+    onBack={({ from }) => {
+      if (from === "ContactedUserProfileData") {
+        console.log("🔙 Back from profile — switching to chat view");
+        setActiveView("chat");
+        setScrollTrigger(Date.now()); // Optional: re-scroll to bottom
+      }
+    }}
+  />
+)}
     </div>
   );
 };

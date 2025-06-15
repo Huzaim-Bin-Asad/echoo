@@ -9,20 +9,20 @@ import UserBasedPreferences from "./UserBasedPreferences";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
 
-const ContactedUserProfileDetails = () => {
+const ContactedUserProfileDetails = ({ onBack }) => {
   return (
     <div
       className="text-dark"
       style={{
-        backgroundColor: "#f8f9fa", // slightly duller white
-        minHeight: "150vh",         // ensures scroll space
+        backgroundColor: "#f8f9fa",
+        minHeight: "150vh",
       }}
     >
-      {/* This header sticks at top */}
-      <StickyHeader />
+      {/* Sticky header receives onBack from parent and calls it */}
+      <StickyHeader onBack={() => onBack?.({ from: "ContactedUserProfileData" })} />
 
       {/* Scrollable profile content */}
-      <div className="px-3 pb-5">
+      <div className="px-3 pt-2 pb-3">
         <UserDetails />
         <ContactedUserAbout />
         <MediaLinksDocs />
